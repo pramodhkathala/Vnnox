@@ -63,7 +63,7 @@
     .vis-details { display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.95em; color: #111827; }
     .vis-details span { display: flex; align-items: center; line-height: 1.4; padding-bottom: 8px; border-bottom: 1px dotted #e5e7eb; }
     .vis-details strong { color: #111827; font-weight: 600; min-width: 260px; text-align: left; margin-right: 16px; }
-    .vis-details small { font-size: 0.98em; color: var(--accent); font-weight: 700; } /* red results */
+    .vis-details small { font-size: 0.98em; color: var(--accent); font-weight: 700; }
 
     .edit-btn { background: none; border: none; color: var(--brand); font-size: 0.9em; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 10px; }
 
@@ -93,12 +93,6 @@
     .modal-grid-span-2 { grid-column: 1 / -1; }
     .modal-input-group label { font-weight: 600; color: var(--brand); margin-bottom: 5px; display: block; }
     .modal-disclaimer { margin-top: 12px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 6px; font-size: 0.85em; color: #616161; }
-
-    /* Minimal SVG overlay styling */
-    #connectionSvg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-    .conn-legend { position:absolute; right:12px; top:8px; z-index:12; font-size:11px; background:rgba(255,255,255,0.95); padding:6px 8px; border-radius:8px; border:1px solid #e5e7eb; display:none; }
-    .conn-legend .sw { width:14px; height:8px; display:inline-block; margin-right:8px; border-radius:2px; }
-    .conn-legend .red { background:#ef5350; } .conn-legend .green { background:#66bb6a; }
 
     /* Responsive */
     @media (max-width: 900px) { .input-grid, .output-grid, .modal-grid { grid-template-columns: 1fr; } }
@@ -212,18 +206,8 @@
         <div class="vis-content">
           <div class="grid" id="visGrid">
             <div id="cabinetOverlay"></div>
-
-            <!-- Persistent SVG overlay (minimal renderer will write into this) -->
-            <svg id="connectionSvg" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true" role="img"></svg>
-
             <span class="dimension-label dim-top" id="visWidthLabel">-- W --</span>
             <span class="dimension-label dim-right" id="visHeightLabel">-- H --</span>
-
-            <!-- Optional legend — shown by JS when connections drawn -->
-            <div id="visLegend" class="conn-legend" aria-hidden="true">
-              <div><span class="sw red"></span>Long Ethernet Run</div>
-              <div><span class="sw green"></span>Cabinet-to-cabinet Link</div>
-            </div>
           </div>
         </div>
       </div>
@@ -606,82 +590,6 @@
       return { finalW_M: finalW_M, finalH_M: finalH_M, finalW_FT: finalW_FT, finalH_FT: finalH_FT };
     }
 
-    // ====== Minimal SVG overlay renderer (clean & compact) ======
-    function renderConnectionsMinimal(data) {
-      const svgEl = document.getElementById('connectionSvg');
-      const gridEl = document.getElementById('visGrid');
-      const overlay = document.getElementById('cabinetOverlay');
-      const legendEl = document.getElementById('visLegend');
-
-      if (!svgEl || !gridEl || !overlay || !data) return;
-
-      const rect = gridEl.getBoundingClientRect();
-      const W = Math.max(10, Math.round(rect.width));
-      const H = Math.max(10, Math.round(rect.height));
-
-      if (W === 0 || H === 0) { svgEl.innerHTML = ''; if (legendEl) legendEl.style.display='none'; return; }
-
-      const cols = data.numCabW || 1;
-      const rows = data.numCabH || 1;
-
-      const cellW = W / cols;
-      const cellH = H / rows;
-
-      const cx = (c) => Math.round((c + 0.5) * cellW);
-      const cy = (r) => Math.round((r + 0.5) * cellH);
-
-      const ctrlX = Math.round(Math.max(8, cellW * 0.05));
-      const ctrlY = Math.round(Math.max(12, H * 0.12));
-
-      const defs = `
-        <defs>
-          <marker id="arrowRed" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto">
-            <path d="M0,0 L9,5 L0,10 z" fill="#ef5350"/>
-          </marker>
-          <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-            <path d="M0,0 L8,4 L0,8 z" fill="#43a047"/>
-          </marker>
-          <style>
-            .lbl{ font-size:11px; font-weight:700; fill:#111827; }
-          </style>
-        </defs>`;
-
-      let inner = defs + `<g aria-hidden="true">`;
-
-      // Long runs -> top cabinet of each column
-      for (let c = 0; c < cols; c++) {
-        const tx = cx(c);
-        const ty = cy(0);
-        const midX = Math.round((ctrlX + tx) / 2);
-        const midY = Math.round(Math.max(ctrlY, ty - cellH * 0.35));
-        const endX = Math.round(tx - cellW * 0.06);
-        const endY = Math.round(ty - cellH * 0.08);
-
-        inner += `<path d="M ${ctrlX} ${ctrlY} C ${midX} ${ctrlY} ${midX} ${midY} ${endX} ${endY}" stroke="#ef5350" stroke-width="${Math.max(2, Math.min(6, W/220))}" fill="none" marker-end="url(#arrowRed)" opacity="0.95"/>`;
-        inner += `<text class="lbl" x="${tx}" y="${Math.max(12, ty - cellH*0.52)}" text-anchor="middle">P${c+1}</text>`;
-      }
-
-      // Horizontal short links
-      for (let r = 0; r < rows; r++){
-        for (let c = 0; c < cols - 1; c++){
-          const sx = Math.round(cx(c) + cellW * 0.18);
-          const sy = cy(r);
-          const ex = Math.round(cx(c+1) - cellW * 0.18);
-          const ey = cy(r);
-          inner += `<line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" stroke="#43a047" stroke-width="${Math.max(1.2, Math.min(4, W/500))}" marker-end="url(#arrowGreen)" opacity="0.85"/>`;
-        }
-      }
-
-      inner += `<text class="lbl" x="${ctrlX}" y="${Math.max(10, ctrlY - 6)}" text-anchor="start">Controller</text>`;
-      inner += `</g>`;
-
-      svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
-      svgEl.innerHTML = inner;
-
-      if (legendEl) legendEl.style.display = 'block';
-    }
-
-    // ===== Visualization rendering =====
     function showVisualization(){
       const data = calculateLEDWall(); if (!data) return;
       const dims = calculateDimensions(data);
@@ -752,20 +660,10 @@
           cabinetOverlay.appendChild(cell);
         }
       }
-
-      // ---- CALL clean minimal renderer here ----
-      renderConnectionsMinimal(finalCalculationData);
-
       document.getElementById('downloadPdfLink').classList.remove('hidden');
     }
 
     function hideVisualization(){
-      // clear svg overlay & legend
-      const svgEl = document.getElementById('connectionSvg');
-      if (svgEl) svgEl.innerHTML = '';
-      const legendEl = document.getElementById('visLegend');
-      if (legendEl) legendEl.style.display = 'none';
-
       document.getElementById('formContainer').classList.remove('minimized');
       document.getElementById('visualization').classList.remove('visible');
       document.getElementById('submitButton').classList.remove('hidden');
@@ -858,7 +756,7 @@
         ['Spare LED Modules', 'Recommended ~3% spares', sparesModules, 'PCS'],
         ['Spare Receiving Cards', 'Recommended ~2% spares', sparesRcv, 'PCS'],
         ['Spare Power Supplies', 'Recommended ~2% spares', sparesPSU, 'PCS'],
-        ['Long Ethernet Cables', 'Controller → first cabinet (per column) + bandwidth', data.requiredPorts, 'PCS'],
+        ['Long Ethernet Cables', 'Controller → first cabinet (per column)', data.requiredPorts, 'PCS'],
         ['Short Ethernet Cables', 'Cabinet interconnect (CAT6/7)', data.requiredShortEthernet, 'PCS'],
         ['Mounting Structure', 'Wall/stacking structure as per site', 1, 'LS'],
         ['Power Distribution', 'PDU/breakers as per load plan', 1, 'LS'],
@@ -909,14 +807,6 @@
       window.addEventListener('click', function(evt){
         const modal = document.getElementById('controllerModal');
         if (evt.target === modal){ closeControllerModal(); }
-      });
-      // Re-render connections when window resizes while visualization visible
-      window.addEventListener('resize', function(){
-        if (document.getElementById('visualization').classList.contains('visible') && finalCalculationData && finalCalculationData.totalPixels) {
-          // small debounce
-          clearTimeout(window.__pl_relayout);
-          window.__pl_relayout = setTimeout(()=>renderConnectionsMinimal(finalCalculationData), 120);
-        }
       });
     });
   </script>
