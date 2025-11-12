@@ -804,7 +804,7 @@
         boqData.push(['Output Card (Sending)', data.outputCardModel + ` (${data.outputCardPorts} ports)`, data.requiredSendCards, 'PCS']);
         boqData.push(['Input Card (User Config)', data.inputCardModel, data.inputCardQty, 'PCS']);
       }
-      doc.autoTable({ startY: y+2, head: [['Item','Description / Model','Quantity','Unit']], body: boqData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'grid', headStyles: { fillColor: primaryColor, halign: 'center' }, styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 2: { halign: 'right' }, 3: { halign: 'center' } } });
+      doc.autoTable({ startY: y+2, head: [['Item','Description / Model','Quantity','Unit']], body: boqData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'grid', headStyles: { fillColor: [13,71,161], halign: 'center' }, styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 2: { halign: 'right' }, 3: { halign: 'center' } } });
       y = doc.lastAutoTable.finalY + lineHeight*2;
 
       // 6. Terms
@@ -818,16 +818,15 @@
         '5. Warranty: Standard 1 year on LED panels/accessories; excludes surge/misuse/unauthorized repair damages.',
         '6. Site Access: Safe/unrestricted access and site-provided lifting equipment (if required) during work hours.'
       ];
-      const pageW = doc.internal.pageSize.getWidth();
-      const marginR = pageW - margin;
+      const pageW2 = doc.internal.pageSize.getWidth();
       terms.forEach(function(term){
-        const split = doc.splitTextToSize(term, pageW - 2*margin);
+        const split = doc.splitTextToSize(term, pageW2 - 2*margin);
         doc.text(split, margin, y); y += (split.length * 3.5) + 1;
       });
 
       // Footer
       doc.setFontSize(8); doc.setTextColor(176,196,222);
-      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala', pageW/2, doc.internal.pageSize.getHeight()-10, { align: 'center' });
+      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala', pageW2/2, doc.internal.pageSize.getHeight()-10, { align: 'center' });
 
       doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
     }
