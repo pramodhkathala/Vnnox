@@ -1,295 +1,512 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>PeopleLink LED Video Wall Configuration Calculator</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-  <style>
-    :root { --bg:#eef1f8; --card:#ffffff; --ink:#1c2738; --brand:#0d47a1; --accent:#b71c1c; --muted:#f7f9fc; --ok:#1b5e20 }
-    html,body{height:100%} body{font-family:Inter, sans-serif;margin:0;padding:40px;background:var(--bg);color:var(--ink);font-size:14px}
-    .main-wrapper{max-width:1200px;margin:auto}
-    h2{text-align:center;color:var(--brand);margin-top:0;margin-bottom:30px;font-weight:700;font-size:1.8em}
-    .input-panel{background:var(--card);padding:30px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.05)}
-    .input-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px 30px}
-    label{display:block;margin-bottom:5px;font-weight:600;color:#444}
-    select,input{width:100%;padding:10px 12px;border:1px solid #dcdcdc;border-radius:6px}
-    .btn{background:var(--brand);color:#fff;padding:14px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
-    .visualization{background:var(--card);padding:30px;border-radius:12px;margin-top:30px;display:none}
-    .visualization.visible{display:block}
-    .details-box{border:1px solid #e0e0e0;padding:20px;border-radius:8px;background:#f7f9fc}
-    .vis-details{display:grid;gap:10px}
-    #downloadPdfLink{text-decoration:underline;cursor:pointer;color:var(--ok);display:inline-block}
-    footer{margin-top:24px;color:#b0c4de;text-align:center}
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PeopleLink LED Video Wall Calculator — Fixed</title>
+
+<!-- Optional: jsPDF and autotable CDN (if offline, download libs or remove; there's a safe fallback) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  body{font-family:Inter,system-ui,Arial; background:#eef1f8; color:#1c2738; margin:20px;padding:20px}
+  .card{background:#fff;border-radius:10px;padding:18px;box-shadow:0 6px 18px rgba(0,0,0,0.06); max-width:1100px;margin:0 auto}
+  h1{color:#0D47A1;margin:0 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  label{font-weight:600;font-size:13px;display:block;margin-bottom:6px}
+  select,input{width:100%;padding:8px;border:1px solid #dcdcdc;border-radius:6px;font-size:14px}
+  .btn{background:#0D47A1;color:#fff;padding:10px 14px;border:none;border-radius:8px;cursor:pointer;font-weight:700}
+  .btn.gray{background:#6c757d}
+  .hidden{display:none}
+  .error{background:#ffebee;color:#b71c1c;padding:8px;border-radius:6px;margin-bottom:8px;font-weight:700}
+  .flex{display:flex;gap:12px;align-items:center}
+  .details{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  pre{background:#f7f9fc;padding:10px;border-radius:6px;overflow:auto}
+  footer{margin-top:18px;text-align:center;color:#9fb0d6}
+  @media (max-width:880px){ .grid,.details{grid-template-columns:1fr} }
+</style>
 </head>
 <body>
-  <div class="main-wrapper">
-    <div class="input-panel" id="formContainer">
-      <h2>LED Video Wall Configuration Calculator</h2>
-      <div id="errorMessage" style="display:none;color:#B71C1C;font-weight:700;padding:10px;border-radius:6px;background:#ffebee;margin-bottom:12px"></div>
-      <div class="input-grid">
-        <div>
-          <label for="productModel">LED Model / Pixel Pitch</label>
-          <select id="productModel">
-            <option value="">Select LED Model</option>
-            <optgroup label="COB Models (16:9 Cabinet - 600x337.5mm)">
-              <option value="cob_09">0.9375mm</option>
-              <option value="cob_125">1.25mm</option>
-              <option value="cob_15">1.5625mm</option>
-            </optgroup>
-            <optgroup label="SMD Indoor Models (4:3 Cabinet - 640x480mm)">
-              <option value="indoor_186">1.86mm</option>
-              <option value="indoor_20">2.0mm</option>
-              <option value="indoor_25">2.5mm</option>
-            </optgroup>
-            <optgroup label="SMD Outdoor Models (1:1 Cabinet - 960x960mm)">
-              <option value="outdoor_40">4.0mm</option>
-              <option value="outdoor_667">6.67mm</option>
-              <option value="outdoor_80">8.0mm</option>
-              <option value="outdoor_100">10.0mm</option>
-            </optgroup>
-          </select>
-        </div>
-        <div>
-          <label for="unit">Unit</label>
-          <select id="unit" onchange="toggleMeasurementFields()">
-            <option value="">Select unit</option>
-            <option value="meters">Meters (m)</option>
-            <option value="feet">Feet (ft)</option>
-            <option value="inches">Inches (diagonal)</option>
-          </select>
-        </div>
+  <div class="card">
+    <h1>PeopleLink LED Video Wall Calculator — Fixed</h1>
 
-        <div id="widthGroup">
-          <label id="widthLabel">Desired Width (m)</label>
-          <input id="width" type="number" step="0.01" min="0.1">
-        </div>
-        <div id="heightGroup">
-          <label id="heightLabel">Desired Height (m)</label>
-          <input id="height" type="number" step="0.01" min="0.1">
-        </div>
+    <div id="errorBox" class="hidden error"></div>
 
-        <div id="diagonalGroup" style="display:none">
-          <label>Diagonal (inches)</label>
-          <input id="diagonal" type="number" step="1" min="10">
-        </div>
+    <div class="grid" id="inputGrid">
+      <div>
+        <label for="productModel">LED Model / Pixel Pitch</label>
+        <select id="productModel">
+          <option value="">Select LED Model</option>
+          <optgroup label="COB Models (16:9 - 600x337.5mm)">
+            <option value="cob_09">COB 0.9375 mm</option>
+            <option value="cob_125">COB 1.25 mm</option>
+            <option value="cob_15">COB 1.5625 mm</option>
+          </optgroup>
+          <optgroup label="SMD Indoor (4:3 - 640x480mm)">
+            <option value="indoor_186">SMD 1.86 mm</option>
+            <option value="indoor_20">SMD 2.0 mm</option>
+            <option value="indoor_25">SMD 2.5 mm</option>
+          </optgroup>
+          <optgroup label="SMD Outdoor (1:1 - 960x960mm)">
+            <option value="outdoor_40">Outdoor 4.0 mm</option>
+            <option value="outdoor_667">Outdoor 6.67 mm</option>
+            <option value="outdoor_80">Outdoor 8.0 mm</option>
+            <option value="outdoor_100">Outdoor 10.0 mm</option>
+          </optgroup>
+        </select>
+      </div>
 
-        <div>
-          <label>Aspect Ratio (optional)</label>
-          <select id="aspectRatio">
-            <option value="">Auto</option>
-            <option value="16:9">16:9</option>
-            <option value="4:3">4:3</option>
-            <option value="1:1">1:1</option>
-          </select>
-        </div>
+      <div>
+        <label for="unit">Units</label>
+        <select id="unit" onchange="toggleMeasurementFields()">
+          <option value="">Choose unit</option>
+          <option value="meters">Meters (m)</option>
+          <option value="feet">Feet (ft)</option>
+          <option value="inches">Inches (Diagonal)</option>
+        </select>
+      </div>
 
-        <div style="grid-column:1/-1">
-          <button class="btn" onclick="showVisualization()">Calculate & Visualize System</button>
-        </div>
+      <div id="widthGroup">
+        <label id="widthLabel">Desired Width (m)</label>
+        <input id="width" type="number" step="0.01" min="0.01" placeholder="e.g., 3.20">
+      </div>
+
+      <div id="heightGroup">
+        <label id="heightLabel">Desired Height (m)</label>
+        <input id="height" type="number" step="0.01" min="0.01" placeholder="e.g., 1.80">
+      </div>
+
+      <div id="diagonalGroup" style="display:none">
+        <label>Desired Diagonal (inches)</label>
+        <input id="diagonal" type="number" step="1" min="10" placeholder="e.g., 110">
+      </div>
+
+      <div>
+        <label for="aspectRatio">Target Aspect Ratio (optional)</label>
+        <select id="aspectRatio">
+          <option value="">Auto</option>
+          <option value="16:9">16:9</option>
+          <option value="4:3">4:3</option>
+          <option value="1:1">1:1</option>
+        </select>
+      </div>
+
+      <div style="align-self:end">
+        <button id="calcBtn" class="btn" onclick="onCalculate()">Calculate & Visualize</button>
       </div>
     </div>
 
-    <div class="visualization" id="visualization">
-      <div style="display:flex;gap:20px;flex-wrap:wrap">
-        <div class="details-box" style="flex:1;min-width:320px">
-          <h4>LED Wall Specifications</h4>
-          <div class="vis-details">
-            <div id="pixelPitchDisplay">Pixel Pitch: --</div>
-            <div id="finalDimensions">Dimensions: --</div>
-            <div id="resolution">Resolution: --</div>
-            <div id="numCabinets">Cabinets: --</div>
-            <div id="totalModules">Modules: --</div>
-            <div id="finalDiagonal">Diagonal: --</div>
-            <div id="finalArea">Area: --</div>
-            <div id="totalPixels">Pixels: --</div>
-            <div id="viewingDistance">Viewing distance (min/comfort/ideal): --</div>
-          </div>
+    <div id="resultArea" class="hidden">
+      <div class="details">
+        <div class="details-card">
+          <h3>LED Wall Specifications</h3>
+          <div id="specsHtml"></div>
         </div>
 
-        <div class="details-box" style="flex:1;min-width:320px">
-          <h4>Control & BOQ</h4>
-          <div class="vis-details" id="controlSystemDetails">--</div>
-          <div style="margin-top:12px">
-            <strong>BOQ (summary)</strong>
-            <div id="boqSummary">--</div>
-          </div>
+        <div class="details-card">
+          <h3>Control & BOQ</h3>
+          <div id="controlHtml"></div>
         </div>
       </div>
 
-      <div style="margin-top:18px">
-        <div style="border:1px dashed #ddd;padding:12px;border-radius:8px;background:#fff">
-          <strong>Visualization</strong>
-          <div id="visGrid" style="height:200px;background:linear-gradient(135deg,#e3f2fd,#bbdefb);margin-top:8px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#1c2738">Physical mockup</div>
+      <div style="margin-top:14px">
+        <strong>Visualization</strong>
+        <div id="visGrid" style="height:220px;margin-top:6px;border-radius:6px;background:linear-gradient(135deg,#e3f2fd,#bbdefb);display:flex;align-items:center;justify-content:center">
+          <div id="cabinetMock">Physical mockup</div>
         </div>
       </div>
 
-      <div style="margin-top:18px;display:flex;gap:12px;align-items:center">
-        <span id="downloadPdfLink" onclick="proceedToDownloadPdf()">Download PDF Technical Summary</span>
-        <button onclick="hideVisualization()">Modify Configuration</button>
+      <div style="margin-top:12px;display:flex;gap:12px;align-items:center">
+        <button class="btn" onclick="proceedToDownloadPdf()">Download PDF Technical Summary</button>
+        <button class="btn gray" onclick="editConfiguration()">Modify Configuration</button>
       </div>
     </div>
 
+    <hr style="margin:18px 0">
+
+    <h4>BOQ (Master) — part codes included</h4>
+    <pre id="boqMasterPre"></pre>
+
+    <footer>© 2025 PeopleLink Unified Communications Pvt. Ltd.</footer>
   </div>
 
-  <footer>© 2025 PeopleLink Unified Communications Pvt. Ltd.</footer>
+<script>
+/* ----------------------
+   Constants & Data
+   ---------------------- */
+const MM_PER_METER = 1000;
+const MM_PER_INCH = 25.4;
+const METER_TO_FEET = 3.28084;
+const PIXELS_PER_PORT_DEFAULT = 650000;
 
-  <script>
-    // constants
-    const MM_PER_METER = 1000; const MM_PER_INCH = 25.4; const MM_PER_FOOT = MM_PER_INCH*12; const METER_TO_FEET = 3.28084; const PIXELS_PER_PORT_DEFAULT = 650000;
+// LED products (copied values from your original)
+const LED_PRODUCTS = {
+  'cob_09': { name: "PeopleLink COB (0.9375mm)", pitch_mm: 0.9375, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 640, cabPixH: 360, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-1000", maxPower_W_m2: 300 },
+  'cob_125': { name: "PeopleLink COB (1.25mm)", pitch_mm: 1.25, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 480, cabPixH: 270, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-800", maxPower_W_m2: 300 },
+  'cob_15': { name: "PeopleLink COB (1.5625mm)", pitch_mm: 1.5625, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 384, cabPixH: 216, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-800", maxPower_W_m2: 300 },
+  'indoor_186': { name: "PeopleLink SMD Indoor (1.86mm)", pitch_mm: 1.86, cabW_mm: 640, cabH_mm: 480, cabPixW: 344, cabPixH: 258, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 },
+  'indoor_20': { name: "PeopleLink SMD Indoor (2.0mm)", pitch_mm: 2.0, cabW_mm: 640, cabH_mm: 480, cabPixW: 320, cabPixH: 240, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 },
+  'indoor_25': { name: "PeopleLink SMD Indoor (2.5mm)", pitch_mm: 2.5, cabW_mm: 640, cabH_mm: 480, cabPixW: 256, cabPixH: 192, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 },
+  'outdoor_40': { name: "PeopleLink SMD Outdoor (4.0mm)", pitch_mm: 4.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 240, cabPixH: 240, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 },
+  'outdoor_667': { name: "PeopleLink SMD Outdoor (6.67mm)", pitch_mm: 6.67, cabW_mm: 960, cabH_mm: 960, cabPixW: 144, cabPixH: 144, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 },
+  'outdoor_80': { name: "PeopleLink SMD Outdoor (8.0mm)", pitch_mm: 8.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 120, cabPixH: 120, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 },
+  'outdoor_100': { name: "PeopleLink SMD Outdoor (10.0mm)", pitch_mm: 10.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 96, cabPixH: 96, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }
+};
 
-    // products (shortened)
-    const LED_PRODUCTS = {
-      'indoor_25': { name:'2.5mm', pitch_mm:2.5, cabW_mm:640, cabH_mm:480, cabPixW:256, cabPixH:192, modulesPerCab:6, weight_kg:6.24, maxPower_W_m2:560 }
-      // add other products as necessary
-    };
+// BOQ master as you provided
+const BOQ_MASTER = [
+  { category: 'Controller', items: [
+      {desc:'LED Video Wall Controller (VX400 Pro)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-VWC-NS-VX400'},
+      {desc:'LED Video Wall Controller (VX600 Pro)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-VWC-NS-VX600'},
+      {desc:'LED Video Wall Controller (VX1000 Pro)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-VWC-NS-VX1000'},
+      {desc:'LED Video Wall Controller (4K Prime)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-VWC-NS-4K-PRM'},
+      {desc:'LED Video Wall Controller (H2)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-XMF-H2'},
+      {desc:'LED Video Wall Controller (H5)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-XMF-H5'},
+      {desc:'LED Video Wall Controller (H9)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-XMF-H9'},
+      {desc:'LED Video Wall Controller (H15)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-XMF-H15'},
+      {desc:'LED Video Wall Controller (H15 Enhanced)', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-XMF-H15E'},
+      {desc:'LED Video Wall Controller: TB60', qty:1, unitPrice:null, totalPrice:null, GST:18, part:'TP-VWC-NS-TB60'}
+    ]},
+  { category:'Input Cards', items:[
+      {desc:'H_4 x HDMI Input Card', qty:1, part:'TP-XIC-HDMI4'},
+      {desc:'H_1 x HDMI 2.0 Input Card', qty:1, part:'TP-XIC-HDMI'},
+      {desc:'H_2 x HDMI 2.0 Input Card', qty:1, part:'TP-XIC-HDMI2'}
+    ]},
+  { category:'Sending Cards', items:[
+      {desc:'H_16 x RJ45 + 2x Fiber Sending Card', qty:1, part:'TP-XOC-RJ45-16-OF2'},
+      {desc:'H_20 x RJ45 Sending Card', qty:1, part:'TP-XOC-RJ45-20'}
+    ]},
+  { category:'Output Cards', items:[
+      {desc:'H_4 x HDMI Output Card', qty:1, part:'TP-XOC-HDMI4'}
+    ]},
+  { category:'Active LED 2.5mm', items:[
+      {desc:'Cabinet with built-in integrated power supply and receiving card (640 x 480 mm), incl. 1m patch cords.', qty:30, part:'PPL-ALD-CU'},
+      {desc:'LED Modules of 2.5 Pixel Pitch', qty:180, part:'PDS-TP-15-T'},
+      {desc:'Spare LED Modules – 10% of total quantity', qty:18, part:'PDS-TP-15-T'},
+      {desc:'LAN cable for long-length LED screen to controller', qty:5, part:'Partner Scope'},
+      {desc:'Power Cable (3 Pin-top type)', qty:2, part:'Partner Scope'},
+      {desc:'LED Video Wall Controller (VX600 Pro)', qty:1, part:'TP-VWC-NS-VX600'},
+      {desc:'Installation & Configuration', qty:30, part:'ALED-INST-IN'},
+      {desc:'Transportation (No of Cabinets) - LOT', qty:30, part:'ALED-TRS-IN-REG'}
+    ]}
+];
 
-    // BOQ master list (user-provided items with part codes)
-    const BOQ_MASTER = [
-      { category: 'Controller', items: [
-        {desc:'LED Video Wall Controller (VX400 Pro)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-VWC-NS-VX400'},
-        {desc:'LED Video Wall Controller (VX600 Pro)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-VWC-NS-VX600'},
-        {desc:'LED Video Wall Controller (VX1000 Pro)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-VWC-NS-VX1000'},
-        {desc:'LED Video Wall Controller (4K Prime)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-VWC-NS-4K-PRM'},
-        {desc:'LED Video Wall Controller (H2)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-XMF-H2'},
-        {desc:'LED Video Wall Controller (H5)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-XMF-H5'},
-        {desc:'LED Video Wall Controller (H9)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-XMF-H9'},
-        {desc:'LED Video Wall Controller (H15)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-XMF-H15'},
-        {desc:'LED Video Wall Controller (H15 Enhanced)', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-XMF-H15E'},
-        {desc:'LED Video Wall Controller: TB60', qty:1, unitPrice:null, totalPrice:null, gst:18, part:'TP-VWC-NS-TB60'}
-      ]},
-      { category:'Input Cards', items:[
-        {desc:'H_4 x HDMI Input Card', qty:1, part:'TP-XIC-HDMI4'},
-        {desc:'H_1 x HDMI 2.0 Input Card', qty:1, part:'TP-XIC-HDMI'},
-        {desc:'H_2 x HDMI 2.0 Input Card', qty:1, part:'TP-XIC-HDMI2'}
-      ]},
-      { category:'Sending Cards', items:[
-        {desc:'H_16 x RJ45 + 2x Fiber Sending Card', qty:1, part:'TP-XOC-RJ45-16-OF2'},
-        {desc:'H_20 x RJ45 Sending Card', qty:1, part:'TP-XOC-RJ45-20'}
-      ]},
-      { category:'Output Cards', items:[
-        {desc:'H_4 x HDMI Output Card', qty:1, part:'TP-XOC-HDMI4'}
-      ]},
-      { category:'Active LED 2.5mm', items:[
-        {desc:'Cabinet with built-in integrated power supply and receiving card (640 x 480 mm), including 1-meter patch cords.', qty:30, part:'PPL-ALD-CU'},
-        {desc:'LED Modules of 2.5 Pixel Pitch', qty:180, part:'PDS-TP-15-T'},
-        {desc:'Spare LED Modules – 10% of total quantity', qty:18, part:'PDS-TP-15-T'},
-        {desc:'LAN cable for long-length LED screen to controller', qty:5, part:'Partner Scope'},
-        {desc:'Power Cable (3 Pin-top type)', qty:2, part:'Partner Scope'},
-        {desc:'LED Video Wall Controller (VX600 Pro)', qty:1, part:'TP-VWC-NS-VX600'},
-        {desc:'Installation & Configuration', qty:30, part:'ALED-INST-IN'},
-        {desc:'Transportation (No of Cabinets) - LOT', qty:30, part:'ALED-TRS-IN-REG'}
-      ]}
-    ];
+/* ----------------------
+   Small helpers
+   ---------------------- */
+function showError(msg){
+  const el = document.getElementById('errorBox');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+function clearError(){
+  const el = document.getElementById('errorBox');
+  el.textContent = '';
+  el.classList.add('hidden');
+}
+function gcd(a,b){ return b===0 ? a : gcd(b, a % b); }
 
-    function toggleMeasurementFields(){
-      const unit = document.getElementById('unit').value; const diag = unit==='inches';
-      document.getElementById('widthGroup').style.display = diag ? 'none' : 'block';
-      document.getElementById('heightGroup').style.display = diag ? 'none' : 'block';
-      document.getElementById('diagonalGroup').style.display = diag ? 'block' : 'none';
-      document.getElementById('errorMessage').style.display='none';
+/* ----------------------
+   UI helpers & initial rendering
+   ---------------------- */
+function renderBoqMaster(){
+  const el = document.getElementById('boqMasterPre');
+  let out='';
+  BOQ_MASTER.forEach(cat=>{
+    out += cat.category + '\\n';
+    cat.items.forEach(it=>{
+      out += `  • ${it.desc} | Qty: ${it.qty || '-'} | Part Code: ${it.part || '-'}\\n`;
+    });
+    out += '\\n';
+  });
+  el.textContent = out;
+}
+renderBoqMaster();
+
+/* ----------------------
+   Toggle measurement fields
+   ---------------------- */
+function toggleMeasurementFields(){
+  const unit = document.getElementById('unit').value;
+  const isDiagonal = unit === 'inches';
+  const widthGroup = document.getElementById('widthGroup');
+  const heightGroup = document.getElementById('heightGroup');
+  const diagonalGroup = document.getElementById('diagonalGroup');
+  const widthLabel = document.getElementById('widthLabel');
+  const heightLabel = document.getElementById('heightLabel');
+
+  if(isDiagonal){
+    widthGroup.style.display = 'none';
+    heightGroup.style.display = 'none';
+    diagonalGroup.style.display = 'block';
+  } else {
+    widthGroup.style.display = 'block';
+    heightGroup.style.display = 'block';
+    diagonalGroup.style.display = 'none';
+    if(unit === 'feet'){
+      widthLabel.textContent = 'Desired Width (ft)';
+      heightLabel.textContent = 'Desired Height (ft)';
+    } else {
+      widthLabel.textContent = 'Desired Width (m)';
+      heightLabel.textContent = 'Desired Height (m)';
     }
+  }
+  clearError();
+}
 
-    function calculateLEDWall(){
-      // Use indoor_25 default if user hasn't selected (for demo); in production you should validate
-      const productKey = document.getElementById('productModel').value || 'indoor_25';
-      const details = LED_PRODUCTS[productKey];
-      // basic default dimensions (1 cabinet x 1 cabinet) to avoid errors
-      const cabinetW_mm = details.cabW_mm, cabinetH_mm = details.cabH_mm;
-      const widthInput = parseFloat(document.getElementById('width').value) || (cabinetW_mm/1000);
-      const heightInput = parseFloat(document.getElementById('height').value) || (cabinetH_mm/1000);
+/* ----------------------
+   Core calculation
+   ---------------------- */
+function calculateLEDWall(){
+  clearError();
+  // input values
+  const productKey = document.getElementById('productModel').value;
+  const unit = document.getElementById('unit').value;
+  const aspectRatioKey = document.getElementById('aspectRatio').value;
+  const widthVal = parseFloat(document.getElementById('width').value);
+  const heightVal = parseFloat(document.getElementById('height').value);
+  const diagonalVal = parseFloat(document.getElementById('diagonal').value);
 
-      // determine cabinet count (round)
-      const desiredW_mm = widthInput * 1000; const desiredH_mm = heightInput * 1000;
-      const numCabW = Math.max(1, Math.round(desiredW_mm / cabinetW_mm));
-      const numCabH = Math.max(1, Math.round(desiredH_mm / cabinetH_mm));
+  // validation
+  if(!productKey){ showError('Please select an LED Model / Pixel Pitch'); return null; }
+  if(!unit){ showError('Please select unit (meters / feet / inches)'); return null; }
+  if(unit === 'inches' && (!diagonalVal || diagonalVal <= 0)){
+    showError('Please enter a valid diagonal in inches'); return null;
+  }
+  if(unit !== 'inches' && (!widthVal && !heightVal)){
+    showError('Please enter width or height in selected unit'); return null;
+  }
 
-      const finalW_mm = numCabW * cabinetW_mm; const finalH_mm = numCabH * cabinetH_mm;
-      const finalArea_m2 = (finalW_mm/1000)*(finalH_mm/1000);
-      const finalResW = numCabW * details.cabPixW; const finalResH = numCabH * details.cabPixH; const totalPixels = finalResW * finalResH;
+  const details = LED_PRODUCTS[productKey];
+  if(!details){ showError('Selected LED model data missing'); return null; }
 
-      // NEW viewing-distance rule: min = pitch_mm * 1 (meters), comfort = 1.5×, ideal = 2× (both shown in meters + feet)
-      const minView_m = details.pitch_mm * 1.0; const comfortView_m = minView_m * 1.5; const idealView_m = minView_m * 2.0;
-      const minView_ft = minView_m * METER_TO_FEET; const comfortView_ft = comfortView_m * METER_TO_FEET; const idealView_ft = idealView_m * METER_TO_FEET;
+  // handle diagonal input
+  let desiredW_mm, desiredH_mm;
+  if(unit === 'inches'){
+    // aspect ratio default to 16:9 if not provided
+    const ratioToUse = aspectRatioKey || '16:9';
+    const [rW, rH] = ratioToUse.split(':').map(Number);
+    const diagRatio = Math.sqrt(rW*rW + rH*rH);
+    const factor = diagonalVal / diagRatio; // inches per ratio unit
+    desiredW_mm = rW * factor * MM_PER_INCH;
+    desiredH_mm = rH * factor * MM_PER_INCH;
+  } else {
+    const factor = (unit === 'meters') ? MM_PER_METER : (MM_PER_INCH * 12); // feet -> mm per foot
+    const hasW = !isNaN(widthVal) && widthVal > 0;
+    const hasH = !isNaN(heightVal) && heightVal > 0;
 
-      // simple port calculations (same as earlier): bandwidth, cabinets and columns
-      const cabinetPixels = details.cabPixW * details.cabPixH;
-      const portsByBandwidth = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
-      const maxCabinetsPerPort = Math.max(1, Math.floor(PIXELS_PER_PORT_DEFAULT / cabinetPixels));
-      const requiredPortsByCabinets = Math.max(1, Math.ceil((numCabW*numCabH) / maxCabinetsPerPort));
-      const requiredPortsByColumns = numCabW;
-      const requiredLongPorts = Math.max(portsByBandwidth, requiredPortsByCabinets, requiredPortsByColumns);
-      const requiredShortEthernet = Math.max(0, (numCabW*numCabH) - requiredLongPorts);
-
-      return {
-        productKey, details, numCabW, numCabH, finalW_mm, finalH_mm, finalArea_m2, finalResW, finalResH, totalPixels,
-        minView_m, comfortView_m, idealView_m, minView_ft, comfortView_ft, idealView_ft,
-        requiredLongPorts, requiredShortEthernet
-      };
-    }
-
-    function showVisualization(){
-      const data = calculateLEDWall();
-      if(!data){ document.getElementById('errorMessage').style.display='block'; document.getElementById('errorMessage').textContent='Calculation failed'; return; }
-      document.getElementById('visualization').classList.add('visible');
-      document.getElementById('pixelPitchDisplay').textContent = 'Pixel Pitch: ' + data.details.pitch_mm + ' mm';
-      const w_m = (data.finalW_mm/1000).toFixed(2), h_m=(data.finalH_mm/1000).toFixed(2);
-      document.getElementById('finalDimensions').textContent = 'Actual Final Dimensions (WxH): ' + w_m + 'm x ' + h_m + 'm';
-      document.getElementById('resolution').textContent = 'Actual Final Resolution (WxH): ' + data.finalResW + ' x ' + data.finalResH;
-      document.getElementById('numCabinets').textContent = 'Total Cabinets: ' + data.numCabW + ' x ' + data.numCabH;
-      document.getElementById('totalModules').textContent = 'Total Modules: ' + (data.numCabW*data.numCabH*data.details.modulesPerCab);
-      document.getElementById('finalDiagonal').textContent = 'Final Diagonal: ' + (Math.sqrt(data.finalW_mm*data.finalW_mm + data.finalH_mm*data.finalH_mm)/25.4).toFixed(1) + ' in';
-      document.getElementById('finalArea').textContent = 'Area: ' + data.finalArea_m2.toFixed(2) + ' m²';
-      document.getElementById('totalPixels').textContent = 'Total Pixels: ' + data.totalPixels.toLocaleString();
-
-      document.getElementById('viewingDistance').innerHTML = 'Viewing distance (min / comfort / ideal): <strong>' + data.minView_m.toFixed(2) + ' m / ' + data.comfortView_m.toFixed(2) + ' m / ' + data.idealView_m.toFixed(2) + ' m</strong> — <strong>' + data.minView_ft.toFixed(1) + ' ft / ' + data.comfortView_ft.toFixed(1) + ' ft / ' + data.idealView_ft.toFixed(1) + ' ft</strong>';
-
-      // BOQ summary render (show top-level categories + counts)
-      let boqHtml = '';
-      BOQ_MASTER.forEach(cat=>{
-        boqHtml += '<div style="margin-top:8px"><strong>'+cat.category+'</strong><ul>';
-        cat.items.forEach(it=>{ boqHtml += '<li>'+it.desc+' — Qty: '+(it.qty||'-') + ' — Part: <code>'+ (it.part||'-') +'</code></li>'; });
-        boqHtml += '</ul></div>';
-      });
-      document.getElementById('boqSummary').innerHTML = boqHtml;
-
-      // control summary placeholder
-      document.getElementById('controlSystemDetails').innerHTML = '<div>Suggested Controller: <strong>Auto-select based on pixels & ports</strong></div>';
-    }
-
-    function hideVisualization(){ document.getElementById('visualization').classList.remove('visible'); }
-
-    // PDF generation: include BOQ_MASTER items into BOQ section
-    function proceedToDownloadPdf(){
-      const { jsPDF } = window.jspdf; const doc = new jsPDF('p','mm','a4'); const pageW = doc.internal.pageSize.getWidth(); const margin = 15; let y = 12;
-      doc.setFontSize(16); doc.text('PeopleLink LED Video Wall Technical Summary', pageW/2, y, {align:'center'}); y+=8;
-
-      // brief specs from last calculation
-      const data = calculateLEDWall();
-      doc.setFontSize(10); doc.text('Model: ' + (data.details.name||'-'), margin, y); y+=6;
-      doc.text('Dimensions: ' + (data.finalW_mm/1000).toFixed(2) + 'm x ' + (data.finalH_mm/1000).toFixed(2)+'m', margin, y); y+=6;
-      doc.text('Resolution: ' + data.finalResW + ' x ' + data.finalResH, margin, y); y+=8;
-
-      // BOQ table using autotable if available
-      const boqRows = [];
-      BOQ_MASTER.forEach(cat=>{
-        boqRows.push([cat.category, '', '', '', '']);
-        cat.items.forEach(it=>{ boqRows.push([it.desc, it.qty||'', it.unitPrice||'₹ -', it.totalPrice||'₹ -', it.part||'']); });
-      });
-      if (doc.autoTable){
-        doc.autoTable({ startY:y, head:[['Description','Qty','Unit Price','Total Price','Part Codes']], body:boqRows, margin:{left:margin,right:margin}, styles:{fontSize:8} });
+    if(aspectRatioKey){
+      const [rW, rH] = aspectRatioKey.split(':').map(Number);
+      if(hasW){
+        desiredW_mm = widthVal * factor;
+        desiredH_mm = (widthVal / rW) * rH * factor;
+      } else if(hasH){
+        desiredH_mm = heightVal * factor;
+        desiredW_mm = (heightVal / rH) * rW * factor;
       } else {
-        // fallback simple text
-        boqRows.forEach(r=>{ doc.text(r.join(' | '), margin, y); y+=5; if (y>270){ doc.addPage(); y=20; } });
+        showError('Please enter width or height when using aspect ratio'); return null;
       }
-
-      doc.save('PeopleLink_LED_BOQ.pdf');
+    } else {
+      // try infer
+      if(hasW && !hasH){
+        desiredW_mm = widthVal * factor;
+        desiredH_mm = desiredW_mm * (details.cabH_mm / details.cabW_mm); // infer using cabinet AR
+      } else if(hasH && !hasW){
+        desiredH_mm = heightVal * factor;
+        desiredW_mm = desiredH_mm * (details.cabW_mm / details.cabH_mm);
+      } else {
+        desiredW_mm = widthVal * factor;
+        desiredH_mm = heightVal * factor;
+      }
     }
+  }
 
-    document.addEventListener('DOMContentLoaded', ()=>{ toggleMeasurementFields(); });
-  </script>
+  // snap to whole cabinets (round nearest)
+  let numCabW = Math.max(1, Math.round(desiredW_mm / details.cabW_mm));
+  let numCabH = Math.max(1, Math.round(desiredH_mm / details.cabH_mm));
+  // avoid zero
+  numCabW = Math.max(1, numCabW);
+  numCabH = Math.max(1, numCabH);
+
+  const finalW_mm = numCabW * details.cabW_mm;
+  const finalH_mm = numCabH * details.cabH_mm;
+  const finalArea_m2 = (finalW_mm/1000) * (finalH_mm/1000);
+  const finalResW = numCabW * details.cabPixW;
+  const finalResH = numCabH * details.cabPixH;
+  const totalPixels = finalResW * finalResH;
+
+  const ratioG = gcd(finalResW, finalResH);
+  const aspectRatioText = `${finalResW/ratioG}:${finalResH/ratioG}`;
+  const finalDiagonal_mm = Math.sqrt(finalW_mm*finalW_mm + finalH_mm*finalH_mm);
+  const finalDiagonal_in = finalDiagonal_mm / MM_PER_INCH;
+
+  // NEW viewing-distance rule: min = pitch(mm) in meters, comfort=1.5x, ideal=2x.
+  const minView_m = details.pitch_mm * 1.0;
+  const comfortView_m = minView_m * 1.5;
+  const idealView_m = minView_m * 2.0;
+
+  // convert to feet
+  const minView_ft = minView_m * METER_TO_FEET;
+  const comfortView_ft = comfortView_m * METER_TO_FEET;
+  const idealView_ft = idealView_m * METER_TO_FEET;
+
+  // power & weight basic (unbuffered)
+  const actualPower_W_unbuffered = finalArea_m2 * details.maxPower_W_m2;
+  const actualCurrent_A = actualPower_W_unbuffered / 220;
+
+  // ports / cards estimates
+  const requiredPorts = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
+  const cabinetPixels = details.cabPixW * details.cabPixH;
+  const maxCabinetsPerPort = Math.max(1, Math.floor(PIXELS_PER_PORT_DEFAULT / cabinetPixels));
+  const requiredPortsByCabinets = Math.max(1, Math.ceil((numCabW*numCabH)/maxCabinetsPerPort));
+  const requiredLongPorts = Math.max(requiredPorts, requiredPortsByCabinets, numCabW); // ensure at least columns
+  const requiredShortEthernet = Math.max(0, (numCabW*numCabH) - requiredLongPorts);
+
+  return {
+    productKey, details,
+    numCabW, numCabH, finalW_mm, finalH_mm, finalArea_m2,
+    finalResW, finalResH, totalPixels, aspectRatioText, finalDiagonal_in,
+    minView_m, comfortView_m, idealView_m, minView_ft, comfortView_ft, idealView_ft,
+    actualPower_W_unbuffered, actualCurrent_A,
+    requiredLongPorts, requiredShortEthernet, requiredPorts
+  };
+}
+
+/* ----------------------
+   UI: Calculate & show
+   ---------------------- */
+function onCalculate(){
+  clearError();
+  const data = calculateLEDWall();
+  if(!data) return;
+
+  // show result area
+  document.getElementById('resultArea').classList.remove('hidden');
+
+  // populate specs
+  const s = [];
+  s.push(`<strong>Model:</strong> ${data.details.name}`);
+  s.push(`<strong>Pixel Pitch:</strong> ${data.details.pitch_mm} mm`);
+  s.push(`<strong>Final Dimensions (WxH):</strong> ${(data.finalW_mm/1000).toFixed(2)} m x ${(data.finalH_mm/1000).toFixed(2)} m`);
+  s.push(`<strong>Resolution (WxH):</strong> ${data.finalResW} x ${data.finalResH}`);
+  s.push(`<strong>Cabinet Matrix:</strong> ${data.numCabW} x ${data.numCabH} (${data.numCabW*data.numCabH} cabinets)`);
+  s.push(`<strong>Total Pixels:</strong> ${data.totalPixels.toLocaleString()}`);
+  s.push(`<strong>Final Diagonal:</strong> ${data.finalDiagonal_in.toFixed(1)} in`);
+  s.push(`<strong>Area:</strong> ${data.finalArea_m2.toFixed(2)} m²`);
+  s.push(`<strong>Viewing distance (min / comfort / ideal):</strong> ${data.minView_m.toFixed(2)} m / ${data.comfortView_m.toFixed(2)} m / ${data.idealView_m.toFixed(2)} m  —  ${data.minView_ft.toFixed(1)} ft / ${data.comfortView_ft.toFixed(1)} ft / ${data.idealView_ft.toFixed(1)} ft`);
+  s.push(`<strong>Power (unbuffered):</strong> ${Math.round(data.actualPower_W_unbuffered)} W`);
+  s.push(`<strong>Current (unbuffered @220V):</strong> ${data.actualCurrent_A.toFixed(2)} A`);
+  s.push(`<strong>Required Long Ethernet Ports:</strong> ${data.requiredLongPorts}`);
+  s.push(`<strong>Short Ethernet Cables (between cabinets):</strong> ${data.requiredShortEthernet}`);
+
+  document.getElementById('specsHtml').innerHTML = s.map(x=>`<div style="margin-bottom:6px">${x}</div>`).join('');
+
+  // BOQ / control placeholder (render BOQ master summary)
+  let controlHtml = '<div><strong>Suggested Controller:</strong> Auto-select based on pixel count (choose from BOQ controllers)</div>';
+  controlHtml += '<div style="margin-top:8px"><strong>BOQ Summary:</strong><ul>';
+  BOQ_MASTER.forEach(cat=>{
+    controlHtml += `<li style="margin-top:6px"><strong>${cat.category}</strong><ul>`;
+    cat.items.forEach(it=>{
+      controlHtml += `<li>${it.desc} — Qty: ${it.qty || '-'} — Part Code: <code>${it.part || '-'}</code></li>`;
+    });
+    controlHtml += '</ul></li>';
+  });
+  controlHtml += '</ul></div>';
+  document.getElementById('controlHtml').innerHTML = controlHtml;
+
+  // adjust visualization text (optional)
+  document.getElementById('cabinetMock').textContent = `${data.numCabW} x ${data.numCabH} cabinets`;
+}
+
+/* ----------------------
+   Edit / back
+   ---------------------- */
+function editConfiguration(){
+  document.getElementById('resultArea').classList.add('hidden');
+  clearError();
+}
+
+/* ----------------------
+   PDF generation
+   ---------------------- */
+function proceedToDownloadPdf(){
+  clearError();
+  const data = calculateLEDWall();
+  if(!data){ showError('Please run calculation first'); return; }
+
+  // create jsPDF doc; guard for library absence
+  let jsPDF;
+  try { jsPDF = window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : (window.jsPDF ? window.jsPDF : null); } catch(e){ jsPDF = null; }
+  if(!jsPDF){
+    // Try old global constructor
+    if (window.jsPDF) jsPDF = window.jsPDF;
+  }
+  if(!jsPDF){
+    showError('jsPDF not loaded. Please include jsPDF library to download PDF.');
+    return;
+  }
+
+  const doc = new jsPDF('p','mm','a4');
+  const pageW = doc.internal.pageSize.getWidth();
+  let y = 12;
+  doc.setFontSize(16); doc.setTextColor(13,71,161);
+  doc.text('PeopleLink LED Video Wall Technical Summary', pageW / 2, y, { align:'center' });
+  y += 8;
+  doc.setFontSize(10); doc.setTextColor(40,40,40);
+  doc.text(`Model: ${data.details.name}`, 14, y); y += 6;
+  doc.text(`Dimensions: ${(data.finalW_mm/1000).toFixed(2)} m x ${(data.finalH_mm/1000).toFixed(2)} m`, 14, y); y += 6;
+  doc.text(`Resolution: ${data.finalResW} x ${data.finalResH}`, 14, y); y += 8;
+
+  // Prepare BOQ rows
+  const boqRows = [];
+  BOQ_MASTER.forEach(cat=>{
+    // category row
+    boqRows.push([cat.category, '', '', '', '']);
+    cat.items.forEach(it=>{
+      boqRows.push([it.desc, it.qty || '', it.unitPrice || '₹ -', it.totalPrice || '₹ -', it.part || '']);
+    });
+  });
+
+  // if autoTable available, use it
+  if(typeof doc.autoTable === 'function'){
+    doc.autoTable({
+      startY: y,
+      head: [['Item/Category','Qty','Unit Price','Total Price','Part Code']],
+      body: boqRows,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [13,71,161], textColor: 255 }
+    });
+  } else {
+    // fallback: simple text output
+    let curY = y;
+    boqRows.forEach(r=>{
+      doc.setFontSize(9);
+      doc.text(r.join(' | '), 14, curY);
+      curY += 5;
+      if(curY > 270){ doc.addPage(); curY = 18; }
+    });
+  }
+
+  // Footer & save
+  const footer = '© 2025 PeopleLink Unified Communications Pvt. Ltd.';
+  doc.setFontSize(8); doc.setTextColor(130,130,130);
+  doc.text(footer, pageW/2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+
+  // Save file name
+  const fileName = `PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`;
+  doc.save(fileName);
+}
+
+/* ----------------------
+   Init
+   ---------------------- */
+document.addEventListener('DOMContentLoaded', ()=>{
+  // set sensible defaults
+  document.getElementById('productModel').value = 'indoor_25';
+  document.getElementById('unit').value = 'meters';
+  toggleMeasurementFields(); // initialize labels
+});
+</script>
 </body>
 </html>
