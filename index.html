@@ -1,1141 +1,701 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>PeopleLink LED Video Wall Configuration Calculator</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-  <style>
-    /* Base styles */
-    :root {
-      --brand: #0D47A1;
-      --accent: #B71C1C;
-      --muted: #6b7280;
-    }
-    body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; background: #eef1f8; color: #1c2738; font-size: 14px; }
-    .main-wrapper { max-width: 1200px; margin: auto; }
+<script>
+/* Complete script — drop this into your page (replaces previous script). 
+   Implements COB/SMD LAN-port rules with +20% controller-port buffer.
+*/
 
-    /* Header & Titles */
-    h2 { 
-        text-align: center; 
-        color: var(--brand);
-        margin-top: 0; 
-        margin-bottom: 30px; 
-        font-weight: 700; 
-        font-size: 1.8em; 
-        display: flex; 
-        align-items: center; 
-        justify-content: center;
-    }
+/* -------------------------
+   Constants & Config
+   -------------------------*/
+const MM_PER_METER = 1000;
+const MM_PER_INCH = 25.4;
+const MM_PER_FOOT = MM_PER_INCH * 12;
+const METER_TO_FEET = 3.28084;
+const PIXELS_PER_PORT_DEFAULT = 650000;     // SMD fallback (pixels / controller long LAN port)
+const CONTROLLER_PORT_BUFFER = 1.20;        // +20% buffer for controller ports
+const POWER_BUFFER = 1.15;                  // 15% power buffer used in PDF and displays
+const WEIGHT_BUFFER = 1.15;                 // 15% weight buffer used in PDF and displays
+const MARGIN_PERCENT_TEXT = "15%";
 
-    /* Input/Form Container */
-    .input-panel { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: all 0.6s ease-out; }
-    .input-panel.minimized { height: 120px; padding-top: 15px; padding-bottom: 10px; opacity: 0.95; overflow: hidden; background: #f7f9fc; }
-    .input-panel.minimized > *:not(h2):not(#enteredValuesDisplay):not(.back-btn-placeholder) { opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.3s ease-out, max-height 0.3s ease-out; pointer-events: none; }
-    .input-panel.minimized h2 { margin-bottom: 5px; }
-    
-    .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 30px; }
-    .input-group { margin-top: 0; }
-    
-    label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; }
-    select, input[type="number"], input[type="text"], input[type="email"], input[type="tel"] { 
-        width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; 
-    }
-    select:focus, input[type="number"]:focus, input[type="text"]:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.12); outline: none; }
-    
-    /* Buttons */
-    .submit-btn { margin-top: 25px; grid-column: 1 / -1; background-color: var(--brand); color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; width: 100%; cursor: pointer; transition: background-color 0.3s, transform 0.2s; font-weight: 600; }
-    .submit-btn:hover { background-color: #1565C0; transform: translateY(-1px); }
-    .back-btn { background-color: #6c757d; margin-top: 30px; }
-    .back-btn:hover { background-color: #5a6268; }
-    .btn { padding: 10px 14px; border-radius: 8px; border: none; cursor: pointer; background: var(--brand); color: #fff; font-weight: 600; }
-    .btn.gray { background: #6c757d; }
+/* COB-specific cabinets-per-long-LAN-cable mapping */
+const COB_CABS_PER_CABLE = {
+  'cob_09': 2,    // 0.9375 mm → 2 cabinets per long LAN cable
+  'cob_125': 5,   // 1.25 mm   → 5 cabinets per long LAN cable
+  'cob_15': 7     // 1.5625 mm → 7 cabinets per long LAN cable
+};
 
-    /* Error/Summary Display */
-    .hidden { display: none !important; }
-    .error-message { 
-        color: var(--accent); 
-        font-weight: bold; 
-        text-align: center; 
-        margin-top: 15px; 
-        padding: 15px; 
-        min-height: 20px; 
-        background: #ffebee; 
-        border: 2px solid var(--accent); 
-        border-radius: 8px; 
-        transition: all 0.3s ease;
-    }
-    #enteredValuesDisplay { text-align: center; font-size: 0.95em; color: #444; margin-bottom: 15px; line-height: 1.4; display: none; }
-    .input-panel.minimized #enteredValuesDisplay { display: block !important; opacity: 1; transition: opacity 0.3s ease-out 0.3s; }
+/* -------------------------
+   Products, Controllers & Defaults (kept as in your system)
+   -------------------------*/
+const LED_PRODUCTS = {
+    'cob_09': { name: "PeopleLink COB (0.9375mm)", pitch_mm: 0.9375, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 640, cabPixH: 360, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-1000", maxPower_W_m2: 300 },
+    'cob_125': { name: "PeopleLink COB (1.25mm)", pitch_mm: 1.25, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 480, cabPixH: 270, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-800", maxPower_W_m2: 300 },
+    'cob_15': { name: "PeopleLink COB (1.5625mm)", pitch_mm: 1.5625, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 384, cabPixH: 216, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-800", maxPower_W_m2: 300 }, 
+    'indoor_186': { name: "PeopleLink SMD Indoor (1.86mm)", pitch_mm: 1.86, cabW_mm: 640, cabH_mm: 480, cabPixW: 344, cabPixH: 258, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 }, 
+    'indoor_20': { name: "PeopleLink SMD Indoor (2.0mm)", pitch_mm: 2.0, cabW_mm: 640, cabH_mm: 480, cabPixW: 320, cabPixH: 240, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 }, 
+    'indoor_25': { name: "PeopleLink SMD Indoor (2.5mm)", pitch_mm: 2.5, cabW_mm: 640, cabH_mm: 480, cabPixW: 256, cabPixH: 192, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 }, 
+    'outdoor_40': { name: "PeopleLink SMD Outdoor (4.0mm)", pitch_mm: 4.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 240, cabPixH: 240, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }, 
+    'outdoor_667': { name: "PeopleLink SMD Outdoor (6.67mm)", pitch_mm: 6.67, cabW_mm: 960, cabH_mm: 960, cabPixW: 144, cabPixH: 144, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }, 
+    'outdoor_80': { name: "PeopleLink SMD Outdoor (8.0mm)", pitch_mm: 8.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 120, cabPixH: 120, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }, 
+    'outdoor_100': { name: "PeopleLink SMD Outdoor (10.0mm)", pitch_mm: 10.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 96, cabPixH: 96, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 } 
+};
 
-    /* Visualization/Output Container */
-    .visualization { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); opacity: 0; max-height: 0; overflow-y: hidden; transition: opacity 0.6s ease-out, max-height 1s ease-out; margin-top: 30px; }
-    .visualization.visible { opacity: 1; max-height: 2000px; } 
-    
-    .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
-    
-    /* Visualization Area */
-    .vis-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: #f7f9fc; }
-    .vis-content { position: relative; width: 100%; margin-bottom: 20px; padding-top: 35px; padding-right: 45px; padding-bottom: 10px; box-sizing: border-box; }
-    
-    /* NEW: constrained preview container */
-    .vis-area {
-      position: relative;
-      display: block;
-      margin: 0 auto;
-      max-width: 800px;   /* keep preview bounded */
-      border-radius: 8px;
-      overflow: hidden;
-      box-sizing: border-box;
-      background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-      border: 3px solid #bbdefb;
-    }
+const CONTROLLER_MODELS = [
+    { name: "TB40", type: "Multimedia Player", ports: 2, maxPixels: 1300000, maxW: 10240, maxH: 8192, priority: 1 },
+    { name: "TB60", type: "Multimedia Player", ports: 4, maxPixels: 2300000, maxW: 4096, maxH: 4096, priority: 2 },
+    { name: "VX400 Pro / DSP400 Pro", type: "All-in-One Processor", ports: 4, maxPixels: 2600000, maxW: 10240, maxH: 8192, priority: 3 },
+    { name: "VX600 Pro / DSP600 Pro", type: "All-in-One Processor", ports: 6, maxPixels: 3900000, maxW: 10240, maxH: 8192, priority: 4 },
+    { name: "VX1000 Pro / DSP1000 Pro", type: "All-in-One Processor", ports: 10, maxPixels: 6500000, maxW: 10240, maxH: 8192, priority: 5 },
+    { name: "4K Prime", type: "All-in-One Processor", ports: 16, maxPixels: 10400000, maxW: 16384, maxH: 8192, priority: 6 },
+    { name: "4K Prime Pro", type: "All-in-One Processor", ports: 20, maxPixels: 13000000, maxW: 16384, maxH: 8192, priority: 7 },
+    { name: "H2 (2U)", type: "Modular Splicer", ports: 20, maxPixels: 26000000, maxW: 16384, maxH: 8192, priority: 8 }, 
+    { name: "H5 (5U)", type: "Modular Splicer", ports: 20, maxPixels: 39000000, maxW: 16384, maxH: 8192, priority: 9 }, 
+    { name: "H9 (9U)", type: "Modular Splicer", ports: 20, maxPixels: 65000000, maxW: 16384, maxH: 8192, priority: 10 }, 
+    { name: "H15 (15U)", type: "Modular Splicer", ports: 20, maxPixels: 130000000, maxW: 16384, maxH: 8192, priority: 11 }, 
+    { name: "H20 (20U)", type: "Modular Splicer", ports: 20, maxPixels: 260000000, maxW: 16384, maxH: 8192, priority: 12 }, 
+].sort((a,b) => a.priority - b.priority);
 
-    /* absolutely-positioned cabinet overlay inside .vis-area */
-    #cabinetOverlay { 
-      position: absolute; 
-      top: 0; left: 0; right: 0; bottom: 0; 
-      display: grid; 
-      z-index: 5; 
-      grid-gap: 0;
-      box-sizing: border-box;
-      align-items: stretch;
-      justify-items: stretch;
-      padding: 6px; /* small padding so dashed borders don't touch edges */
+const H_SERIES_DEFAULTS = {
+    SPLICER_NAME: "H-Series Modular Splicer Frame", 
+    INPUT_CARD_OPTIONS: [
+        { model: "H_1xHDMI2.0 input card (4K)", display: "1x 4K HDMI (Single Input)", qty: 1, type: "4K Single Input" },
+        { model: "H_2xHDMI2.0 input card (4K)", display: "2x 4K HDMI (Dual Input)", qty: 1, type: "4K Dual Input" },
+        { model: "H_4xHDMI input card (1080P)", display: "4x FHD HDMI (Quad Input)", qty: 1, type: "HD Quad Input" },
+    ],
+    DEFAULT_INPUT_CARD_MODEL: "H_1xHDMI2.0 input card (4K)",
+    DEFAULT_INPUT_CARD_QTY: 2,
+    OUTPUT_CARD_20_PORTS: 20,
+    OUTPUT_CARD_20_MODEL: "H_20xRJ45 Sending Card",
+    OUTPUT_CARD_16_PORTS: 16,
+    OUTPUT_CARD_16_MODEL: "H_16xRJ45 Sending Card",
+};
+
+/* -------------------------
+   Globals & helpers
+   -------------------------*/
+let finalCalculationData = {}; 
+let contactInfo = { email: '', phone: '' };
+
+function formatNumber(n,d=1){ return n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function formatLargeNumber(n){ if(n>=1e6) return (n/1e6).toFixed(2)+"M"; if(n>=1e3) return (n/1e3).toFixed(1)+"K"; return n.toLocaleString(); }
+function gcd(a,b){ return b===0 ? a : gcd(b, a % b); }
+
+/* -------------------------
+   Controller suggestion helper
+   -------------------------*/
+function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey) {
+    // prefer small multimedia devices for small walls/outdoor, else pick appropriate AIO or H-series
+    const isOutdoor = productKey && productKey.startsWith('outdoor');
+    const isSmallIndoor = totalPixels < 1500000;
+
+    let suggestedController = null;
+
+    if (isOutdoor || isSmallIndoor) {
+        suggestedController = CONTROLLER_MODELS.find(c => c.type === "Multimedia Player" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
     }
 
-    /* cabinet cells */
-    #cabinetOverlay > div {
-      border: 1px dashed rgba(13, 71, 161, 0.4);
-      box-sizing: border-box;
-      width: 100%;
-      height: 100%;
-      min-width: 8px; /* prevents odd collapse on very large matrices */
-      min-height: 8px;
+    if (!suggestedController) {
+        suggestedController = CONTROLLER_MODELS.find(c => c.type === "All-in-One Processor" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
     }
 
-    .dimension-label { position: absolute; color: var(--accent); background: rgba(255, 255, 255, 0.95); padding: 3px 6px; font-size: 0.9em; border-radius: 3px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); z-index: 10; }
-    .dim-top { top: 6px; left: 50%; transform: translateX(-50%); }
-    .dim-right { top: 50%; right: 6px; transform: translateY(-50%) rotate(90deg); transform-origin: center center; }
-
-    /* Details Section */
-    .details-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: #f7f9fc; }
-    .details-box h4 { margin-top: 0; color: var(--brand); border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 15px; font-size: 1.1em; }
-    
-    /* Custom style for the table layout */
-    .vis-details { display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 0.95em; color: #333; }
-    .vis-details span { 
-        display: flex; 
-        justify-content: flex-start; 
-        align-items: center; 
-        line-height: 1.4; 
-        padding-bottom: 5px; 
-        border-bottom: 1px dotted #e0e0e0;
-    }
-    .vis-details strong { 
-        color: #333; 
-        font-weight: 400; 
-        min-width: 250px; 
-        text-align: left;
-        margin-right: 15px; 
-    }
-    .vis-details small { 
-        font-size: 1.0em; 
-        color: var(--accent); 
-        font-weight: 700; 
-    } 
-
-    .edit-btn { background: none; border: none; color: var(--brand); font-size: 0.9em; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 10px; }
-
-    /* small centered footer style (updated) */
-    footer { text-align: center; font-size: 11px; color: var(--muted); margin-top: 18px; }
-
-    /* Modal/Popup Styles */
-    .modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); display: none; }
-    .modal-content { background-color: #fefefe; margin: 5% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
-    .close-btn { color: #aaa; font-size: 28px; font-weight: bold; }
-    .close-btn:hover, .close-btn:focus { color: #000; text-decoration: none; cursor: pointer; }
-    .modal-input-group { margin-bottom: 15px; }
-    .modal-input-group label { font-weight: 600; color: var(--brand); margin-bottom: 5px; }
-    .modal-submit { background-color: #1B5E20; margin-top: 15px; }
-    .modal-submit:hover { background-color: #2E7D32; }
-    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .modal-grid-span-2 { grid-column: 1 / -1; }
-    .modal-disclaimer { margin-top: 15px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 5px; font-size: 0.85em; color: #616161; }
-
-    @media (max-width: 900px) {
-      .input-grid { grid-template-columns: 1fr; }
-      .output-grid { grid-template-columns: 1fr; }
-      .vis-area { max-width: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <div class="main-wrapper">
-    <div class="input-panel" id="formContainer">
-      <h2>
-        LED Video Wall Configuration Calculator
-      </h2>
-      <div id="enteredValuesDisplay" class="hidden">
-          <span id="enteredSummaryText"></span><br>
-          Actual Final Aspect Ratio: <strong><span id="aspectRatioValue">--</span></strong>
-      </div>
-      <div id="errorMessage" class="error-message hidden" role="alert" aria-live="assertive"></div>
-
-      <div class="input-grid">
-        <div class="input-group">
-          <label for="productModel">LED Model / Pixel Pitch</label>
-          <select id="productModel">
-              <option value="">Select LED Model</option>
-              <optgroup label="COB Models (16:9 Cabinet - 600x337.5mm)">
-                  <option value="cob_09">0.9375mm</option>
-                  <option value="cob_125">1.25mm</option>
-                  <option value="cob_15">1.5625mm</option>
-              </optgroup>
-              <optgroup label="SMD Indoor Models (4:3 Cabinet - 640x480mm)">
-                  <option value="indoor_186">1.86mm</option>
-                  <option value="indoor_20">2.0mm</option>
-                  <option value="indoor_25">2.5mm</option>
-              </optgroup>
-              <optgroup label="SMD Outdoor Models (1:1 Cabinet - 960x960mm)">
-                  <option value="outdoor_40">4.0mm</option>
-                  <option value="outdoor_667">6.67mm</option>
-                  <option value="outdoor_80">8.0mm</option>
-                  <option value="outdoor_100">10.0mm</option>
-              </optgroup>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="unit">Unit of Measurement</label>
-          <select id="unit" onchange="toggleMeasurementFields()"> 
-              <option value="">Select unit</option> 
-              <option value="meters">Meters (m)</option> 
-              <option value="feet">Feet (ft)</option> 
-              <option value="inches">Inches (in) - Diagonal</option> 
-          </select>
-        </div>
-        
-        <div class="input-group" id="widthGroup">
-          <label for="width" id="widthLabel">Desired Width (m)</label>
-          <input type="number" id="width" placeholder="Enter desired width" min="0.1" step="0.01">
-        </div>
-        <div class="input-group" id="heightGroup">
-          <label for="height" id="heightLabel">Desired Height (m)</label>
-          <input type="number" id="height" placeholder="Enter desired height" min="0.1" step="0.01">
-        </div>
-        
-        <div class="input-group hidden" id="diagonalGroup">
-          <label for="diagonal" id="diagonalLabel">Desired Diagonal (inches)</label>
-          <input type="number" id="diagonal" placeholder="Enter desired diagonal inches" min="10" step="1">
-        </div>
-
-        <div class="input-group" id="aspectRatioGroup">
-          <label for="aspectRatio" id="aspectRatioLabel">Target Aspect Ratio (Optional)</label>
-          <select id="aspectRatio"> 
-              <option value="">Select ratio (Optional)</option> 
-              <option value="16:9">16:9 (HD/UHD)</option> 
-              <option value="16:10">16:10 (WUXGA)</option> 
-              <option value="4:3">4:3 (Legacy)</option> 
-              <option value="2:1">2:1 (Cinematic)</option>
-              <option value="21:9">21:9 (Cinematic/2.37:1)</option>
-              <option value="1:1">1:1 (Square)</option> 
-          </select>
-        </div>
-
-        <button class="submit-btn" id="submitButton" onclick="showVisualization()" aria-controls="visualization">Calculate & Visualize System</button>
-        <div class="back-btn-placeholder hidden"></div>
-      </div>
-    </div>
-
-    <div class="visualization" id="visualization" aria-hidden="true">
-      
-      <div class="output-grid" aria-live="polite">
-        <div class="details-box">
-            <h4>LED Wall Specifications</h4>
-            <div class="vis-details" id="wallSpecs">
-                <span id="pixelPitchDisplay"><strong>--</strong><small>--</small></span>
-                <span id="finalDimensions"><strong>--</strong><small>--</small></span>
-                <span id="resolution"><strong>--</strong><small>--</small></span>
-                <span id="numCabinets"><strong>--</strong><small>--</small></span>
-                <span id="totalModules"><strong>--</strong><small>--</small></span>
-                <span id="finalDiagonal"><strong>--</strong><small>--</small></span>
-                <span id="finalArea"><strong>--</strong><small>--</small></span>
-                <span id="totalPixels"><strong>--</strong><small>--</small></span>
-                <span id="cabinetSize"><strong>--</strong><small>--</small></span>
-                <span id="cabinetPixels"><strong>--</strong><small>--</small></span>
-            </div>
-        </div>
-
-        <div class="details-box">
-            <h4>Control System Requirements <button class="edit-btn" onclick="openControllerModal()" aria-haspopup="dialog">Edit/View Components ⚙️</button></h4>
-            <div class="vis-details" id="controlSystemDetails"></div>
-        </div>
-      </div>
-      
-      <!-- === REPLACED VISUALIZATION BLOCK (Option B) === -->
-      <h3 style="margin:0 0 8px;color:var(--brand)">Physical Wall Visualization</h3>
-
-      <!-- constrained preview area -->
-      <div class="vis-area" id="visArea" style="height:300px; width:600px;">
-        <div id="cabinetOverlay" aria-hidden="true"></div>
-        <div class="dimension-label dim-top" id="dimTop">-- W --</div>
-        <div class="dimension-label dim-right" id="dimRight">-- H --</div>
-      </div>
-
-      <div style="display:flex;gap:12px;margin-top:12px; justify-content:center;">
-        <button class="btn" id="downloadPdf" onclick="proceedToDownloadPdf()" aria-label="Download PDF Technical Summary">Download PDF Technical Summary 📄</button>
-        <button class="btn gray" onclick="hideVisualization()" aria-label="Modify Configuration">Modify Configuration</button>
-      </div>
-    </div>
-
-    <footer>© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala</footer>
-  </div>
-
-  <!-- Controller Modal (unchanged) -->
-  <div id="controllerModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="controllerModalTitle">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="controllerModalTitle" style="margin:0; color:var(--brand);">Edit Control System Components</h3>
-        <span class="close-btn" onclick="closeControllerModal()" role="button" aria-label="Close modal">&times;</span>
-      </div>
-      
-      <div class="modal-grid">
-          <div class="modal-input-group modal-grid-span-2">
-              <label for="modalControllerModel">Suggested Controller/Processor Model (Select):</label>
-              <select id="modalControllerModel"></select>
-          </div>
-
-          <div class="modal-input-group">
-              <label for="modalSplicerSolution">Splicer Frame/Solution (Optional):</label>
-              <input type="text" id="modalSplicerSolution" placeholder="e.g., H5 Modular Splicer (5U)">
-          </div>
-
-          <div class="modal-input-group">
-              <label for="modalMaxPortsPerCard">Max Ports per Output Card (Read Only from Selection):</label>
-              <input type="number" id="modalMaxPortsPerCard" min="1" step="1" readonly placeholder="e.g., 20">
-          </div>
-          
-          <div class="modal-input-group">
-              <label for="modalOutputCardModel">Output Card Model (Select):</label>
-              <select id="modalOutputCardModel" onchange="updatePortsFromOutputCard()"></select>
-          </div>
-
-          <div class="modal-input-group">
-              <label for="modalInputCardModel">Input Card Model (Select Default Input):</label>
-              <select id="modalInputCardModel"></select>
-          </div>
-          
-          <div class="modal-input-group">
-              <label for="modalInputCardQty">Input Card Quantity:</label>
-              <input type="number" id="modalInputCardQty" min="1" step="1" placeholder="e.g., 2">
-          </div>
-      </div>
-
-      <div class="modal-disclaimer">
-          <p><strong>Crucial Disclaimer:</strong> You can edit the types and quantities of input cards/sending cards and accessories as required. The system will regenerate a solution based on your pixel count and the *Max Ports per Output Card* value you select. **The default input card quantity is 2 (2x 4K card) and should be changed 'as per site requirement/number of inputs actual requirement'.**</p>
-      </div>
-
-      <button class="submit-btn modal-submit" onclick="applyModalChanges()">Apply Changes & Recalculate</button>
-    </div>
-  </div>
-
-  <script>
-    // --- Constants ---
-    const MM_PER_METER = 1000;
-    const MM_PER_INCH = 25.4;
-    const MM_PER_FOOT = MM_PER_INCH * 12;
-    const METER_TO_FEET = 3.28084; // Per user request: 1 mtr = 3.28084 ft
-    const PIXELS_PER_PORT_DEFAULT = 650000; // Standard for NovaStar Ethernet port bandwidth (approx 650K/port)
-    
-    // Safety Buffer standardized to 15%
-    const POWER_BUFFER = 1.15; 
-    const WEIGHT_BUFFER = 1.15; 
-    const MARGIN_PERCENT_TEXT = "15%"; // Text for PDF
-
-    // --- PeopleLink LED Models (V14) ---
-    const LED_PRODUCTS = {
-        'cob_09': { name: "PeopleLink COB (0.9375mm)", pitch_mm: 0.9375, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 640, cabPixH: 360, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-1000", maxPower_W_m2: 300 },
-        'cob_125': { name: "PeopleLink COB (1.25mm)", pitch_mm: 1.25, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 480, cabPixH: 270, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-800", maxPower_W_m2: 300 },
-        'cob_15': { name: "PeopleLink COB (1.5625mm)", pitch_mm: 1.5625, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 384, cabPixH: 216, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-800", maxPower_W_m2: 300 }, 
-        'indoor_186': { name: "PeopleLink SMD Indoor (1.86mm)", pitch_mm: 1.86, cabW_mm: 640, cabH_mm: 480, cabPixW: 344, cabPixH: 258, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 }, 
-        'indoor_20': { name: "PeopleLink SMD Indoor (2.0mm)", pitch_mm: 2.0, cabW_mm: 640, cabH_mm: 480, cabPixW: 320, cabPixH: 240, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 }, 
-        'indoor_25': { name: "PeopleLink SMD Indoor (2.5mm)", pitch_mm: 2.5, cabW_mm: 640, cabH_mm: 480, cabPixW: 256, cabPixH: 192, modulesPerCab: 6, weight_kg: 6.24, nits_range: "450-600", maxPower_W_m2: 560 }, 
-        'outdoor_40': { name: "PeopleLink SMD Outdoor (4.0mm)", pitch_mm: 4.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 240, cabPixH: 240, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }, 
-        'outdoor_667': { name: "PeopleLink SMD Outdoor (6.67mm)", pitch_mm: 6.67, cabW_mm: 960, cabH_mm: 960, cabPixW: 144, cabPixH: 144, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }, 
-        'outdoor_80': { name: "PeopleLink SMD Outdoor (8.0mm)", pitch_mm: 8.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 120, cabPixH: 120, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }, 
-        'outdoor_100': { name: "PeopleLink SMD Outdoor (10.0mm)", pitch_mm: 10.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 96, cabPixH: 96, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 } 
-    };
-    
-    // --- Controller Tiers ---
-    const CONTROLLER_MODELS = [
-        { name: "TB40", type: "Multimedia Player", ports: 2, maxPixels: 1300000, maxW: 10240, maxH: 8192, priority: 1 },
-        { name: "TB60", type: "Multimedia Player", ports: 4, maxPixels: 2300000, maxW: 4096, maxH: 4096, priority: 2 },
-        { name: "VX400 Pro / DSP400 Pro", type: "All-in-One Processor", ports: 4, maxPixels: 2600000, maxW: 10240, maxH: 8192, priority: 3 },
-        { name: "VX600 Pro / DSP600 Pro", type: "All-in-One Processor", ports: 6, maxPixels: 3900000, maxW: 10240, maxH: 8192, priority: 4 },
-        { name: "VX1000 Pro / DSP1000 Pro", type: "All-in-One Processor", ports: 10, maxPixels: 6500000, maxW: 10240, maxH: 8192, priority: 5 },
-        { name: "4K Prime", type: "All-in-One Processor", ports: 16, maxPixels: 10400000, maxW: 16384, maxH: 8192, priority: 6 },
-        { name: "4K Prime Pro", type: "All-in-One Processor", ports: 20, maxPixels: 13000000, maxW: 16384, maxH: 8192, priority: 7 },
-        { name: "H2 (2U)", type: "Modular Splicer", ports: 20, maxPixels: 26000000, maxW: 16384, maxH: 8192, priority: 8 }, 
-        { name: "H5 (5U)", type: "Modular Splicer", ports: 20, maxPixels: 39000000, maxW: 16384, maxH: 8192, priority: 9 }, 
-        { name: "H9 (9U)", type: "Modular Splicer", ports: 20, maxPixels: 65000000, maxW: 16384, maxH: 8192, priority: 10 }, 
-        { name: "H15 (15U)", type: "Modular Splicer", ports: 20, maxPixels: 130000000, maxW: 16384, maxH: 8192, priority: 11 }, 
-        { name: "H20 (20U)", type: "Modular Splicer", ports: 20, maxPixels: 260000000, maxW: 16384, maxH: 8192, priority: 12 }, 
-    ].sort((a, b) => a.priority - b.priority);
-
-    const H_SERIES_DEFAULTS = {
-        SPLICER_NAME: "H-Series Modular Splicer Frame", 
-        INPUT_CARD_OPTIONS: [
-            { model: "H_1xHDMI2.0 input card (4K)", display: "1x 4K HDMI (Single Input)", qty: 1, type: "4K Single Input" },
-            { model: "H_2xHDMI2.0 input card (4K)", display: "2x 4K HDMI (Dual Input)", qty: 1, type: "4K Dual Input" },
-            { model: "H_4xHDMI input card (1080P)", display: "4x FHD HDMI (Quad Input)", qty: 1, type: "HD Quad Input" },
-        ],
-        DEFAULT_INPUT_CARD_MODEL: "H_1xHDMI2.0 input card (4K)",
-        DEFAULT_INPUT_CARD_QTY: 2, 
-        OUTPUT_CARD_20_PORTS: 20,
-        OUTPUT_CARD_20_MODEL: "H_20xRJ45 Sending Card",
-        OUTPUT_CARD_16_PORTS: 16,
-        OUTPUT_CARD_16_MODEL: "H_16xRJ45 Sending Card", 
-    };
-    
-    // --- Global Store and Helpers ---
-    let finalCalculationData = {}; 
-    let contactInfo = { email: '', phone: '' };
-
-    function formatNumber(n,d=1){return n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});}
-    function formatLargeNumber(n){if(n>=1e6)return(n/1e6).toFixed(2)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return n.toLocaleString();}
-    function gcd(a,b){return b===0?a:gcd(b,a%b);}
-
-    function openContactModal() { /* kept for compatibility */ }
-    function closeContactModal() { /* kept for compatibility */ }
-    function handleDownloadRequest() { /* kept for compatibility */ }
-    function addWatermarkToPdf(doc, text) { /* removed */ }
-
-    function toggleMeasurementFields(){
-        const unit = document.getElementById('unit').value;
-        const isDiagonal = (unit === 'inches');
-        const isFeet = (unit === 'feet');
-
-        let unitText = ' (m)';
-        if (isFeet) unitText = ' (ft)';
-        if (isDiagonal) unitText = ' (in)';
-
-        document.getElementById('widthLabel').textContent = `Desired Width${unitText}`;
-        document.getElementById('heightLabel').textContent = `Desired Height${unitText}`;
-        document.getElementById('aspectRatioLabel').textContent = 'Target Aspect Ratio (Optional)';
-
-        document.getElementById('widthGroup').classList.toggle('hidden', isDiagonal);
-        document.getElementById('heightGroup').classList.toggle('hidden', isDiagonal);
-        document.getElementById('diagonalGroup').classList.toggle('hidden', !isDiagonal);
-        
-        if (isDiagonal) {
-            document.getElementById('width').value = '';
-            document.getElementById('height').value = '';
-        } else {
-            document.getElementById('diagonal').value = '';
-        }
-        document.getElementById('errorMessage').classList.add('hidden');
-    }
-    
-    function populateModalControllers() {
-        const select = document.getElementById('modalControllerModel');
-        select.innerHTML = '';
-        CONTROLLER_MODELS.forEach(controller => {
-            const opt = document.createElement('option');
-            opt.value = controller.name;
-            opt.textContent = `${controller.name} (${controller.type}, ${formatLargeNumber(controller.maxPixels)} max px)`;
-            select.appendChild(opt);
-        });
+    if (!suggestedController) {
+        suggestedController = CONTROLLER_MODELS.find(c => c.name.includes('4K Prime') && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
     }
 
-    function populateModalOutputCards() {
-        const select = document.getElementById('modalOutputCardModel');
-        select.innerHTML = '';
-        const cards = [
-            { model: H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS },
-            { model: H_SERIES_DEFAULTS.OUTPUT_CARD_16_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_16_PORTS },
-        ];
-        cards.forEach(card => {
-            const opt = document.createElement('option');
-            opt.value = `${card.model}|${card.ports}`; 
-            opt.textContent = `${card.model} (${card.ports} ports)`;
-            select.appendChild(opt);
-        });
+    if (!suggestedController) {
+        const candidates = CONTROLLER_MODELS.filter(c => c.type === "Modular Splicer" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH).sort((a,b)=>a.maxPixels-b.maxPixels);
+        suggestedController = candidates.length ? candidates[0] : CONTROLLER_MODELS[CONTROLLER_MODELS.length - 1];
     }
 
-    function populateModalInputCards() {
-        const select = document.getElementById('modalInputCardModel');
-        select.innerHTML = '';
-        H_SERIES_DEFAULTS.INPUT_CARD_OPTIONS.forEach(option => {
-            const opt = document.createElement('option');
-            opt.value = `${option.model}|${option.qty}`; 
-            opt.textContent = option.display;
-            select.appendChild(opt);
-        });
+    return suggestedController;
+}
+
+/* -------------------------
+   Modal population helpers
+   -------------------------*/
+function populateModalControllers(){
+    const sel = document.getElementById('modalControllerModel');
+    if (!sel) return;
+    sel.innerHTML = '';
+    CONTROLLER_MODELS.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c.name;
+        o.textContent = `${c.name} (${c.type}, ${formatLargeNumber(c.maxPixels)} max px)`;
+        sel.appendChild(o);
+    });
+}
+function populateModalOutputCards(){
+    const sel = document.getElementById('modalOutputCardModel');
+    if (!sel) return;
+    sel.innerHTML = '';
+    [
+      { model: H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS },
+      { model: H_SERIES_DEFAULTS.OUTPUT_CARD_16_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_16_PORTS },
+    ].forEach(card => {
+      const o = document.createElement('option');
+      o.value = `${card.model}|${card.ports}`;
+      o.textContent = `${card.model} (${card.ports} ports)`;
+      sel.appendChild(o);
+    });
+}
+function populateModalInputCards(){
+    const sel = document.getElementById('modalInputCardModel');
+    if (!sel) return;
+    sel.innerHTML = '';
+    H_SERIES_DEFAULTS.INPUT_CARD_OPTIONS.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = `${opt.model}|${opt.qty}`;
+        o.textContent = opt.display;
+        sel.appendChild(o);
+    });
+}
+
+/* -------------------------
+   Modal open/close/apply
+   -------------------------*/
+function openControllerModal(){
+    populateModalControllers();
+    populateModalOutputCards();
+    populateModalInputCards();
+
+    const suggested = finalCalculationData.controllerOverrideName || (finalCalculationData.controllerName ? finalCalculationData.controllerName.split('(')[0].trim() : '');
+    const sel = document.getElementById('modalControllerModel');
+    if (sel && sel.querySelector(`option[value="${suggested}"]`)) sel.value = suggested;
+
+    document.getElementById('modalSplicerSolution').value = finalCalculationData.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME;
+    const curOut = `${finalCalculationData.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL}|${finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS}`;
+    const outSel = document.getElementById('modalOutputCardModel');
+    if (outSel && outSel.querySelector(`option[value="${curOut}"]`)) outSel.value = curOut;
+
+    document.getElementById('modalMaxPortsPerCard').value = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
+    const inSel = document.getElementById('modalInputCardModel');
+    const desired = finalCalculationData.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
+    if (inSel) {
+        const match = Array.from(inSel.options).find(x=>x.value.startsWith(desired));
+        if (match) inSel.value = match.value;
     }
+    document.getElementById('modalInputCardQty').value = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
+    document.getElementById('controllerModal').style.display = 'block';
+}
+function closeControllerModal(){ document.getElementById('controllerModal').style.display = 'none'; }
+function updatePortsFromOutputCard(){
+    const sel = document.getElementById('modalOutputCardModel');
+    if (!sel) return;
+    const [model, ports] = sel.value.split('|');
+    document.getElementById('modalMaxPortsPerCard').value = ports;
+}
+function applyModalChanges(){
+    finalCalculationData.controllerOverrideName = document.getElementById('modalControllerModel').value;
+    finalCalculationData.splicerSolution = document.getElementById('modalSplicerSolution').value;
+    const [model, ports] = document.getElementById('modalOutputCardModel').value.split('|');
+    finalCalculationData.outputCardModel = model;
+    finalCalculationData.outputCardPorts = parseInt(ports,10);
+    finalCalculationData.inputCardModel = document.getElementById('modalInputCardModel').value.split('|')[0];
+    finalCalculationData.inputCardQty = parseInt(document.getElementById('modalInputCardQty').value,10) || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
+    closeControllerModal();
+    showVisualization();
+}
 
-    function updatePortsFromOutputCard() {
-        const select = document.getElementById('modalOutputCardModel');
-        const [model, ports] = select.value.split('|');
-        document.getElementById('modalMaxPortsPerCard').value = ports;
-    }
+/* -------------------------
+   Core calculation (implements COB/SMD rules + 20% buffer)
+   -------------------------*/
+function calculateLEDWall(){
+    const productKey = document.getElementById('productModel').value;
+    const unit = document.getElementById('unit').value;
+    const widthInput = document.getElementById('width').value;
+    const heightInput = document.getElementById('height').value;
+    const diagonalInput = document.getElementById('diagonal').value;
+    const aspectRatioKey = document.getElementById('aspectRatio').value;
 
-    function openControllerModal() {
-        populateModalControllers();
-        populateModalOutputCards();
-        populateModalInputCards(); 
+    let inputW = parseFloat(widthInput);
+    let inputH = parseFloat(heightInput);
+    let inputD = parseFloat(diagonalInput);
 
-        const suggestedControllerName = finalCalculationData.controllerOverrideName || (finalCalculationData.controllerName ? finalCalculationData.controllerName.split('(')[0].trim() : '');
-        const controllerSelect = document.getElementById('modalControllerModel');
-        if (controllerSelect.querySelector(`option[value="${suggestedControllerName}"]`)) {
-            controllerSelect.value = suggestedControllerName;
-        }
+    const errorDiv = document.getElementById('errorMessage');
+    if (errorDiv) errorDiv.classList.add('hidden');
 
-        document.getElementById('modalSplicerSolution').value = finalCalculationData.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME;
-        
-        const currentOutputCardValue = `${finalCalculationData.outputCardModel}|${finalCalculationData.outputCardPorts}`;
-        const outputCardSelect = document.getElementById('modalOutputCardModel');
-        if (outputCardSelect.querySelector(`option[value="${currentOutputCardValue}"]`)) {
-            outputCardSelect.value = currentOutputCardValue;
-        } else {
-            outputCardSelect.value = `${H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL}|${H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS}`;
-        }
-        document.getElementById('modalMaxPortsPerCard').value = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
-        
-        const inputCardSelect = document.getElementById('modalInputCardModel');
-        const desiredModel = finalCalculationData.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
-        const matchingOption = Array.from(inputCardSelect.options).find(opt => opt.value.startsWith(desiredModel));
-        if (matchingOption) {
-            inputCardSelect.value = matchingOption.value;
-        } else {
-             inputCardSelect.selectedIndex = 0;
-        }
-        document.getElementById('modalInputCardQty').value = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
-
-        document.getElementById('controllerModal').style.display = 'block';
-    }
-
-    function closeControllerModal() {
-        document.getElementById('controllerModal').style.display = 'none';
-    }
-
-    function applyModalChanges() {
-        finalCalculationData.controllerOverrideName = document.getElementById('modalControllerModel').value;
-        finalCalculationData.splicerSolution = document.getElementById('modalSplicerSolution').value;
-
-        const [model, ports] = document.getElementById('modalOutputCardModel').value.split('|');
-        finalCalculationData.outputCardModel = model;
-        finalCalculationData.outputCardPorts = parseFloat(ports);
-        
-        const inputCardModelSelect = document.getElementById('modalInputCardModel');
-        finalCalculationData.inputCardModel = inputCardModelSelect.value.split('|')[0];
-        finalCalculationData.inputCardQty = parseFloat(document.getElementById('modalInputCardQty').value);
-
-        closeControllerModal();
-        showVisualization(); 
-    }
-    
-    function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey) {
-        
-        const details = LED_PRODUCTS[productKey];
-        const isOutdoor = productKey.startsWith('outdoor');
-        const isSmallIndoor = totalPixels < 1500000; 
-
-        let suggestedController = null;
-
-        if (isOutdoor || isSmallIndoor) {
-             const suitableTB = CONTROLLER_MODELS.find(c => c.type === "Multimedia Player" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
-             if (suitableTB) {
-                suggestedController = suitableTB;
-             }
-        }
-
-        if (!suggestedController) {
-            const suitableAIO = CONTROLLER_MODELS.find(c => c.type === "All-in-One Processor" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
-            if (suitableAIO) {
-                suggestedController = suitableAIO;
-            }
-        }
-        
-        if (!suggestedController) {
-            const suitable4K = CONTROLLER_MODELS.find(c => c.name.includes('4K Prime') && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
-            if (suitable4K) {
-                suggestedController = suitable4K;
-            }
-        }
-
-        if (!suggestedController) {
-            const suitableHSeries = CONTROLLER_MODELS
-                .filter(c => c.type === "Modular Splicer" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH)
-                .sort((a, b) => a.maxPixels - b.maxPixels); 
-
-            if (suitableHSeries.length > 0) {
-                suggestedController = suitableHSeries[0];
-            } else {
-                 suggestedController = CONTROLLER_MODELS[CONTROLLER_MODELS.length - 1]; 
-            }
-        }
-
-        return suggestedController;
-    }
-
-    function calculateLEDWall(){
-        const productKey = document.getElementById('productModel').value;
-        const unit = document.getElementById('unit').value;
-        const widthInput = document.getElementById('width').value;
-        const heightInput = document.getElementById('height').value;
-        const diagonalInput = document.getElementById('diagonal').value;
-        const aspectRatioKey = document.getElementById('aspectRatio').value;
-
-        let inputW = parseFloat(widthInput);
-        let inputH = parseFloat(heightInput);
-        let inputD = parseFloat(diagonalInput);
-
-        const errorDiv=document.getElementById('errorMessage');
-        errorDiv.classList.add('hidden');
-        
-        if (!productKey || !unit || ((unit !== 'inches' && (!inputW && !inputH)) || (unit === 'inches' && !inputD))) {
+    if (!productKey || !unit || ((unit !== 'inches' && (!inputW && !inputH)) || (unit === 'inches' && !inputD))) {
+        if (errorDiv) {
             errorDiv.textContent = 'ERROR: Please select a Model, Unit, and enter valid dimensions to continue.';
             errorDiv.classList.remove('hidden');
             errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return null;
         }
+        return null;
+    }
 
-        const isDiagonal = (unit === 'inches');
-        const details = LED_PRODUCTS[productKey];
-        const cabinetW_mm = details.cabW_mm;
-        const cabinetH_mm = details.cabH_mm;
-        
-        let desiredW_mm, desiredH_mm;
-        let usedW_input, usedH_input, usedRatio = aspectRatioKey || 'None Specified';
-        let inputDiagonal;
-        
-        if (unit === 'inches') {
-            const ratioToUse = aspectRatioKey || '16:9'; 
-            const [ratioW, ratioH] = ratioToUse.split(':').map(Number);
-            const ratioDiagonal = Math.sqrt(ratioW * ratioW + ratioH * ratioH);
-            const factor = inputD / ratioDiagonal;
+    const details = LED_PRODUCTS[productKey];
+    const cabinetW_mm = details.cabW_mm;
+    const cabinetH_mm = details.cabH_mm;
 
-            desiredW_mm = ratioW * factor * MM_PER_INCH;
-            desiredH_mm = ratioH * factor * MM_PER_INCH;
+    let desiredW_mm, desiredH_mm;
+    let usedW_input, usedH_input;
+    let inputDiagonal = 0;
 
-            usedW_input = 0; 
-            usedH_input = 0; 
-            usedRatio = aspectRatioKey || '16:9 (Assumed)'; 
-            inputDiagonal = inputD;
+    if (unit === 'inches') {
+        const ratioToUse = aspectRatioKey || '16:9';
+        const [ratioW, ratioH] = ratioToUse.split(':').map(Number);
+        const ratioDiagonal = Math.sqrt(ratioW*ratioW + ratioH*ratioH);
+        const factor = inputD / ratioDiagonal;
+        desiredW_mm = ratioW * factor * MM_PER_INCH;
+        desiredH_mm = ratioH * factor * MM_PER_INCH;
+        inputDiagonal = inputD;
+    } else {
+        const unit_factor = (unit === 'meters') ? MM_PER_METER : MM_PER_FOOT;
+        const hasW = !isNaN(inputW) && inputW > 0;
+        const hasH = !isNaN(inputH) && inputH > 0;
 
-        } else {
-            const unit_factor = (unit === 'meters') ? MM_PER_METER : MM_PER_FOOT;
-            const hasW = !isNaN(inputW) && inputW > 0;
-            const hasH = !isNaN(inputH) && inputH > 0;
-            
-            if (aspectRatioKey) {
-                const [ratioW, ratioH] = aspectRatioKey.split(':').map(Number);
-                if (hasW) {
-                    usedW_input = inputW;
-                    usedH_input = (inputW / ratioW) * ratioH;
-                } else if (hasH) {
-                    usedH_input = inputH;
-                    usedW_input = (inputH / ratioH) * ratioW;
-                } else {
-                    usedW_input = inputW; 
-                    usedH_input = inputH;
-                }
-                
-                desiredW_mm = usedW_input * unit_factor;
-                desiredH_mm = usedH_input * unit_factor;
-
+        if (aspectRatioKey) {
+            const [rW, rH] = aspectRatioKey.split(':').map(Number);
+            if (hasW) {
+                usedW_input = inputW;
+                usedH_input = (inputW / rW) * rH;
+            } else if (hasH) {
+                usedH_input = inputH;
+                usedW_input = (inputH / rH) * rW;
             } else {
-                usedW_input = hasW ? inputW : (inputH * (cabinetW_mm / cabinetH_mm) * (unit === 'meters' ? 1 : 1)); 
-                usedH_input = hasH ? inputH : (inputW * (cabinetH_mm / cabinetW_mm) * (unit === 'meters' ? 1 : 1));
-
-                desiredW_mm = usedW_input * unit_factor;
-                desiredH_mm = usedH_input * unit_factor;
-                
-                if(hasW && !hasH) usedRatio = `Inferred from Cabinet AR (${cabinetW_mm}:${cabinetH_mm})`;
-                if(hasH && !hasW) usedRatio = `Inferred from Cabinet AR (${cabinetW_mm}:${cabinetH_mm})`;
+                usedW_input = inputW; usedH_input = inputH;
             }
-            inputDiagonal = 0;
+            desiredW_mm = usedW_input * unit_factor;
+            desiredH_mm = usedH_input * unit_factor;
+        } else {
+            usedW_input = hasW ? inputW : (inputH * (cabinetW_mm / cabinetH_mm));
+            usedH_input = hasH ? inputH : (inputW * (cabinetH_mm / cabinetW_mm));
+            desiredW_mm = usedW_input * unit_factor;
+            desiredH_mm = usedH_input * unit_factor;
         }
-
-        let numCabW = Math.max(1, Math.round(desiredW_mm / cabinetW_mm));
-        let numCabH = Math.max(1, Math.round(desiredH_mm / cabinetH_mm));
-        
-        const totalCabinets = numCabW * numCabH;
-        const totalModules = totalCabinets * details.modulesPerCab;
-
-        const finalW_mm = numCabW * cabinetW_mm;
-        const finalH_mm = numCabH * cabinetH_mm;
-        const finalArea_m2 = (finalW_mm / MM_PER_METER) * (finalH_mm / MM_PER_METER);
-
-        const finalResW = numCabW * details.cabPixW;
-        const finalResH = numCabH * details.cabPixH;
-        const totalPixels = finalResW * finalResH;
-
-        const ratioGCD = gcd(finalResW, finalResH);
-        const aspectRatioText = `${finalResW / ratioGCD}:${finalResH / ratioGCD}`;
-        const finalDiagonal_mm = Math.sqrt(finalW_mm * finalW_mm + finalH_mm * finalH_mm);
-        const finalDiagonal_in = finalDiagonal_mm / MM_PER_INCH;
-        
-        const minViewingDistance_ft = details.pitch_mm * METER_TO_FEET; 
-
-        const actualPower_W_unbuffered = finalArea_m2 * details.maxPower_W_m2; 
-        const maxPower_W_buffered = actualPower_W_unbuffered * POWER_BUFFER; 
-        const actualCurrent_A = actualPower_W_unbuffered / 220; 
-        const maxCurrent_A_buffered = maxPower_W_buffered / 220; 
-        const actualCabinetWeight_unbuffered = details.weight_kg * totalCabinets;
-        const totalWallWeight_buffered = actualCabinetWeight_unbuffered * WEIGHT_BUFFER;
-
-        const suggestedController = getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey);
-        const isHSeries = suggestedController.type.includes("Modular");
-        
-        const outputCardPorts = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
-        const outputCardModel = finalCalculationData.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
-        
-        const inputCardModel = finalCalculationData.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
-        const inputCardQty = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
-        
-        const splicerSolution = finalCalculationData.splicerSolution || (isHSeries ? H_SERIES_DEFAULTS.SPLICER_NAME : 'N/A');
-
-        const requiredPorts = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT)); 
-
-        const requiredSendCards = Math.max(1, Math.ceil(requiredPorts / outputCardPorts));
-        
-        const requiredShortEthernet = Math.max(0, totalCabinets - requiredPorts); 
-
-        const controllerName = finalCalculationData.controllerOverrideName || suggestedController.name;
-        
-        finalCalculationData = {
-            ...finalCalculationData, 
-            productName: details.name,
-            pixelPitch_mm: details.pitch_mm,
-            cabinetW_mm: cabinetW_mm,
-            cabinetH_mm: cabinetH_mm,
-            cabPixW: details.cabPixW,
-            cabPixH: details.cabPixH,
-            finalW_mm: finalW_mm,
-            finalH_mm: finalH_mm,
-            finalArea_m2: finalArea_m2,
-            finalResW: finalResW,
-            finalResH: finalResH,
-            totalPixels: totalPixels,
-            aspectRatioText: aspectRatioText,
-            finalDiagonal_in: finalDiagonal_in,
-            totalCabinets: totalCabinets,
-            totalModules: totalModules,
-            totalRecCards: totalCabinets,
-            numCabW: numCabW,
-            numCabH: numCabH,
-            modulesPerCab: details.modulesPerCab,
-            nits_range: details.nits_range,
-            minViewingDistance_ft: minViewingDistance_ft, 
-            actualPower_W_unbuffered: actualPower_W_unbuffered,
-            maxPower_W: maxPower_W_buffered,
-            actualCurrent_A: actualCurrent_A, 
-            maxCurrent_A_buffered: maxCurrent_A_buffered, 
-            actualWallWeight_unbuffered: actualCabinetWeight_unbuffered,
-            totalWallWeight_buffered: totalWallWeight_buffered,
-            controllerName: controllerName,
-            controllerType: suggestedController.type,
-            requiredPorts: requiredPorts, 
-            requiredShortEthernet: requiredShortEthernet, 
-            outputCardPorts: outputCardPorts,
-            outputCardModel: outputCardModel,
-            requiredSendCards: requiredSendCards,
-            inputCardModel: inputCardModel,
-            inputCardQty: inputCardQty,
-            splicerSolution: splicerSolution
-        };
-
-        return finalCalculationData;
     }
 
-    function calculateDimensions(data) {
-        const finalW_M = data.finalW_mm / MM_PER_METER;
-        const finalH_M = data.finalH_mm / MM_PER_METER;
-        const finalW_FT = data.finalW_mm / MM_PER_FOOT;
-        const finalH_FT = data.finalH_mm / MM_PER_FOOT;
-        return { finalW_M, finalH_M, finalW_FT, finalH_FT };
+    // compute cabinet matrix
+    let numCabW = Math.max(1, Math.round(desiredW_mm / cabinetW_mm));
+    let numCabH = Math.max(1, Math.round(desiredH_mm / cabinetH_mm));
+    const totalCabinets = numCabW * numCabH;
+    const totalModules = totalCabinets * details.modulesPerCab;
+
+    // final physicals & resolution
+    const finalW_mm = numCabW * cabinetW_mm;
+    const finalH_mm = numCabH * cabinetH_mm;
+    const finalArea_m2 = (finalW_mm / MM_PER_METER) * (finalH_mm / MM_PER_METER);
+    const finalResW = numCabW * details.cabPixW;
+    const finalResH = numCabH * details.cabPixH;
+    const totalPixels = finalResW * finalResH;
+
+    const ratioGCD = gcd(finalResW, finalResH);
+    const aspectRatioText = `${finalResW/ratioGCD}:${finalResH/ratioGCD}`;
+    const finalDiagonal_mm = Math.sqrt(finalW_mm*finalW_mm + finalH_mm*finalH_mm);
+    const finalDiagonal_in = finalDiagonal_mm / MM_PER_INCH;
+    const minViewingDistance_ft = details.pitch_mm * METER_TO_FEET;
+
+    // Power & weight
+    const actualPower_W_unbuffered = finalArea_m2 * details.maxPower_W_m2;
+    const maxPower_W_buffered = actualPower_W_unbuffered * POWER_BUFFER;
+    const actualCurrent_A = actualPower_W_unbuffered / 220;
+    const maxCurrent_A_buffered = maxPower_W_buffered / 220;
+    const actualCabinetWeight_unbuffered = details.weight_kg * totalCabinets;
+    const totalWallWeight_buffered = actualCabinetWeight_unbuffered * WEIGHT_BUFFER;
+
+    // ---- Implement LAN-port rules ----
+    // For COB models: use cabinets-per-cable mapping -> requiredPortsRaw = ceil(totalCabinets / perCable)
+    // For SMD models: requiredPortsRaw = ceil(totalPixels / PIXELS_PER_PORT_DEFAULT)
+    let requiredPortsRaw;
+    if (productKey.startsWith('cob')) {
+        const perCable = COB_CABS_PER_CABLE[productKey] || 2;
+        requiredPortsRaw = Math.max(1, Math.ceil(totalCabinets / perCable));
+    } else {
+        requiredPortsRaw = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
     }
 
-    function showVisualization(){
-        const data = calculateLEDWall();
-        if (!data) return; 
+    // Apply controller-port buffer (+20%) and round up
+    const requiredPortsBuffered = Math.max(1, Math.ceil(requiredPortsRaw * CONTROLLER_PORT_BUFFER));
 
-        const { finalW_M, finalH_M, finalW_FT, finalH_FT } = calculateDimensions(data);
+    // Output card ports (from modal override if set)
+    const outputCardPorts = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
+    const outputCardModel = finalCalculationData.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
+    const requiredSendCards = Math.max(1, Math.ceil(requiredPortsBuffered / outputCardPorts));
 
-        document.getElementById('enteredSummaryText').textContent = `Cabinet Matrix: ${data.numCabW}x${data.numCabH} (${data.totalCabinets} Cabinets)`;
-        document.getElementById('aspectRatioValue').textContent = data.aspectRatioText; 
+    // Short ethernet cables heuristic (between cabinets)
+    const requiredShortEthernet = Math.max(0, totalCabinets - requiredPortsBuffered);
 
-        document.getElementById('formContainer').classList.add('minimized');
-        document.getElementById('submitButton').classList.add('hidden');
-        document.querySelector('.back-btn-placeholder').classList.remove('hidden');
-        document.getElementById('visualization').classList.add('visible');
-        document.getElementById('visualization').setAttribute('aria-hidden', 'false');
+    // Controller suggestion
+    const suggestedController = getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey);
+    const controllerName = finalCalculationData.controllerOverrideName || suggestedController.name;
 
-        document.getElementById('pixelPitchDisplay').innerHTML = `<strong>Pixel Pitch :</strong><small>${data.pixelPitch_mm} mm</small>`;
-        document.getElementById('finalDimensions').innerHTML = `<strong>Actual Final Dimensions (WxH) :</strong><small>(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) - ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m</small>`;
-        document.getElementById('resolution').innerHTML = `<strong>Actual Final Resolution (WxH) :</strong><small>${data.finalResW} x ${data.finalResH}</small>`;
-        document.getElementById('numCabinets').innerHTML = `<strong>Total Cabinets (W x H) :</strong><small>${data.totalCabinets} (${data.numCabW} x ${data.numCabH})</small>`;
-        document.getElementById('totalModules').innerHTML = `<strong>Total Modules Required :</strong><small>${data.totalModules} (${data.modulesPerCab} per cabinet)</small>`;
-        document.getElementById('finalDiagonal').innerHTML = `<strong>Final Diagonal Size :</strong><small>${data.finalDiagonal_in.toFixed(1)} in</small>`;
-        document.getElementById('finalArea').innerHTML = `<strong>Final Area :</strong><small>${data.finalArea_m2.toFixed(2)} m²</small>`;
-        document.getElementById('totalPixels').innerHTML = `<strong>Total Pixels :</strong><small>${formatLargeNumber(data.totalPixels)}</small>`;
-        document.getElementById('cabinetSize').innerHTML = `<strong>Cabinet Size (WxH) :</strong><small>${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm</small>`;
-        document.getElementById('cabinetPixels').innerHTML = `<strong>Cabinet Pixels (WxH) :</strong><small>${data.cabPixW} x ${data.cabPixH}</small>`;
+    // Input card defaults & splicer
+    const inputCardModel = finalCalculationData.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
+    const inputCardQty = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
+    const splicerSolution = finalCalculationData.splicerSolution || (suggestedController.type.includes("Modular") ? H_SERIES_DEFAULTS.SPLICER_NAME : 'N/A');
 
+    // persist to finalCalculationData
+    finalCalculationData = {
+        ...finalCalculationData,
+        productName: details.name,
+        pixelPitch_mm: details.pitch_mm,
+        cabinetW_mm, cabinetH_mm,
+        cabPixW: details.cabPixW, cabPixH: details.cabPixH,
+        finalW_mm, finalH_mm,
+        finalArea_m2,
+        finalResW, finalResH,
+        totalPixels,
+        aspectRatioText,
+        finalDiagonal_in,
+        totalCabinets, totalModules,
+        totalRecCards: totalCabinets,
+        numCabW, numCabH,
+        modulesPerCab: details.modulesPerCab,
+        nits_range: details.nits_range,
+        minViewingDistance_ft,
+        actualPower_W_unbuffered,
+        maxPower_W: maxPower_W_buffered,
+        actualCurrent_A,
+        maxCurrent_A_buffered,
+        actualWallWeight_unbuffered,
+        totalWallWeight_buffered,
+        controllerName,
+        controllerType: suggestedController.type,
+        // Updated port fields per your rules
+        requiredPortsRaw,
+        requiredPorts: requiredPortsBuffered,
+        outputCardPorts,
+        outputCardModel,
+        requiredSendCards,
+        requiredShortEthernet,
+        inputCardModel,
+        inputCardQty,
+        splicerSolution
+    };
+
+    return finalCalculationData;
+}
+
+/* -------------------------
+   Visualization & UI wiring
+   -------------------------*/
+function calculateDimensions(data) {
+    const finalW_M = data.finalW_mm / MM_PER_METER;
+    const finalH_M = data.finalH_mm / MM_PER_METER;
+    const finalW_FT = data.finalW_mm / MM_PER_FOOT;
+    const finalH_FT = data.finalH_mm / MM_PER_FOOT;
+    return { finalW_M, finalH_M, finalW_FT, finalH_FT };
+}
+
+function showVisualization(){
+    const data = calculateLEDWall();
+    if (!data) return;
+
+    const { finalW_M, finalH_M, finalW_FT, finalH_FT } = calculateDimensions(data);
+
+    // UI state changes
+    const formContainer = document.getElementById('formContainer');
+    if (formContainer) formContainer.classList.add('minimized');
+    const submitButton = document.getElementById('submitButton');
+    if (submitButton) submitButton.classList.add('hidden');
+    const backPlaceholder = document.querySelector('.back-btn-placeholder');
+    if (backPlaceholder) backPlaceholder.classList.remove('hidden');
+    const visualization = document.getElementById('visualization');
+    if (visualization) {
+        visualization.classList.add('visible');
+        visualization.setAttribute('aria-hidden','false');
+    }
+
+    // populate spec fields
+    if (document.getElementById('enteredSummaryText')) document.getElementById('enteredSummaryText').textContent = `Cabinet Matrix: ${data.numCabW}x${data.numCabH} (${data.totalCabinets} Cabinets)`;
+    if (document.getElementById('aspectRatioValue')) document.getElementById('aspectRatioValue').textContent = data.aspectRatioText;
+
+    const setters = {
+      pixelPitchDisplay: `<strong>Pixel Pitch :</strong><small>${data.pixelPitch_mm} mm</small>`,
+      finalDimensions: `<strong>Actual Final Dimensions (WxH) :</strong><small>(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) - ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m</small>`,
+      resolution: `<strong>Actual Final Resolution (WxH) :</strong><small>${data.finalResW} x ${data.finalResH}</small>`,
+      numCabinets: `<strong>Total Cabinets (W x H) :</strong><small>${data.totalCabinets} (${data.numCabW} x ${data.numCabH})</small>`,
+      totalModules: `<strong>Total Modules Required :</strong><small>${data.totalModules} (${data.modulesPerCab} per cabinet)</small>`,
+      finalDiagonal: `<strong>Final Diagonal Size :</strong><small>${data.finalDiagonal_in.toFixed(1)} in</small>`,
+      finalArea: `<strong>Final Area :</strong><small>${data.finalArea_m2.toFixed(2)} m²</small>`,
+      totalPixels: `<strong>Total Pixels :</strong><small>${formatLargeNumber(data.totalPixels)}</small>`,
+      cabinetSize: `<strong>Cabinet Size (WxH) :</strong><small>${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm</small>`,
+      cabinetPixels: `<strong>Cabinet Pixels (WxH) :</strong><small>${data.cabPixW} x ${data.cabPixH}</small>`
+    };
+    Object.keys(setters).forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = setters[id]; });
+
+    // control system summary
+    const controlSystemDetailsDiv = document.getElementById('controlSystemDetails');
+    if (controlSystemDetailsDiv) {
         const isHSeries = data.controllerType.includes("Modular");
-        const controlSystemDetailsDiv = document.getElementById('controlSystemDetails');
-        
-        let htmlContent = `
-            <span style="grid-column: 1 / -1; font-weight: 700; color: var(--brand); border-bottom: 1px solid var(--brand); padding-bottom: 5px; margin-bottom: 5px; margin-top: 10px;">Control System Summary</span>
+        let html = `
+            <span style="grid-column:1/-1;font-weight:700;color:#0D47A1;border-bottom:1px solid #0D47A1;padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Control System Summary</span>
             <span id="suggestedControllerModel"><strong>Controller/Processor Model (${data.controllerType}) :</strong><small>${data.controllerName}</small></span>
         `;
-
         if (isHSeries) {
-            htmlContent += `
-                <div id="modularDetails" class="vis-details" style="grid-column: 1 / -1; gap: 5px; border-top: 1px solid #e0e0e0; padding-top: 10px; margin-top: 5px;">
-                    <span style="grid-column: 1 / -1; font-weight: 700; color: var(--accent); margin-bottom: 5px;">Modular Components (H-Series)</span>
+            html += `
+                <div id="modularDetails" class="vis-details" style="grid-column:1/-1;gap:5px;border-top:1px solid #e0e0e0;padding-top:10px;margin-top:5px;">
+                    <span style="grid-column:1/-1;font-weight:700;color:#B71C1C;margin-bottom:5px;">Modular Components (H-Series)</span>
                     <span id="splicerSolution"><strong>Splicer Frame/Solution :</strong><small>${data.splicerSolution || 'N/A'}</small></span>
                     <span id="sendingCardModel"><strong>Output Card (${data.outputCardPorts} ports/card) :</strong><small>${data.requiredSendCards} x ${data.outputCardModel}</small></span>
                     <span id="inputCardModel"><strong>Input Card (User Specified) :</strong><small>${data.inputCardQty} x ${data.inputCardModel}</small></span>
                 </div>
             `;
         }
-
-        htmlContent += `
-            <span style="grid-column: 1 / -1; font-weight: 700; color: var(--brand); border-bottom: 1px solid var(--brand); padding-bottom: 5px; margin-bottom: 5px; margin-top: 10px;">Connection Summary</span>
+        html += `
+            <span style="grid-column:1/-1;font-weight:700;color:#0D47A1;border-bottom:1px solid #0D47A1;padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Connection Summary</span>
             <span id="requiredRecCards"><strong>Total Receiving Cards Required :</strong><small>${data.totalRecCards}</small></span>
-            
-            <span id="controllerLongPorts"><strong>Long Ethernet Ports/Runs :</strong><small>${data.requiredPorts} (Controller to Wall) </small></span>
-            <span id="controllerShortPorts"><strong>Short Ethernet Cables :</strong><small>${data.requiredShortEthernet} (Between Cabinets) </small></span>
-        `;
-        
-        htmlContent += `
-            <span style="grid-column: 1 / -1; font-weight: 700; color: var(--brand); border-bottom: 1px solid var(--brand); padding-bottom: 5px; margin-bottom: 5px; margin-top: 10px;">Power and Weight (Actual Figures Only)</span>
-            <span id="wallPowerActual"><strong>Max Power Consumption (Actual) :</strong><small>${formatNumber(data.actualPower_W_unbuffered, 0)} W</small></span>
+            <span id="controllerLongPorts"><strong>Long Ethernet Ports/Runs (Controller → Wall) :</strong><small>${data.requiredPorts} (after +20% buffer)</small></span>
+            <span id="controllerShortPorts"><strong>Short Ethernet Cables :</strong><small>${data.requiredShortEthernet} (Between Cabinets)</small></span>
+            <span style="grid-column:1/-1;font-weight:700;color:#0D47A1;border-bottom:1px solid #0D47A1;padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Power and Weight (Actual Figures Only)</span>
+            <span id="wallPowerActual"><strong>Max Power Consumption (Actual) :</strong><small>${formatNumber(data.actualPower_W_unbuffered,0)} W</small></span>
             <span id="wallCurrent"><strong>Max Current Draw (Actual @220V) :</strong><small>${data.actualCurrent_A.toFixed(2)} A</small></span>
-            <span id="cabinetWeightActual"><strong>Total Wall Weight (Actual Cabinets) :</strong><small>${formatNumber(data.actualWallWeight_unbuffered, 1)} kg</small></span>
+            <span id="cabinetWeightActual"><strong>Total Wall Weight (Actual Cabinets) :</strong><small>${formatNumber(data.actualWallWeight_unbuffered,1)} kg</small></span>
         `;
-        
-        controlSystemDetailsDiv.innerHTML = htmlContent;
+        controlSystemDetailsDiv.innerHTML = html;
+    }
 
-
-        const aspectRatio = data.finalW_mm / data.finalH_mm;
-        const visualizationHeight = 300; 
-        const visArea = document.getElementById('visArea');
-        
-        // Constrain to a max width for the preview
-        let previewMaxWidth = 800;
+    // visualization rendering
+    const aspectRatio = data.finalW_mm / data.finalH_mm;
+    const visualizationHeight = 300;
+    const visArea = document.getElementById('visArea');
+    if (visArea) {
+        const previewMaxWidth = 800;
         let areaWidth, areaHeight;
         if (visualizationHeight * aspectRatio > previewMaxWidth) {
-             areaWidth = previewMaxWidth;
-             areaHeight = previewMaxWidth / aspectRatio;
+            areaWidth = previewMaxWidth;
+            areaHeight = previewMaxWidth / aspectRatio;
         } else {
-             areaHeight = visualizationHeight;
-             areaWidth = visualizationHeight * aspectRatio;
+            areaHeight = visualizationHeight;
+            areaWidth = visualizationHeight * aspectRatio;
         }
-        
-        // Ensure minimum sizes so preview remains visible for very tall/narrow walls
         areaWidth = Math.max(220, Math.min(previewMaxWidth, areaWidth));
         areaHeight = Math.max(120, Math.min(600, areaHeight));
-
         visArea.style.width = `${areaWidth}px`;
         visArea.style.height = `${areaHeight}px`;
         visArea.style.margin = '12px auto';
+    }
 
-        document.getElementById('dimTop').textContent = `${finalW_M.toFixed(2)} m (W)`;
-        document.getElementById('dimRight').textContent = `${finalH_M.toFixed(2)} m (H)`;
+    if (document.getElementById('dimTop')) document.getElementById('dimTop').textContent = `${finalW_M.toFixed(2)} m (W)`;
+    if (document.getElementById('dimRight')) document.getElementById('dimRight').textContent = `${finalH_M.toFixed(2)} m (H)`;
 
-        const cabinetOverlay = document.getElementById('cabinetOverlay');
+    const cabinetOverlay = document.getElementById('cabinetOverlay');
+    if (cabinetOverlay) {
         cabinetOverlay.innerHTML = '';
         cabinetOverlay.style.gridTemplateColumns = `repeat(${data.numCabW}, 1fr)`;
         cabinetOverlay.style.gridTemplateRows = `repeat(${data.numCabH}, 1fr)`;
 
-        // Add small gap logic if matrix is large to avoid visual overflow
-        const maxCells = 200; // safety cap for rendering
+        const maxCells = 200;
         const totalCells = data.numCabW * data.numCabH;
         if (totalCells > maxCells) {
-          // too many cells to render as individual boxes — fallback to a tiled hint
-          const hint = document.createElement('div');
-          hint.style.display = 'flex';
-          hint.style.alignItems = 'center';
-          hint.style.justifyContent = 'center';
-          hint.style.fontSize = '0.9rem';
-          hint.style.color = '#1c2738';
-          hint.style.padding = '8px';
-          hint.textContent = `${data.numCabW} x ${data.numCabH} cabinets (${data.totalCabinets} total) — preview simplified`;
-          cabinetOverlay.appendChild(hint);
+            const hint = document.createElement('div');
+            hint.style.display = 'flex';
+            hint.style.alignItems = 'center';
+            hint.style.justifyContent = 'center';
+            hint.style.padding = '8px';
+            hint.style.fontSize = '0.95rem';
+            hint.style.color = '#1c2738';
+            hint.textContent = `${data.numCabW} x ${data.numCabH} cabinets (${data.totalCabinets} total) — preview simplified`;
+            cabinetOverlay.appendChild(hint);
         } else {
-          for (let r = 0; r < data.numCabH; r++) {
-              for (let c = 0; c < data.numCabW; c++) {
-                  const cabDiv = document.createElement('div');
-                  cabDiv.style.border = '1px dashed rgba(13, 71, 161, 0.4)';
-                  cabDiv.style.boxSizing = 'border-box';
-                  cabinetOverlay.appendChild(cabDiv);
-              }
-          }
-        }
-
-        // Ensure the download button is visible
-        const dlBtn = document.getElementById('downloadPdf');
-        if (dlBtn) dlBtn.classList.remove('hidden');
-    }
-    
-    function hideVisualization(){
-        document.getElementById('formContainer').classList.remove('minimized');
-        document.getElementById('visualization').classList.remove('visible');
-        document.getElementById('visualization').setAttribute('aria-hidden', 'true');
-        document.getElementById('submitButton').classList.remove('hidden');
-        document.querySelector('.back-btn-placeholder').classList.add('hidden');
-        const dlBtn = document.getElementById('downloadPdf');
-        if (dlBtn) dlBtn.classList.add('hidden');
-    }
-
-    function proceedToDownloadPdf() {
-        const data = finalCalculationData;
-        if (!data || !data.finalResW) {
-            document.getElementById('errorMessage').textContent = 'ERROR: Please calculate the LED wall configuration first.';
-            document.getElementById('errorMessage').classList.remove('hidden');
-            return;
-        }
-        const { finalW_M, finalH_M, finalW_FT, finalH_FT } = calculateDimensions(data);
-        
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4'); 
-
-        let y = 10;
-        const margin = 15;
-        const lineHeight = 7; 
-        const pageW = doc.internal.pageSize.getWidth();
-        const primaryColor = [13, 71, 161]; 
-        const secondaryColor = [183, 28, 28]; 
-
-        // 1. Header (Title)
-        doc.setFontSize(18);
-        doc.setTextColor(...primaryColor);
-        doc.text('PeopleLink LED Video Wall Technical Summary', pageW / 2, y, { align: 'center' });
-        y += lineHeight;
-        doc.setFontSize(8);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Generated: ${new Date().toLocaleDateString()} | Model: ${data.productName}`, pageW / 2, y, { align: 'center' });
-        doc.text(`Contact: ${contactInfo.email} | ${contactInfo.phone}`, pageW / 2, y + 4, { align: 'center' }); // ADDED CONTACT INFO
-        y += lineHeight * 2;
-
-        // --- 2. Wall Performance & Resolution ---
-        doc.setFontSize(12); 
-        doc.setTextColor(...secondaryColor); 
-        doc.text('1. Wall Performance & Dimensions', margin, y);
-        y += lineHeight;
-
-        const performanceData = [
-            ['Actual Final Dimensions (WxH) :', `(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) - ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m`],
-            ['Actual Final Resolution (WxH) :', `${data.finalResW} x ${data.finalResH}`],
-            ['Aspect Ratio :', data.aspectRatioText],
-            ['Final Diagonal Size :', `${data.finalDiagonal_in.toFixed(1)} inches`],
-            ['Total Pixels / Area :', `${formatLargeNumber(data.totalPixels)} / ${data.finalArea_m2.toFixed(2)} m²`],
-            ['Minimum Viewing Distance :', `${data.minViewingDistance_ft.toFixed(2)} feet`], 
-        ];
-
-        doc.autoTable({ 
-            startY: y + 2, 
-            body: performanceData, 
-            margin: { left: margin, right: margin, bottom: 0 }, 
-            theme: 'striped', 
-            headStyles: { fillColor: primaryColor, halign: 'center' },
-            styles: { fontSize: 8, cellPadding: 1.5 }, 
-            columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
-        });
-        y = doc.lastAutoTable.finalY + lineHeight;
-
-        // --- 3. Physical & Cabinet Specifications ---
-        doc.setFontSize(12); 
-        doc.setTextColor(...secondaryColor); 
-        doc.text('2. Physical & Cabinet Specifications', margin, y);
-        y += lineHeight;
-
-        const specsData = [
-            ['Pixel Pitch :', `${data.pixelPitch_mm} mm`],
-            ['Cabinet Dimensions (W x H) :', `${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm`],
-            ['Cabinet Pixels (W x H) :', `${data.cabPixW} x ${data.cabPixH}`],
-            ['Cabinet Matrix (W x H) :', `${data.numCabW} x ${data.numCabH}`],
-            ['Total Cabinets Required :', `${data.totalCabinets}`],
-            ['Total Modules Required :', `${data.totalModules}`],
-            ['Brightness Range :', data.nits_range ? `${data.nits_range} cd/m²` : 'N/A'], 
-        ];
-
-        doc.autoTable({ 
-            startY: y + 2, 
-            body: specsData, 
-            margin: { left: margin, right: margin, bottom: 0 }, 
-            theme: 'plain', 
-            styles: { fontSize: 8, cellPadding: 1.5 }, 
-            columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
-        });
-        y = doc.lastAutoTable.finalY + lineHeight;
-        
-        // --- 4. Control System & Connections ---
-        doc.setFontSize(12); 
-        doc.setTextColor(...secondaryColor); 
-        doc.text('3. Control System & Connections', margin, y);
-        y += lineHeight;
-
-        let controllerData = [
-            ['Controller/Processor Model :', `${data.controllerName} (${data.controllerType})`],
-            ['Total Receiving Cards :', `${data.totalRecCards}`],
-            ['Long Ethernet Ports/Runs : (Controller to Wall)', `${data.requiredPorts}`],
-            ['Short Ethernet Cables : (Between Cabinets)', `${data.requiredShortEthernet}`],
-        ];
-        
-        if (data.controllerType.includes("Modular")) {
-            controllerData.push(['Modular Splicer Frame :', data.splicerSolution || 'Not Specified']);
-            controllerData.push(['Output Card (Sending) :', `${data.requiredSendCards} x ${data.outputCardModel}`]);
-            controllerData.push(['Input Card (User Config) :', `${data.inputCardModel} x ${data.inputCardQty}`]);
-        }
-
-        doc.autoTable({ 
-            startY: y + 2, 
-            body: controllerData, 
-            margin: { left: margin, right: margin, bottom: 0 }, 
-            theme: 'striped', 
-            styles: { fontSize: 8, cellPadding: 1.5 }, 
-            columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
-        });
-        y = doc.lastAutoTable.finalY + lineHeight;
-        
-        // --- 5. Power and Weight (Standardized 15% Margin) ---
-        doc.setFontSize(12); 
-        doc.setTextColor(...secondaryColor); 
-        doc.text('4. Power and Weight', margin, y);
-        y += lineHeight;
-
-        const powerWeightData = [
-            ['Actual Max Power Consumption (W) :', `${formatNumber(data.actualPower_W_unbuffered, 0)} W`],
-            ['Design Max Power Consumption (W) :', `${formatNumber(data.maxPower_W, 0)} W`],
-            ['Max Current Draw (Actual @220V) :', `${data.actualCurrent_A.toFixed(2)} A`],
-            ['Max Current Draw (Design @220V) :', `${data.maxCurrent_A_buffered.toFixed(2)} A`],
-            ['Actual Wall Weight (kg) :', `${formatNumber(data.actualWallWeight_unbuffered, 1)} kg`],
-            ['Total Wall Weight (Installation Design) :', `${formatNumber(data.totalWallWeight_buffered, 1)} kg`],
-        ];
-
-        doc.autoTable({ 
-            startY: y + 2, 
-            body: powerWeightData, 
-            margin: { left: margin, right: margin, bottom: 0 }, 
-            theme: 'plain', 
-            styles: { fontSize: 8, cellPadding: 1.5 }, 
-            columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } }
-        });
-        y = doc.lastAutoTable.finalY + lineHeight * 2;
-        
-        // --- 6. Bill of Quantities (BOQ) ---
-        doc.setFontSize(12); 
-        doc.setTextColor(...secondaryColor); 
-        doc.text('5. Bill of Quantities (BOQ)', margin, y);
-        y += lineHeight;
-
-        let boqData = [
-            ['LED Cabinets', data.productName, data.totalCabinets, 'PCS'],
-            ['Controller/Processor', data.controllerName, 1, 'PCS'],
-            ['Receiving Cards (R-Card)', `Embedded in Cabinet`, data.totalRecCards, 'PCS'],
-            ['Long Ethernet Cables', `Controller to Wall runs (CAT6/7)`, data.requiredPorts, 'PCS'],
-            ['Short Ethernet Cables', `Cabinet interconnect (CAT6/7)`, data.requiredShortEthernet, 'PCS'],
-            ['Installation / Configuration', `Includes wall mounting/stacking structure, site setup, and system commissioning.`, 1, 'LS (Lump Sum)'],
-            ['Transport / Logistics', `Shipping/freight charges to site location.`, 1, 'LS (Lump Sum)'],
-        ];
-
-        if (data.controllerType.includes("Modular")) {
-            boqData.push(['Modular Splicer Frame', data.splicerSolution || 'Not Specified', 1, 'PCS']);
-            boqData.push(['Output Card (Sending)', data.outputCardModel, data.requiredSendCards, 'PCS']);
-            boqData.push(['Input Card (User Config)', data.inputCardModel, data.inputCardQty, 'PCS']);
-        }
-
-        doc.autoTable({ 
-            startY: y + 2, 
-            head: [['Item', 'Description / Model', 'Quantity', 'Unit']],
-            body: boqData, 
-            margin: { left: margin, right: margin, bottom: 0 }, 
-            theme: 'grid', 
-            headStyles: { fillColor: primaryColor, halign: 'center' },
-            styles: { fontSize: 8, cellPadding: 1.5 },
-            columnStyles: { 0: { fontStyle: 'bold' }, 2: { halign: 'right' }, 3: { halign: 'center' } }
-        });
-        y = doc.lastAutoTable.finalY + lineHeight * 2;
-        
-        // --- 7. Terms and Conditions ---
-        doc.setFontSize(12);
-        doc.setTextColor(...secondaryColor);
-        doc.text('6. Standard Terms & Conditions for Active LED', margin, y);
-        y += lineHeight;
-        
-        doc.setFontSize(8); 
-        doc.setTextColor(50, 50, 50); 
-
-        const terms = [
-            "1. Price Validity: This quotation is valid for 30 days from the date of issue.",
-            "2. Payment Terms: Standard terms are 50% advance, 40% upon delivery, and 10% upon successful commissioning, unless otherwise specified.",
-            "3. Civil Work/Structure: All necessary civil works (wall reinforcement, recess creation, etc.) and primary mounting structure must be provided by the client, unless explicitly included in the BOQ.",
-            "4. Power and Data: Stable power sources (UPS/Dedicated Circuit) and necessary data network drops (LAN for control) must be provided by the client near the installation area.",
-            "5. Warranty: Standard warranty is 1 years on LED panels and accessories, covering manufacturing defects. Warranty does not cover damages from misuse, power surges, or unauthorized repair.",
-            "6. Site Access: Unrestricted, safe site access and use of site-provided lifting equipment (if required) must be available during installation and commissioning hours."
-        ];
-        
-        terms.forEach((term, index) => {
-            if (y > doc.internal.pageSize.getHeight() - margin - 30) {
-                doc.addPage();
-                y = margin;
-                doc.setFontSize(8);
-                doc.setTextColor(50, 50, 50);
+            for (let r=0; r < data.numCabH; r++){
+                for (let c=0; c < data.numCabW; c++){
+                    const cabDiv = document.createElement('div');
+                    cabDiv.style.border = '1px dashed rgba(13,71,161,0.4)';
+                    cabDiv.style.boxSizing = 'border-box';
+                    cabinetOverlay.appendChild(cabDiv);
+                }
             }
-            const splitText = doc.splitTextToSize(term, pageW - 2 * margin);
-            doc.text(splitText, margin, y);
-            y += (splitText.length * 3.5) + 1; 
-        });
-        
-        // Final Disclaimer
-        y += lineHeight * 0.5;
-        if (y > doc.internal.pageSize.getHeight() - margin - 20) {
-                doc.addPage();
-                y = margin;
         }
-
-        doc.setFontSize(7); 
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Note on Design Figures: Design Power and Weight include a ${MARGIN_PERCENT_TEXT} safety margin over actual maximum consumption/cabinet weight for structural and electrical planning.`, margin, y, { maxWidth: pageW - 2 * margin });
-        y += lineHeight;
-        
-        // PDF Footer (Light Color)
-        doc.setFontSize(8);
-        doc.setTextColor(176, 196, 222); // Light Steel Blue
-        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala';
-
-        // Add footer to the current page (last page)
-        doc.text(footerText, pageW / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
-
-        // --- ADD WATERMARK TO ALL PAGES (REMOVED) ---
-        // addWatermarkToPdf(doc, "Pramodh Kathala");
-
-        doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        toggleMeasurementFields();
-        populateModalControllers();
-        populateModalOutputCards();
-        populateModalInputCards(); 
+    const dlBtn = document.getElementById('downloadPdf');
+    if (dlBtn) dlBtn.classList.remove('hidden');
+}
 
-        // initially hide download button (it becomes visible after calc)
-        const dlBtn = document.getElementById('downloadPdf');
-        if (dlBtn) dlBtn.classList.add('hidden');
+/* Hide visualization and restore form */
+function hideVisualization(){
+    const formContainer = document.getElementById('formContainer');
+    if (formContainer) formContainer.classList.remove('minimized');
+    const visualization = document.getElementById('visualization');
+    if (visualization) {
+        visualization.classList.remove('visible');
+        visualization.setAttribute('aria-hidden','true');
+    }
+    const submitButton = document.getElementById('submitButton');
+    if (submitButton) submitButton.classList.remove('hidden');
+    const backPlaceholder = document.querySelector('.back-btn-placeholder');
+    if (backPlaceholder) backPlaceholder.classList.add('hidden');
+    const dlBtn = document.getElementById('downloadPdf');
+    if (dlBtn) dlBtn.classList.add('hidden');
+}
 
-        window.onclick = function(event) {
-          const controllerModal = document.getElementById('controllerModal');
-          if (event.target == controllerModal) {
-            controllerModal.style.display = "none";
-          }
-        }
+/* -------------------------
+   PDF generation
+   -------------------------*/
+function proceedToDownloadPdf() {
+    const data = finalCalculationData;
+    if (!data || !data.finalResW) {
+        const err = document.getElementById('errorMessage');
+        if (err) { err.textContent = 'ERROR: Please calculate the LED wall configuration first.'; err.classList.remove('hidden'); }
+        return;
+    }
+
+    const { finalW_M, finalH_M, finalW_FT, finalH_FT } = calculateDimensions(data);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p','mm','a4');
+
+    let y = 10;
+    const margin = 15;
+    const lineHeight = 7;
+    const pageW = doc.internal.pageSize.getWidth();
+    const primaryColor = [13,71,161];
+    const secondaryColor = [183,28,28];
+
+    doc.setFontSize(18);
+    doc.setTextColor(...primaryColor);
+    doc.text('PeopleLink LED Video Wall Technical Summary', pageW/2, y, { align: 'center' });
+    y += lineHeight;
+    doc.setFontSize(8);
+    doc.setTextColor(100,100,100);
+    doc.text(`Generated: ${new Date().toLocaleDateString()} | Model: ${data.productName}`, pageW/2, y, { align: 'center' });
+    doc.text(`Contact: ${contactInfo.email} | ${contactInfo.phone}`, pageW/2, y+4, { align: 'center' });
+    y += lineHeight*2;
+
+    // 1. Wall Performance
+    doc.setFontSize(12);
+    doc.setTextColor(...secondaryColor);
+    doc.text('1. Wall Performance & Dimensions', margin, y); y += lineHeight;
+    const performanceData = [
+        ['Actual Final Dimensions (WxH) :', `(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) - ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m`],
+        ['Actual Final Resolution (WxH) :', `${data.finalResW} x ${data.finalResH}`],
+        ['Aspect Ratio :', data.aspectRatioText],
+        ['Final Diagonal Size :', `${data.finalDiagonal_in.toFixed(1)} inches`],
+        ['Total Pixels / Area :', `${formatLargeNumber(data.totalPixels)} / ${data.finalArea_m2.toFixed(2)} m²`],
+        ['Minimum Viewing Distance :', `${data.minViewingDistance_ft.toFixed(2)} feet`],
+    ];
+    doc.autoTable({ startY: y+2, body: performanceData, margin: { left: margin, right: margin }, theme: 'striped', styles: { fontSize:8, cellPadding:1.5 }, columnStyles: {0:{fontStyle:'bold'},1:{halign:'right'} } });
+    y = doc.lastAutoTable.finalY + lineHeight;
+
+    // 2. Physical & Cabinet
+    doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('2. Physical & Cabinet Specifications', margin, y); y+=lineHeight;
+    const specsData = [
+        ['Pixel Pitch :', `${data.pixelPitch_mm} mm`],
+        ['Cabinet Dimensions (W x H) :', `${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm`],
+        ['Cabinet Pixels (W x H) :', `${data.cabPixW} x ${data.cabPixH}`],
+        ['Cabinet Matrix (W x H) :', `${data.numCabW} x ${data.numCabH}`],
+        ['Total Cabinets Required :', `${data.totalCabinets}`],
+        ['Total Modules Required :', `${data.totalModules}`],
+        ['Brightness Range :', data.nits_range ? `${data.nits_range} cd/m²` : 'N/A'],
+    ];
+    doc.autoTable({ startY: y+2, body: specsData, margin: { left: margin, right: margin }, theme: 'plain', styles: { fontSize:8, cellPadding:1.5 }, columnStyles: {0:{fontStyle:'bold'},1:{halign:'right'} } });
+    y = doc.lastAutoTable.finalY + lineHeight;
+
+    // 3. Control System & Connections
+    doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('3. Control System & Connections', margin, y); y+=lineHeight;
+    let controllerData = [
+        ['Controller/Processor Model :', `${data.controllerName} (${data.controllerType})`],
+        ['Total Receiving Cards :', `${data.totalRecCards}`],
+        ['Long Ethernet Ports/Runs (Controller → Wall) :', `${data.requiredPorts}`],
+        ['Short Ethernet Cables (Between Cabinets) :', `${data.requiredShortEthernet}`],
+    ];
+    if (data.controllerType.includes("Modular")) {
+        controllerData.push(['Modular Splicer Frame :', data.splicerSolution || 'Not Specified']);
+        controllerData.push(['Output Card (Sending) :', `${data.requiredSendCards} x ${data.outputCardModel}`]);
+        controllerData.push(['Input Card (User Config) :', `${data.inputCardModel} x ${data.inputCardQty}`]);
+    }
+    doc.autoTable({ startY: y+2, body: controllerData, margin: { left: margin, right: margin }, theme: 'striped', styles: { fontSize:8, cellPadding:1.5 }, columnStyles: {0:{fontStyle:'bold'},1:{halign:'right'} } });
+    y = doc.lastAutoTable.finalY + lineHeight;
+
+    // 4. Power and Weight
+    doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('4. Power and Weight', margin, y); y+=lineHeight;
+    const powerWeightData = [
+        ['Actual Max Power Consumption (W) :', `${formatNumber(data.actualPower_W_unbuffered,0)} W`],
+        ['Design Max Power Consumption (W) :', `${formatNumber(data.maxPower_W,0)} W`],
+        ['Max Current Draw (Actual @220V) :', `${data.actualCurrent_A.toFixed(2)} A`],
+        ['Max Current Draw (Design @220V) :', `${data.maxCurrent_A_buffered.toFixed(2)} A`],
+        ['Actual Wall Weight (kg) :', `${formatNumber(data.actualWallWeight_unbuffered,1)} kg`],
+        ['Total Wall Weight (Installation Design) :', `${formatNumber(data.totalWallWeight_buffered,1)} kg`],
+    ];
+    doc.autoTable({ startY: y+2, body: powerWeightData, margin: { left: margin, right: margin }, theme: 'plain', styles: { fontSize:8, cellPadding:1.5 }, columnStyles: {0:{fontStyle:'bold'},1:{halign:'right'} } });
+    y = doc.lastAutoTable.finalY + lineHeight*2;
+
+    // 5. BOQ
+    doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('5. Bill of Quantities (BOQ)', margin, y); y+=lineHeight;
+    let boqData = [
+        ['LED Cabinets', data.productName, data.totalCabinets, 'PCS'],
+        ['Controller/Processor', data.controllerName, 1, 'PCS'],
+        ['Receiving Cards (R-Card)', 'Embedded in Cabinet', data.totalRecCards, 'PCS'],
+        ['Long Ethernet Cables', 'Controller to Wall runs (CAT6/7)', data.requiredPorts, 'PCS'],
+        ['Short Ethernet Cables', 'Cabinet interconnect (CAT6/7)', data.requiredShortEthernet, 'PCS'],
+        ['Installation / Configuration', 'Includes wall mounting/stacking structure, site setup, and system commissioning.', 1, 'LS'],
+        ['Transport / Logistics', 'Shipping/freight charges to site location.', 1, 'LS'],
+    ];
+    if (data.controllerType.includes("Modular")) {
+        boqData.push(['Modular Splicer Frame', data.splicerSolution || 'Not Specified', 1, 'PCS']);
+        boqData.push(['Output Card (Sending)', data.outputCardModel, data.requiredSendCards, 'PCS']);
+        boqData.push(['Input Card (User Config)', data.inputCardModel, data.inputCardQty, 'PCS']);
+    }
+    doc.autoTable({ startY: y+2, head:[['Item','Description / Model','Quantity','Unit']], body: boqData, margin: { left: margin, right: margin }, theme: 'grid', headStyles: { fillColor: primaryColor, halign:'center' }, styles: { fontSize:8, cellPadding:1.5 }, columnStyles:{0:{fontStyle:'bold'},2:{halign:'right'},3:{halign:'center'}} });
+    y = doc.lastAutoTable.finalY + lineHeight*2;
+
+    // 6. Terms & Conditions (short)
+    doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('6. Standard Terms & Conditions for Active LED', margin, y); y+=lineHeight;
+    doc.setFontSize(8); doc.setTextColor(50,50,50);
+    const terms = [
+        "1. Price Validity: Quotation valid for 30 days from date of issue.",
+        "2. Payment Terms: Standard terms are 50% advance, 40% on delivery, 10% on commissioning.",
+        "3. Civil Work/Structure: Client to provide necessary civil works unless included in BOQ.",
+        "4. Power and Data: Stable power (UPS/dedicated circuit) and LAN drops required near install area.",
+        "5. Warranty: Standard 1 year warranty on panels and accessories (T&C apply).",
+        "6. Site Access: Unrestricted safe site access and lifting equipment availability required.",
+    ];
+    terms.forEach(term => {
+        if (y > doc.internal.pageSize.getHeight() - margin - 30) { doc.addPage(); y = margin; doc.setFontSize(8); doc.setTextColor(50,50,50); }
+        const lines = doc.splitTextToSize(term, pageW - 2*margin);
+        doc.text(lines, margin, y);
+        y += (lines.length * 3.5) + 1;
     });
-  </script>
-</body>
-</html>
+
+    // Final note + footer
+    y += lineHeight*0.5;
+    if (y > doc.internal.pageSize.getHeight() - margin - 20) { doc.addPage(); y = margin; }
+    doc.setFontSize(7); doc.setTextColor(100,100,100);
+    doc.text(`Note: Design Power and Weight include a ${MARGIN_PERCENT_TEXT} safety margin over actual maximum consumption/cabinet weight for structural & electrical planning.`, margin, y, { maxWidth: pageW - 2*margin });
+    doc.setFontSize(8); doc.setTextColor(176,196,222);
+    const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala';
+    doc.text(footerText, pageW/2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+
+    doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
+}
+
+/* -------------------------
+   Event wiring on load
+   -------------------------*/
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize measurement fields and modals
+    toggleMeasurementFields && toggleMeasurementFields();
+    populateModalControllers();
+    populateModalOutputCards();
+    populateModalInputCards();
+
+    // Hide download button until calculation runs
+    const dlBtn = document.getElementById('downloadPdf');
+    if (dlBtn) dlBtn.classList.add('hidden');
+
+    // Modal outside click close
+    window.onclick = function(event) {
+        const controllerModal = document.getElementById('controllerModal');
+        if (controllerModal && event.target === controllerModal) controllerModal.style.display = 'none';
+    };
+});
+
+/* -------------------------
+   Expose modal functions to global (so buttons can call them)
+   -------------------------*/
+window.openControllerModal = openControllerModal;
+window.closeControllerModal = closeControllerModal;
+window.applyModalChanges = applyModalChanges;
+window.updatePortsFromOutputCard = updatePortsFromOutputCard;
+window.showVisualization = showVisualization;
+window.hideVisualization = hideVisualization;
+window.proceedToDownloadPdf = proceedToDownloadPdf;
+
+/* -------------------------
+   Note:
+   - This script assumes the HTML contains the same IDs as used in your page:
+     productModel, unit, width, height, diagonal, aspectRatio, submitButton,
+     visualization, visArea, cabinetOverlay, downloadPdf, controllerModal,
+     modalControllerModel, modalOutputCardModel, modalInputCardModel, modalInputCardQty, modalMaxPortsPerCard, modalSplicerSolution
+   - If you want the exact same script but *minified* or a standalone JS file, say "minify" or "make file".
+*/
+</script>
