@@ -63,7 +63,7 @@
     .vis-details { display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.95em; color: #111827; }
     .vis-details span { display: flex; align-items: center; line-height: 1.4; padding-bottom: 8px; border-bottom: 1px dotted #e5e7eb; }
     .vis-details strong { color: #111827; font-weight: 600; min-width: 260px; text-align: left; margin-right: 16px; }
-    .vis-details small { font-size: 0.98em; color: var(--accent); font-weight: 700; }
+    .vis-details small { font-size: 0.98em; color: var(--accent); font-weight: 700; } /* changed to red results */
 
     .edit-btn { background: none; border: none; color: var(--brand); font-size: 0.9em; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 10px; }
 
@@ -93,6 +93,37 @@
     .modal-grid-span-2 { grid-column: 1 / -1; }
     .modal-input-group label { font-weight: 600; color: var(--brand); margin-bottom: 5px; display: block; }
     .modal-disclaimer { margin-top: 12px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 6px; font-size: 0.85em; color: #616161; }
+
+    /* Connection overlay CSS (legend + label) */
+    #connectionSvg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .conn-label {
+      font-size: 10px;
+      font-weight: 700;
+      fill: #111827;
+    }
+    .legend {
+      position: absolute;
+      right: 12px;
+      top: 8px;
+      background: rgba(255,255,255,0.95);
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      border: 1px solid #e5e7eb;
+      z-index: 20;
+    }
+    .legend .item { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+    .legend .sw { width:14px; height:8px; border-radius:2px; display:inline-block; }
+    .legend .sw.red { background: #ef5350; }
+    .legend .sw.green { background: #66bb6a; }
 
     /* Responsive */
     @media (max-width: 900px) { .input-grid, .output-grid, .modal-grid { grid-template-columns: 1fr; } }
@@ -590,6 +621,160 @@
       return { finalW_M: finalW_M, finalH_M: finalH_M, finalW_FT: finalW_FT, finalH_FT: finalH_FT };
     }
 
+    // ===== Connection overlay helpers & renderer =====
+    function clearConnectionOverlay() {
+      const existing = document.getElementById('connectionSvg');
+      if (existing) existing.remove();
+      const existingLegend = document.getElementById('visLegend');
+      if (existingLegend) existingLegend.remove();
+    }
+
+    function createConnectionSvg(width, height) {
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('id', 'connectionSvg');
+      svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+      const defs = document.createElementNS(svgNS, 'defs');
+
+      const markerRed = document.createElementNS(svgNS, 'marker');
+      markerRed.setAttribute('id','arrowRed');
+      markerRed.setAttribute('markerWidth','10');
+      markerRed.setAttribute('markerHeight','10');
+      markerRed.setAttribute('refX','10');
+      markerRed.setAttribute('refY','5');
+      markerRed.setAttribute('orient','auto');
+      markerRed.innerHTML = '<path d="M0,0 L10,5 L0,10 z" fill="#ef5350"/>';
+      defs.appendChild(markerRed);
+
+      const markerGreen = document.createElementNS(svgNS, 'marker');
+      markerGreen.setAttribute('id','arrowGreen');
+      markerGreen.setAttribute('markerWidth','8');
+      markerGreen.setAttribute('markerHeight','8');
+      markerGreen.setAttribute('refX','8');
+      markerGreen.setAttribute('refY','4');
+      markerGreen.setAttribute('orient','auto');
+      markerGreen.innerHTML = '<path d="M0,0 L8,4 L0,8 z" fill="#43a047"/>';
+      defs.appendChild(markerGreen);
+
+      svg.appendChild(defs);
+      return svg;
+    }
+
+    function renderCabinetConnections(data) {
+      clearConnectionOverlay();
+
+      const visGrid = document.getElementById('visGrid');
+      const cabinetOverlay = document.getElementById('cabinetOverlay');
+      if (!visGrid || !cabinetOverlay) return;
+
+      // measured pixel size of visualization area
+      const bbox = visGrid.getBoundingClientRect();
+      const viewW = Math.round(bbox.width);
+      const viewH = Math.round(bbox.height);
+      if (viewW === 0 || viewH === 0) return;
+      const svg = createConnectionSvg(viewW, viewH);
+
+      const cols = data.numCabW;
+      const rows = data.numCabH;
+      if (cols <= 0 || rows <= 0) return;
+
+      const cellW = viewW / cols;
+      const cellH = viewH / rows;
+
+      function cellCenter(colIndex, rowIndex){
+        const cx = (colIndex + 0.5) * cellW;
+        const cy = (rowIndex + 0.5) * cellH;
+        return { x: cx, y: cy };
+      }
+
+      const svgNS = 'http://www.w3.org/2000/svg';
+
+      // Long runs: controller -> first cabinet of each column (draw to top cabinet center)
+      // controller anchor point on left
+      const controllerX = Math.max(12, cellW * 0.05);
+      const controllerY = Math.max(12, viewH * 0.12);
+
+      for (let c = 0; c < cols; c++) {
+        const target = cellCenter(c, 0); // top row
+        const startX = controllerX;
+        const startY = controllerY;
+        const midX = (startX + target.x) / 2;
+        const midY = Math.max(startY, target.y - cellH * 0.35);
+
+        const path = document.createElementNS(svgNS, 'path');
+        const d = `M ${startX} ${startY} C ${midX} ${startY} , ${midX} ${midY} , ${ target.x - cellW*0.06 } ${ target.y - cellH*0.08 }`;
+        path.setAttribute('d', d);
+        path.setAttribute('stroke', '#ef5350');
+        path.setAttribute('stroke-width', Math.max(2, Math.min(6, viewW/220)));
+        path.setAttribute('fill', 'none');
+        path.setAttribute('marker-end', 'url(#arrowRed)');
+        path.setAttribute('opacity','0.95');
+        svg.appendChild(path);
+
+        const label = document.createElementNS(svgNS,'text');
+        label.setAttribute('class','conn-label');
+        label.setAttribute('x', target.x);
+        label.setAttribute('y', Math.max(12, target.y - cellH*0.52));
+        label.setAttribute('text-anchor','middle');
+        label.textContent = `P${c+1}`;
+        svg.appendChild(label);
+      }
+
+      // Short links: horizontal arrows between adjacent cabinets
+      for (let r = 0; r < rows; r++){
+        for (let c = 0; c < cols - 1; c++){
+          const from = cellCenter(c, r);
+          const to   = cellCenter(c+1, r);
+
+          const sx = from.x + cellW * 0.18;
+          const sy = from.y;
+          const ex = to.x - cellW * 0.18;
+          const ey = to.y;
+
+          const line = document.createElementNS(svgNS,'line');
+          line.setAttribute('x1', sx);
+          line.setAttribute('y1', sy);
+          line.setAttribute('x2', ex);
+          line.setAttribute('y2', ey);
+          line.setAttribute('stroke', '#43a047');
+          line.setAttribute('stroke-width', Math.max(1.2, Math.min(4, viewW/500)));
+          line.setAttribute('marker-end', 'url(#arrowGreen)');
+          line.setAttribute('opacity','0.85');
+          svg.appendChild(line);
+        }
+      }
+
+      // Controller label
+      const ctrlText = document.createElementNS(svgNS, 'text');
+      ctrlText.setAttribute('x', controllerX);
+      ctrlText.setAttribute('y', Math.max(10, controllerY - 6));
+      ctrlText.setAttribute('class','conn-label');
+      ctrlText.setAttribute('text-anchor','start');
+      ctrlText.textContent = 'Controller';
+      svg.appendChild(ctrlText);
+
+      // Attach SVG overlay
+      visGrid.style.position = 'relative';
+      svg.style.position = 'absolute';
+      svg.style.top = '0';
+      svg.style.left = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+      document.getElementById('visGrid').appendChild(svg);
+
+      // Legend
+      const legend = document.createElement('div');
+      legend.setAttribute('id','visLegend');
+      legend.className = 'legend';
+      legend.innerHTML = '<div class="item"><span class="sw red"></span>Long Ethernet Run (controller → column)</div>'
+                       + '<div class="item"><span class="sw green"></span>Short Link (cabinet → cabinet)</div>';
+      document.getElementById('visGrid').appendChild(legend);
+    }
+
+    // ===== Visualization rendering =====
     function showVisualization(){
       const data = calculateLEDWall(); if (!data) return;
       const dims = calculateDimensions(data);
@@ -660,10 +845,16 @@
           cabinetOverlay.appendChild(cell);
         }
       }
+
+      // --- CALL THE CABINET CONNECTION RENDERER ---
+      // This draws the red long-runs and the green cabinet-to-cabinet links
+      renderCabinetConnections(finalCalculationData);
+
       document.getElementById('downloadPdfLink').classList.remove('hidden');
     }
 
     function hideVisualization(){
+      clearConnectionOverlay();
       document.getElementById('formContainer').classList.remove('minimized');
       document.getElementById('visualization').classList.remove('visible');
       document.getElementById('submitButton').classList.remove('hidden');
@@ -756,7 +947,7 @@
         ['Spare LED Modules', 'Recommended ~3% spares', sparesModules, 'PCS'],
         ['Spare Receiving Cards', 'Recommended ~2% spares', sparesRcv, 'PCS'],
         ['Spare Power Supplies', 'Recommended ~2% spares', sparesPSU, 'PCS'],
-        ['Long Ethernet Cables', 'Controller → first cabinet (per column)', data.requiredPorts, 'PCS'],
+        ['Long Ethernet Cables', 'Controller → first cabinet (per column) + bandwidth', data.requiredPorts, 'PCS'],
         ['Short Ethernet Cables', 'Cabinet interconnect (CAT6/7)', data.requiredShortEthernet, 'PCS'],
         ['Mounting Structure', 'Wall/stacking structure as per site', 1, 'LS'],
         ['Power Distribution', 'PDU/breakers as per load plan', 1, 'LS'],
