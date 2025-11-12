@@ -33,7 +33,7 @@
     .input-group { margin-top: 0; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--ink-2); }
     select, input[type="number"], input[type="text"] { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; background: #fff; }
-    select:focus, input:focus { border-color: var (--brand); box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.2); outline: none; }
+    select:focus, input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.2); outline: none; }
 
     /* Buttons */
     .btn { background-color: var(--brand); color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; width: 100%; cursor: pointer; transition: background-color 0.2s, transform 0.15s; font-weight: 600; }
@@ -76,8 +76,21 @@
 
     footer { text-align: center; color: #b0c4de; font-size: 12px; margin-top: 24px; }
 
+    /* Modal (missing earlier) */
+    .modal { position: fixed; z-index: 1000; inset: 0; background: rgba(0,0,0,0.4); display: none; }
+    .modal.hidden { display: none; }
+    .modal:not(.hidden) { display: block; }
+    .modal-content { background: #fff; margin: 5% auto; padding: 24px; border-radius: 10px; width: 90%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 16px; }
+    .close-btn { background: none; border: 0; font-size: 28px; color: #888; cursor: pointer; }
+    .close-btn:hover { color: #000; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .modal-grid-span-2 { grid-column: 1 / -1; }
+    .modal-input-group label { font-weight: 600; color: var(--brand); margin-bottom: 5px; display: block; }
+    .modal-disclaimer { margin-top: 12px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 6px; font-size: 0.85em; color: #616161; }
+
     /* Responsive */
-    @media (max-width: 900px) { .input-grid, .output-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .input-grid, .output-grid, .modal-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -191,9 +204,7 @@
         </div>
       </div>
 
-      <!-- Direct download (no contact gate) -->
       <span id="downloadPdfLink" onclick="proceedToDownloadPdf()">Download PDF Technical Summary 📄</span>
-
       <button class="btn gray" id="backButton" onclick="hideVisualization()">Modify Configuration</button>
     </div>
 
@@ -275,7 +286,7 @@
       outdoor_100:{ name: "PeopleLink SMD Outdoor (10.0mm)", pitch_mm: 10.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 96, cabPixH: 96, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }
     };
 
-    // ===== Controllers =====
+    // ===== Controllers ===== (remove numeric separators for compatibility)
     const CONTROLLER_MODELS = [
       { name: "TB40",            type: "Multimedia Player",   ports: 2,  maxPixels: 1300000,  maxW: 10240, maxH: 8192,  priority: 1 },
       { name: "TB60",            type: "Multimedia Player",   ports: 4,  maxPixels: 2300000,  maxW: 4096,  maxH: 4096,  priority: 2 },
@@ -289,7 +300,7 @@
       { name: "H9 (9U)",        type: "Modular Splicer",      ports: 20, maxPixels: 65000000, maxW: 16384, maxH: 8192, priority: 10 },
       { name: "H15 (15U)",      type: "Modular Splicer",      ports: 20, maxPixels: 130000000, maxW: 16384, maxH: 8192, priority: 11 },
       { name: "H20 (20U)",      type: "Modular Splicer",      ports: 20, maxPixels: 260000000, maxW: 16384, maxH: 8192, priority: 12 }
-    ].sort((a,b)=>a.priority-b.priority);
+    ].sort(function(a,b){ return a.priority - b.priority; });
 
     const H_SERIES_DEFAULTS = {
       SPLICER_NAME: "H-Series Modular Splicer Frame",
@@ -308,9 +319,9 @@
 
     // ===== Helpers =====
     let finalCalculationData = {};
-    function formatNumber(n,d=1){return n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d});}
-    function formatLargeNumber(n){if(n>=1e6)return(n/1e6).toFixed(2)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return n.toLocaleString();}
-    function gcd(a,b){return b===0?a:gcd(b,a%b);}
+    function formatNumber(n,d){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:d||1,maximumFractionDigits:d||1}); }
+    function formatLargeNumber(n){ n=Number(n); if(n>=1e6)return(n/1e6).toFixed(2)+"M"; if(n>=1e3)return(n/1e3).toFixed(1)+"K"; return n.toLocaleString(); }
+    function gcd(a,b){ return b===0?a:gcd(b,a%b); }
 
     function toggleMeasurementFields(){
       const unit = document.getElementById('unit').value;
@@ -332,9 +343,11 @@
     function populateModalControllers(){
       const select = document.getElementById('modalControllerModel');
       select.innerHTML = '';
-      CONTROLLER_MODELS.forEach(c=>{
+      CONTROLLER_MODELS.forEach(function(c){
         const opt = document.createElement('option');
-        opt.value = c.name; opt.textContent = `${c.name} (${c.type}, ${formatLargeNumber(c.maxPixels)} max px)`; select.appendChild(opt);
+        opt.value = c.name;
+        opt.textContent = c.name + " (" + c.type + ", " + formatLargeNumber(c.maxPixels) + " max px)";
+        select.appendChild(opt);
       });
     }
     function populateModalOutputCards(){
@@ -343,22 +356,26 @@
       [
         { model: H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS },
         { model: H_SERIES_DEFAULTS.OUTPUT_CARD_16_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_16_PORTS }
-      ].forEach(card=>{
+      ].forEach(function(card){
         const opt = document.createElement('option');
-        opt.value = `${card.model}|${card.ports}`; opt.textContent = `${card.model} (${card.ports} ports)`; select.appendChild(opt);
+        opt.value = card.model + "|" + card.ports;
+        opt.textContent = card.model + " (" + card.ports + " ports)";
+        select.appendChild(opt);
       });
     }
     function populateModalInputCards(){
       const select = document.getElementById('modalInputCardModel');
       select.innerHTML='';
-      H_SERIES_DEFAULTS.INPUT_CARD_OPTIONS.forEach(o=>{
+      H_SERIES_DEFAULTS.INPUT_CARD_OPTIONS.forEach(function(o){
         const opt=document.createElement('option');
-        opt.value = `${o.model}|${o.qty}`; opt.textContent = o.display; select.appendChild(opt);
+        opt.value = o.model + "|" + o.qty;
+        opt.textContent = o.display;
+        select.appendChild(opt);
       });
     }
     function updatePortsFromOutputCard(){
-      const [model, ports] = document.getElementById('modalOutputCardModel').value.split('|');
-      document.getElementById('modalMaxPortsPerCard').value = ports;
+      const val = document.getElementById('modalOutputCardModel').value.split('|');
+      document.getElementById('modalMaxPortsPerCard').value = val[1];
     }
 
     function openControllerModal(){
@@ -367,17 +384,18 @@
       populateModalInputCards();
       const suggestedControllerName = finalCalculationData.controllerOverrideName || (finalCalculationData.controllerName ? finalCalculationData.controllerName.split('(')[0].trim() : '');
       const controllerSelect = document.getElementById('modalControllerModel');
-      if (controllerSelect.querySelector(`option[value="${suggestedControllerName}"]`)) controllerSelect.value = suggestedControllerName;
+      if (controllerSelect.querySelector('option[value="'+suggestedControllerName+'"]')) controllerSelect.value = suggestedControllerName;
       document.getElementById('modalSplicerSolution').value = finalCalculationData.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME;
 
-      const currentOutputCardValue = `${finalCalculationData.outputCardModel||H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL}|${finalCalculationData.outputCardPorts||H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS}`;
+      const currentOutputCardValue = (finalCalculationData.outputCardModel||H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL) + "|" + (finalCalculationData.outputCardPorts||H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS);
       const outputCardSelect = document.getElementById('modalOutputCardModel');
-      if (outputCardSelect.querySelector(`option[value="${currentOutputCardValue}"]`)) outputCardSelect.value = currentOutputCardValue; else outputCardSelect.selectedIndex = 0;
+      if (outputCardSelect.querySelector('option[value="'+currentOutputCardValue+'"]')) outputCardSelect.value = currentOutputCardValue; else outputCardSelect.selectedIndex = 0;
       document.getElementById('modalMaxPortsPerCard').value = (finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS);
 
       const inputCardSelect = document.getElementById('modalInputCardModel');
       const desiredModel = finalCalculationData.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
-      const opt = Array.from(inputCardSelect.options).find(o=>o.value.startsWith(desiredModel));
+      var opt = null;
+      Array.prototype.slice.call(inputCardSelect.options).forEach(function(o){ if(!opt && o.value.indexOf(desiredModel)===0) opt=o; });
       inputCardSelect.value = opt ? opt.value : inputCardSelect.options[0].value;
       document.getElementById('modalInputCardQty').value = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
 
@@ -391,8 +409,8 @@
     function applyModalChanges(){
       finalCalculationData.controllerOverrideName = document.getElementById('modalControllerModel').value;
       finalCalculationData.splicerSolution = document.getElementById('modalSplicerSolution').value;
-      const [model, ports] = document.getElementById('modalOutputCardModel').value.split('|');
-      finalCalculationData.outputCardModel = model; finalCalculationData.outputCardPorts = parseFloat(ports);
+      const outVals = document.getElementById('modalOutputCardModel').value.split('|');
+      finalCalculationData.outputCardModel = outVals[0]; finalCalculationData.outputCardPorts = parseFloat(outVals[1]);
       const inputCardModelSelect = document.getElementById('modalInputCardModel');
       finalCalculationData.inputCardModel = inputCardModelSelect.value.split('|')[0];
       finalCalculationData.inputCardQty = parseFloat(document.getElementById('modalInputCardQty').value);
@@ -400,20 +418,20 @@
     }
 
     function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey){
-      const isOutdoor = productKey.startsWith('outdoor');
+      const isOutdoor = productKey.indexOf('outdoor')===0;
       const isSmallIndoor = totalPixels < 1500000;
-      let suggested = null;
+      var suggested = null;
       if (isOutdoor || isSmallIndoor){
-        suggested = CONTROLLER_MODELS.find(c=>c.type==="Multimedia Player" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH);
+        suggested = CONTROLLER_MODELS.find(function(c){ return c.type==="Multimedia Player" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; });
       }
       if (!suggested){
-        suggested = CONTROLLER_MODELS.find(c=>c.type==="All-in-One Processor" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH);
+        suggested = CONTROLLER_MODELS.find(function(c){ return c.type==="All-in-One Processor" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; });
       }
       if (!suggested){
-        suggested = CONTROLLER_MODELS.find(c=>c.name.includes('4K Prime') && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH);
+        suggested = CONTROLLER_MODELS.find(function(c){ return c.name.indexOf('4K Prime')>-1 && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; });
       }
       if (!suggested){
-        const mods = CONTROLLER_MODELS.filter(c=>c.type==="Modular Splicer" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH).sort((a,b)=>a.maxPixels-b.maxPixels);
+        const mods = CONTROLLER_MODELS.filter(function(c){ return c.type==="Modular Splicer" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; }).sort(function(a,b){ return a.maxPixels-b.maxPixels; });
         suggested = mods[0] || CONTROLLER_MODELS[CONTROLLER_MODELS.length-1];
       }
       return suggested;
@@ -427,14 +445,13 @@
       const diagonalInput = document.getElementById('diagonal').value;
       const aspectRatioKey = document.getElementById('aspectRatio').value;
 
-      let inputW = parseFloat(widthInput);
-      let inputH = parseFloat(heightInput);
-      let inputD = parseFloat(diagonalInput);
+      var inputW = parseFloat(widthInput);
+      var inputH = parseFloat(heightInput);
+      var inputD = parseFloat(diagonalInput);
 
       const errorDiv = document.getElementById('errorMessage');
       errorDiv.classList.add('hidden');
 
-      // Basic validation
       if (!productKey || !unit || ((unit !== 'inches' && (!inputW && !inputH)) || (unit === 'inches' && !inputD))){
         errorDiv.textContent = 'ERROR: Please select a Model, Unit, and enter valid dimensions to continue.';
         errorDiv.classList.remove('hidden');
@@ -446,11 +463,11 @@
       const cabinetW_mm = details.cabW_mm;
       const cabinetH_mm = details.cabH_mm;
 
-      let desiredW_mm, desiredH_mm; let usedW_input, usedH_input, usedRatio = aspectRatioKey || 'None Specified'; let inputDiagonal;
+      var desiredW_mm, desiredH_mm; var usedW_input, usedH_input, usedRatio = aspectRatioKey || 'None Specified'; var inputDiagonal;
 
       if (unit === 'inches'){
         const ratioToUse = aspectRatioKey || '16:9';
-        const [rW, rH] = ratioToUse.split(':').map(Number);
+        const parts = ratioToUse.split(':'); const rW = Number(parts[0]); const rH = Number(parts[1]);
         const rDiag = Math.sqrt(rW*rW + rH*rH);
         const factor = inputD / rDiag;
         desiredW_mm = rW * factor * MM_PER_INCH; desiredH_mm = rH * factor * MM_PER_INCH;
@@ -459,16 +476,15 @@
         const unit_factor = (unit === 'meters') ? MM_PER_METER : MM_PER_FOOT;
         const hasW = !isNaN(inputW) && inputW > 0; const hasH = !isNaN(inputH) && inputH > 0;
         if (aspectRatioKey){
-          const [rW, rH] = aspectRatioKey.split(':').map(Number);
+          const p = aspectRatioKey.split(':'); const rW = Number(p[0]); const rH = Number(p[1]);
           if (hasW){ usedW_input = inputW; usedH_input = (inputW / rW) * rH; }
           else if (hasH){ usedH_input = inputH; usedW_input = (inputH / rH) * rW; }
           else { usedW_input = inputW; usedH_input = inputH; }
           desiredW_mm = usedW_input * unit_factor; desiredH_mm = usedH_input * unit_factor;
         } else {
-          // If only one dimension provided, infer the other from cabinet AR
           const cabAR = cabinetW_mm / cabinetH_mm;
-          if (hasW && !hasH){ usedW_input = inputW; usedH_input = inputW / cabAR; usedRatio = `Inferred from Cabinet AR (${cabinetW_mm}:${cabinetH_mm})`; }
-          else if (hasH && !hasW){ usedH_input = inputH; usedW_input = inputH * cabAR; usedRatio = `Inferred from Cabinet AR (${cabinetW_mm}:${cabinetH_mm})`; }
+          if (hasW && !hasH){ usedW_input = inputW; usedH_input = inputW / cabAR; usedRatio = 'Inferred from Cabinet AR (' + cabinetW_mm + ':' + cabinetH_mm + ')'; }
+          else if (hasH && !hasW){ usedH_input = inputH; usedW_input = inputH * cabAR; usedRatio = 'Inferred from Cabinet AR (' + cabinetW_mm + ':' + cabinetH_mm + ')'; }
           else { usedW_input = inputW; usedH_input = inputH; }
           desiredW_mm = usedW_input * unit_factor; desiredH_mm = usedH_input * unit_factor;
         }
@@ -476,8 +492,8 @@
       }
 
       // Snap to nearest whole cabinets
-      let numCabW = Math.max(1, Math.round(desiredW_mm / cabinetW_mm));
-      let numCabH = Math.max(1, Math.round(desiredH_mm / cabinetH_mm));
+      var numCabW = Math.max(1, Math.round(desiredW_mm / cabinetW_mm));
+      var numCabH = Math.max(1, Math.round(desiredH_mm / cabinetH_mm));
 
       const totalCabinets = numCabW * numCabH;
       const totalModules = totalCabinets * details.modulesPerCab;
@@ -486,11 +502,10 @@
 
       const finalResW = numCabW * details.cabPixW; const finalResH = numCabH * details.cabPixH; const totalPixels = finalResW * finalResH;
 
-      const ratioGCD = gcd(finalResW, finalResH); const aspectRatioText = `${finalResW/ratioGCD}:${finalResH/ratioGCD}`;
+      const ratioGCD = gcd(finalResW, finalResH); const aspectRatioText = (finalResW/ratioGCD) + ':' + (finalResH/ratioGCD);
       const finalDiagonal_mm = Math.sqrt(finalW_mm*finalW_mm + finalH_mm*finalH_mm); const finalDiagonal_in = finalDiagonal_mm / MM_PER_INCH;
 
-      // Viewing distance rule (revised):
-      // min ≈ 1× pixel pitch (m); comfort ≈ 2×; ideal ≈ 3×
+      // Viewing distance rule (revised): min ≈ 1× pitch (m); comfort ≈ 2×; ideal ≈ 3×
       const minView_m = details.pitch_mm / 1000;
       const comfortView_m = (details.pitch_mm * 2) / 1000;
       const idealView_m = (details.pitch_mm * 3) / 1000;
@@ -498,7 +513,7 @@
       const comfortView_ft = comfortView_m * METER_TO_FEET;
       const idealView_ft = idealView_m * METER_TO_FEET;
 
-      // Power/Weight (actual + design margins)
+      // Power/Weight
       const actualPower_W_unbuffered = finalArea_m2 * details.maxPower_W_m2;
       const maxPower_W_buffered = actualPower_W_unbuffered * POWER_BUFFER;
       const actualCurrent_A = actualPower_W_unbuffered / 220; const maxCurrent_A_buffered = maxPower_W_buffered / 220;
@@ -506,7 +521,7 @@
 
       // Controller suggestion
       const suggestedController = getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey);
-      const isHSeries = suggestedController.type.includes('Modular');
+      const isHSeries = suggestedController.type.indexOf('Modular')>-1;
 
       const outputCardPorts = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
       const outputCardModel = finalCalculationData.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
@@ -521,25 +536,26 @@
       const controllerName = finalCalculationData.controllerOverrideName || suggestedController.name;
 
       finalCalculationData = {
-        ...finalCalculationData,
         productName: details.name,
         pixelPitch_mm: details.pitch_mm,
-        cabinetW_mm, cabinetH_mm,
+        cabinetW_mm: cabinetW_mm, cabinetH_mm: cabinetH_mm,
         cabPixW: details.cabPixW, cabPixH: details.cabPixH,
-        finalW_mm, finalH_mm, finalArea_m2,
-        finalResW, finalResH, totalPixels,
-        aspectRatioText, finalDiagonal_in,
-        totalCabinets, totalModules, totalRecCards: totalCabinets,
-        numCabW, numCabH, modulesPerCab: details.modulesPerCab,
+        finalW_mm: finalW_mm, finalH_mm: finalH_mm, finalArea_m2: finalArea_m2,
+        finalResW: finalResW, finalResH: finalResH, totalPixels: totalPixels,
+        aspectRatioText: aspectRatioText, finalDiagonal_in: finalDiagonal_in,
+        totalCabinets: totalCabinets, totalModules: totalModules, totalRecCards: totalCabinets,
+        numCabW: numCabW, numCabH: numCabH, modulesPerCab: details.modulesPerCab,
         nits_range: details.nits_range,
-        minView_m, comfortView_m, idealView_m, minView_ft, comfortView_ft, idealView_ft,
-        actualPower_W_unbuffered, maxPower_W: maxPower_W_buffered,
-        actualCurrent_A, maxCurrent_A_buffered,
-        actualWallWeight_unbuffered, totalWallWeight_buffered,
-        controllerName, controllerType: suggestedController.type,
-        requiredPorts, requiredShortEthernet,
-        outputCardPorts, outputCardModel, requiredSendCards,
-        inputCardModel, inputCardQty, splicerSolution
+        minView_m: minView_m, comfortView_m: comfortView_m, idealView_m: idealView_m,
+        minView_ft: minView_ft, comfortView_ft: comfortView_ft, idealView_ft: idealView_ft,
+        actualPower_W_unbuffered: actualPower_W_unbuffered, maxPower_W: maxPower_W_buffered,
+        actualCurrent_A: actualCurrent_A, maxCurrent_A_buffered: maxCurrent_A_buffered,
+        actualWallWeight_unbuffered: actualCabinetWeight_unbuffered, totalWallWeight_buffered: totalWallWeight_buffered,
+        controllerName: controllerName, controllerType: suggestedController.type,
+        requiredPorts: requiredPorts, requiredShortEthernet: requiredShortEthernet,
+        outputCardPorts: outputCardPorts, outputCardModel: outputCardModel, requiredSendCards: requiredSendCards,
+        inputCardModel: inputCardModel, inputCardQty: inputCardQty, splicerSolution: splicerSolution,
+        controllerOverrideName: finalCalculationData.controllerOverrideName || null
       };
       return finalCalculationData;
     }
@@ -547,14 +563,15 @@
     function calculateDimensions(data){
       const finalW_M = data.finalW_mm / MM_PER_METER; const finalH_M = data.finalH_mm / MM_PER_METER;
       const finalW_FT = data.finalW_mm / MM_PER_FOOT; const finalH_FT = data.finalH_mm / MM_PER_FOOT;
-      return { finalW_M, finalH_M, finalW_FT, finalH_FT };
+      return { finalW_M: finalW_M, finalH_M: finalH_M, finalW_FT: finalW_FT, finalH_FT: finalH_FT };
     }
 
     function showVisualization(){
       const data = calculateLEDWall(); if (!data) return;
-      const { finalW_M, finalH_M, finalW_FT, finalH_FT } = calculateDimensions(data);
+      const dims = calculateDimensions(data);
+      const finalW_M = dims.finalW_M, finalH_M = dims.finalH_M, finalW_FT = dims.finalW_FT, finalH_FT = dims.finalH_FT;
 
-      document.getElementById('enteredSummaryText').textContent = `Cabinet Matrix: ${data.numCabW}x${data.numCabH} (${data.totalCabinets} Cabinets)`;
+      document.getElementById('enteredSummaryText').textContent = 'Cabinet Matrix: ' + data.numCabW + 'x' + data.numCabH + ' (' + data.totalCabinets + ' Cabinets)';
       document.getElementById('aspectRatioValue').textContent = data.aspectRatioText;
 
       document.getElementById('formContainer').classList.add('minimized');
@@ -562,61 +579,56 @@
       document.querySelector('.back-btn-placeholder').classList.remove('hidden');
       document.getElementById('visualization').classList.add('visible');
 
-      // Left card
-      document.getElementById('pixelPitchDisplay').innerHTML = `<strong>Pixel Pitch :</strong><small>${data.pixelPitch_mm} mm</small>`;
-      document.getElementById('finalDimensions').innerHTML = `<strong>Actual Final Dimensions (WxH) :</strong><small>(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) - ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m</small>`;
-      document.getElementById('resolution').innerHTML = `<strong>Actual Final Resolution (WxH) :</strong><small>${data.finalResW} x ${data.finalResH}</small>`;
-      document.getElementById('numCabinets').innerHTML = `<strong>Total Cabinets (W x H) :</strong><small>${data.totalCabinets} (${data.numCabW} x ${data.numCabH})</small>`;
-      document.getElementById('totalModules').innerHTML = `<strong>Total Modules Required :</strong><small>${data.totalModules} (${data.modulesPerCab} per cabinet)</small>`;
-      document.getElementById('finalDiagonal').innerHTML = `<strong>Final Diagonal Size :</strong><small>${data.finalDiagonal_in.toFixed(1)} in</small>`;
-      document.getElementById('finalArea').innerHTML = `<strong>Final Area :</strong><small>${data.finalArea_m2.toFixed(2)} m²</small>`;
-      document.getElementById('totalPixels').innerHTML = `<strong>Total Pixels :</strong><small>${formatLargeNumber(data.totalPixels)}</small>`;
+      document.getElementById('pixelPitchDisplay').innerHTML = '<strong>Pixel Pitch :</strong><small>' + data.pixelPitch_mm + ' mm</small>';
+      document.getElementById('finalDimensions').innerHTML = '<strong>Actual Final Dimensions (WxH) :</strong><small>(' + finalW_FT.toFixed(2) + 'ft x ' + finalH_FT.toFixed(2) + 'ft) - ' + finalW_M.toFixed(2) + 'm x ' + finalH_M.toFixed(2) + 'm</small>';
+      document.getElementById('resolution').innerHTML = '<strong>Actual Final Resolution (WxH) :</strong><small>' + data.finalResW + ' x ' + data.finalResH + '</small>';
+      document.getElementById('numCabinets').innerHTML = '<strong>Total Cabinets (W x H) :</strong><small>' + data.totalCabinets + ' (' + data.numCabW + ' x ' + data.numCabH + ')</small>';
+      document.getElementById('totalModules').innerHTML = '<strong>Total Modules Required :</strong><small>' + data.totalModules + ' (' + data.modulesPerCab + ' per cabinet)</small>';
+      document.getElementById('finalDiagonal').innerHTML = '<strong>Final Diagonal Size :</strong><small>' + data.finalDiagonal_in.toFixed(1) + ' in</small>';
+      document.getElementById('finalArea').innerHTML = '<strong>Final Area :</strong><small>' + data.finalArea_m2.toFixed(2) + ' m²</small>';
+      document.getElementById('totalPixels').innerHTML = '<strong>Total Pixels :</strong><small>' + formatLargeNumber(data.totalPixels) + '</small>';
       document.getElementById('viewingDistance').innerHTML =
-        `<strong>Viewing Distance (min / comfort / ideal) :</strong><small>${data.minView_m.toFixed(2)}m / ${data.comfortView_m.toFixed(2)}m / ${data.idealView_m.toFixed(2)}m  —  ${data.minView_ft.toFixed(1)}ft / ${data.comfortView_ft.toFixed(1)}ft / ${data.idealView_ft.toFixed(1)}ft</small>`;
-      document.getElementById('cabinetSize').innerHTML = `<strong>Cabinet Size (WxH) :</strong><small>${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm</small>`;
-      document.getElementById('cabinetPixels').innerHTML = `<strong>Cabinet Pixels (WxH) :</strong><small>${data.cabPixW} x ${data.cabPixH}</small>`;
+        '<strong>Viewing Distance (min / comfort / ideal) :</strong><small>' + data.minView_m.toFixed(2) + 'm / ' + data.comfortView_m.toFixed(2) + 'm / ' + data.idealView_m.toFixed(2) + 'm  —  ' + data.minView_ft.toFixed(1) + 'ft / ' + data.comfortView_ft.toFixed(1) + 'ft / ' + data.idealView_ft.toFixed(1) + 'ft</small>';
+      document.getElementById('cabinetSize').innerHTML = '<strong>Cabinet Size (WxH) :</strong><small>' + data.cabinetW_mm + 'mm x ' + data.cabinetH_mm + 'mm</small>';
+      document.getElementById('cabinetPixels').innerHTML = '<strong>Cabinet Pixels (WxH) :</strong><small>' + data.cabPixW + ' x ' + data.cabPixH + '</small>';
 
-      // Right card (control)
-      const isHSeries = data.controllerType.includes('Modular');
+      const isHSeries = data.controllerType.indexOf('Modular')>-1;
       const controlDiv = document.getElementById('controlSystemDetails');
-      let html = `
-        <span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Control System Summary</span>
-        <span id="suggestedControllerModel"><strong>Controller/Processor Model (${data.controllerType}) :</strong><small>${data.controllerName}</small></span>
-      `;
+      var html = ''
+        + '<span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Control System Summary</span>'
+        + '<span id="suggestedControllerModel"><strong>Controller/Processor Model (' + data.controllerType + ') :</strong><small>' + data.controllerName + '</small></span>';
       if (isHSeries){
-        html += `
-          <div id="modularDetails" class="vis-details" style="grid-column:1/-1;gap:5px;border-top:1px solid #e0e0e0;padding-top:10px;margin-top:5px;">
-            <span style="grid-column:1/-1;font-weight:700;color:var(--accent);margin-bottom:5px;">Modular Components (H-Series)</span>
-            <span id="splicerSolution"><strong>Splicer Frame/Solution :</strong><small>${data.splicerSolution||'N/A'}</small></span>
-            <span id="sendingCardModel"><strong>Output Card (${data.outputCardPorts} ports/card) :</strong><small>${data.requiredSendCards} x ${data.outputCardModel}</small></span>
-            <span id="inputCardModel"><strong>Input Card (User Specified) :</strong><small>${data.inputCardQty} x ${data.inputCardModel}</small></span>
-          </div>`;
+        html += ''
+          + '<div id="modularDetails" class="vis-details" style="grid-column:1/-1;gap:5px;border-top:1px solid #e0e0e0;padding-top:10px;margin-top:5px;">'
+          +   '<span style="grid-column:1/-1;font-weight:700;color:var(--accent);margin-bottom:5px;">Modular Components (H-Series)</span>'
+          +   '<span id="splicerSolution"><strong>Splicer Frame/Solution :</strong><small>' + (data.splicerSolution||'N/A') + '</small></span>'
+          +   '<span id="sendingCardModel"><strong>Output Card (' + data.outputCardPorts + ' ports/card) :</strong><small>' + data.requiredSendCards + ' x ' + data.outputCardModel + '</small></span>'
+          +   '<span id="inputCardModel"><strong>Input Card (User Specified) :</strong><small>' + data.inputCardQty + ' x ' + data.inputCardModel + '</small></span>'
+          + '</div>';
       }
-      html += `
-        <span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Connection Summary</span>
-        <span id="requiredRecCards"><strong>Total Receiving Cards Required :</strong><small>${data.totalRecCards}</small></span>
-        <span id="controllerLongPorts"><strong>Long Ethernet Ports/Runs :</strong><small>${data.requiredPorts} (Controller → Wall)</small></span>
-        <span id="controllerShortPorts"><strong>Short Ethernet Cables :</strong><small>${data.requiredShortEthernet} (Between Cabinets)</small></span>
-        <span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Power and Weight</span>
-        <span id="wallPowerActual"><strong>Max Power Consumption (Actual) :</strong><small>${formatNumber(data.actualPower_W_unbuffered,0)} W</small></span>
-        <span id="wallCurrent"><strong>Max Current Draw (Actual @220V) :</strong><small>${data.actualCurrent_A.toFixed(2)} A</small></span>
-        <span id="cabinetWeightActual"><strong>Total Wall Weight (Actual Cabinets) :</strong><small>${formatNumber(data.actualWallWeight_unbuffered,1)} kg</small></span>
-      `;
+      html += ''
+        + '<span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Connection Summary</span>'
+        + '<span id="requiredRecCards"><strong>Total Receiving Cards Required :</strong><small>' + data.totalRecCards + '</small></span>'
+        + '<span id="controllerLongPorts"><strong>Long Ethernet Ports/Runs :</strong><small>' + data.requiredPorts + ' (Controller → Wall)</small></span>'
+        + '<span id="controllerShortPorts"><strong>Short Ethernet Cables :</strong><small>' + data.requiredShortEthernet + ' (Between Cabinets)</small></span>'
+        + '<span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Power and Weight</span>'
+        + '<span id="wallPowerActual"><strong>Max Power Consumption (Actual) :</strong><small>' + formatNumber(data.actualPower_W_unbuffered,0) + ' W</small></span>'
+        + '<span id="wallCurrent"><strong>Max Current Draw (Actual @220V) :</strong><small>' + data.actualCurrent_A.toFixed(2) + ' A</small></span>'
+        + '<span id="cabinetWeightActual"><strong>Total Wall Weight (Actual Cabinets) :</strong><small>' + formatNumber(data.actualWallWeight_unbuffered,1) + ' kg</small></span>';
       controlDiv.innerHTML = html;
 
-      // Visualization sizing
       const aspectRatio = data.finalW_mm / data.finalH_mm; const visualizationHeight = 300; const visGrid = document.getElementById('visGrid');
-      if (visualizationHeight * aspectRatio > 800){ visGrid.style.width = `800px`; visGrid.style.height = `${800 / aspectRatio}px`; }
-      else { visGrid.style.height = `${visualizationHeight}px`; visGrid.style.width = `${visualizationHeight * aspectRatio}px`; }
+      if (visualizationHeight * aspectRatio > 800){ visGrid.style.width = '800px'; visGrid.style.height = (800 / aspectRatio) + 'px'; }
+      else { visGrid.style.height = visualizationHeight + 'px'; visGrid.style.width = (visualizationHeight * aspectRatio) + 'px'; }
       visGrid.style.margin = '0 auto';
-      document.getElementById('visWidthLabel').textContent = `${finalW_M.toFixed(2)} m (W)`;
-      document.getElementById('visHeightLabel').textContent = `${finalH_M.toFixed(2)} m (H)`;
+      document.getElementById('visWidthLabel').textContent = finalW_M.toFixed(2) + ' m (W)';
+      document.getElementById('visHeightLabel').textContent = finalH_M.toFixed(2) + ' m (H)';
       const cabinetOverlay = document.getElementById('cabinetOverlay');
       cabinetOverlay.innerHTML='';
-      cabinetOverlay.style.gridTemplateColumns = `repeat(${data.numCabW}, 1fr)`;
-      cabinetOverlay.style.gridTemplateRows = `repeat(${data.numCabH}, 1fr)`;
-      for (let r=0;r<data.numCabH;r++){
-        for (let c=0;c<data.numCabW;c++){
+      cabinetOverlay.style.gridTemplateColumns = 'repeat(' + data.numCabW + ', 1fr)';
+      cabinetOverlay.style.gridTemplateRows = 'repeat(' + data.numCabH + ', 1fr)';
+      for (var r=0;r<data.numCabH;r++){
+        for (var c=0;c<data.numCabW;c++){
           const cell=document.createElement('div');
           cell.style.border='1px dashed rgba(13,71,161,0.4)'; cell.style.boxSizing='border-box';
           cabinetOverlay.appendChild(cell);
@@ -641,81 +653,76 @@
         e.textContent = 'ERROR: Please calculate the LED wall configuration first.'; e.classList.remove('hidden');
         e.scrollIntoView({ behavior:'smooth', block:'center' }); return;
       }
-      const { finalW_M, finalH_M, finalW_FT, finalH_FT } = calculateDimensions(data);
-      const { jsPDF } = window.jspdf; const doc = new jsPDF('p','mm','a4');
+      const dims = calculateDimensions(data);
+      const jsPDFObj = window.jspdf.jsPDF;
+      const doc = new jsPDFObj('p','mm','a4');
       let y = 10; const margin = 15; const lineHeight = 7; const pageW = doc.internal.pageSize.getWidth();
       const primaryColor = [13,71,161]; const secondaryColor = [183,28,28];
 
-      // Header
-      doc.setFontSize(18); doc.setTextColor(...primaryColor);
+      doc.setFontSize(18); doc.setTextColor(primaryColor[0],primaryColor[1],primaryColor[2]);
       doc.text('PeopleLink LED Video Wall Technical Summary', pageW/2, y, {align:'center'});
       y += lineHeight; doc.setFontSize(8); doc.setTextColor(100,100,100);
-      doc.text(`Generated: ${new Date().toLocaleDateString()} | Model: ${data.productName}`, pageW/2, y, {align:'center'});
+      doc.text('Generated: ' + new Date().toLocaleDateString() + ' | Model: ' + data.productName, pageW/2, y, {align:'center'});
       y += lineHeight * 1.5;
 
-      // 1. Wall Performance
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('1. Wall Performance & Dimensions', margin, y); y+=lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('1. Wall Performance & Dimensions', margin, y); y+=lineHeight;
       const performanceData = [
-        ['Actual Final Dimensions (WxH) :', `(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) — ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m`],
-        ['Actual Final Resolution (WxH) :', `${data.finalResW} x ${data.finalResH}`],
+        ['Actual Final Dimensions (WxH) :', '(' + dims.finalW_FT.toFixed(2) + 'ft x ' + dims.finalH_FT.toFixed(2) + 'ft) — ' + dims.finalW_M.toFixed(2) + 'm x ' + dims.finalH_M.toFixed(2) + 'm'],
+        ['Actual Final Resolution (WxH) :', data.finalResW + ' x ' + data.finalResH],
         ['Aspect Ratio :', data.aspectRatioText],
-        ['Final Diagonal Size :', `${data.finalDiagonal_in.toFixed(1)} inches`],
-        ['Total Pixels / Area :', `${formatLargeNumber(data.totalPixels)} / ${data.finalArea_m2.toFixed(2)} m²`],
+        ['Final Diagonal Size :', data.finalDiagonal_in.toFixed(1) + ' inches'],
+        ['Total Pixels / Area :', formatLargeNumber(data.totalPixels) + ' / ' + data.finalArea_m2.toFixed(2) + ' m²'],
         ['Viewing Distance (min / comfort / ideal) :', 
-          `${data.minView_m.toFixed(2)} m / ${data.comfortView_m.toFixed(2)} m / ${data.idealView_m.toFixed(2)} m  —  ${data.minView_ft.toFixed(1)} ft / ${data.comfortView_ft.toFixed(1)} ft / ${data.idealView_ft.toFixed(1)} ft`]
+          data.minView_m.toFixed(2) + ' m / ' + data.comfortView_m.toFixed(2) + ' m / ' + data.idealView_m.toFixed(2) + ' m  —  ' + data.minView_ft.toFixed(1) + ' ft / ' + data.comfortView_ft.toFixed(1) + ' ft / ' + data.idealView_ft.toFixed(1) + ' ft']
       ];
       doc.autoTable({ startY: y+2, body: performanceData, margin:{left:margin,right:margin,bottom:0}, theme:'striped', headStyles:{ fillColor: primaryColor, halign:'center' }, styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
       y = doc.lastAutoTable.finalY + lineHeight;
 
-      // 2. Physical & Cabinet Specs
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('2. Physical & Cabinet Specifications', margin, y); y+=lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('2. Physical & Cabinet Specifications', margin, y); y+=lineHeight;
       const specsData = [
-        ['Pixel Pitch :', `${data.pixelPitch_mm} mm`],
-        ['Cabinet Dimensions (W x H) :', `${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm`],
-        ['Cabinet Pixels (W x H) :', `${data.cabPixW} x ${data.cabPixH}`],
-        ['Cabinet Matrix (W x H) :', `${data.numCabW} x ${data.numCabH}`],
-        ['Total Cabinets Required :', `${data.totalCabinets}`],
-        ['Total Modules Required :', `${data.totalModules}`],
-        ['Brightness Range :', data.nits_range ? `${data.nits_range} cd/m²` : 'N/A']
+        ['Pixel Pitch :', data.pixelPitch_mm + ' mm'],
+        ['Cabinet Dimensions (W x H) :', data.cabinetW_mm + 'mm x ' + data.cabinetH_mm + 'mm'],
+        ['Cabinet Pixels (W x H) :', data.cabPixW + ' x ' + data.cabPixH],
+        ['Cabinet Matrix (W x H) :', data.numCabW + ' x ' + data.numCabH],
+        ['Total Cabinets Required :', '' + data.totalCabinets],
+        ['Total Modules Required :', '' + data.totalModules],
+        ['Brightness Range :', data.nits_range ? (data.nits_range + ' cd/m²') : 'N/A']
       ];
       doc.autoTable({ startY: y+2, body: specsData, margin:{left:margin,right:margin,bottom:0}, theme:'plain', styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
       y = doc.lastAutoTable.finalY + lineHeight;
 
-      // 3. Control & Connections
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('3. Control System & Connections', margin, y); y+=lineHeight;
-      let controllerData = [
-        ['Controller/Processor Model :', `${data.controllerName} (${data.controllerType})`],
-        ['Total Receiving Cards :', `${data.totalRecCards}`],
-        ['Long Ethernet Ports/Runs : (Controller to Wall)', `${data.requiredPorts}`],
-        ['Short Ethernet Cables : (Between Cabinets)', `${data.requiredShortEthernet}`]
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('3. Control System & Connections', margin, y); y+=lineHeight;
+      var controllerData = [
+        ['Controller/Processor Model :', data.controllerName + ' (' + data.controllerType + ')'],
+        ['Total Receiving Cards :', '' + data.totalRecCards],
+        ['Long Ethernet Ports/Runs : (Controller to Wall)', '' + data.requiredPorts],
+        ['Short Ethernet Cables : (Between Cabinets)', '' + data.requiredShortEthernet]
       ];
-      if (data.controllerType.includes('Modular')){
+      if (data.controllerType.indexOf('Modular')>-1){
         controllerData.push(['Modular Splicer Frame :', data.splicerSolution || 'Not Specified']);
-        controllerData.push(['Output Card (Sending) :', `${data.requiredSendCards} x ${data.outputCardModel}`]);
-        controllerData.push(['Input Card (User Config) :', `${data.inputCardQty} x ${data.inputCardModel}`]);
+        controllerData.push(['Output Card (Sending) :', data.requiredSendCards + ' x ' + data.outputCardModel]);
+        controllerData.push(['Input Card (User Config) :', data.inputCardQty + ' x ' + data.inputCardModel]);
       }
       doc.autoTable({ startY: y+2, body: controllerData, margin:{left:margin,right:margin,bottom:0}, theme:'striped', styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
       y = doc.lastAutoTable.finalY + lineHeight;
 
-      // 4. Power & Weight
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('4. Power and Weight', margin, y); y+=lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('4. Power and Weight', margin, y); y+=lineHeight;
       const powerWeightData = [
-        ['Actual Max Power Consumption (W) :', `${formatNumber(data.actualPower_W_unbuffered,0)} W`],
-        ['Design Max Power Consumption (W) :', `${formatNumber(data.maxPower_W,0)} W`],
-        ['Max Current Draw (Actual @220V) :', `${data.actualCurrent_A.toFixed(2)} A`],
-        ['Max Current Draw (Design @220V) :', `${data.maxCurrent_A_buffered.toFixed(2)} A`],
-        ['Actual Wall Weight (kg) :', `${formatNumber(data.actualWallWeight_unbuffered,1)} kg`],
-        ['Total Wall Weight (Installation Design) :', `${formatNumber(data.totalWallWeight_buffered,1)} kg`]
+        ['Actual Max Power Consumption (W) :', formatNumber(data.actualPower_W_unbuffered,0) + ' W'],
+        ['Design Max Power Consumption (W) :', formatNumber(data.maxPower_W,0) + ' W'],
+        ['Max Current Draw (Actual @220V) :', data.actualCurrent_A.toFixed(2) + ' A'],
+        ['Max Current Draw (Design @220V) :', data.maxCurrent_A_buffered.toFixed(2) + ' A'],
+        ['Actual Wall Weight (kg) :', formatNumber(data.actualWallWeight_unbuffered,1) + ' kg'],
+        ['Total Wall Weight (Installation Design) :', formatNumber(data.totalWallWeight_buffered,1) + ' kg']
       ];
       doc.autoTable({ startY: y+2, body: powerWeightData, margin:{left:margin,right:margin,bottom:0}, theme:'plain', styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
       y = doc.lastAutoTable.finalY + lineHeight * 2;
 
-      // 5. BOQ (with spares & no duplicates)
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('5. Bill of Quantities (BOQ)', margin, y); y+=lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('5. Bill of Quantities (BOQ)', margin, y); y+=lineHeight;
       const sparesModules = Math.max(2, Math.ceil(data.totalModules * 0.03));
       const sparesRcv = Math.max(2, Math.ceil(data.totalRecCards * 0.02));
       const sparesPSU = Math.max(2, Math.ceil(data.totalCabinets * 0.02));
-      let boqData = [
+      var boqData = [
         ['LED Cabinets', data.productName, data.totalCabinets, 'PCS'],
         ['Controller/Processor', data.controllerName, 1, 'PCS'],
         ['Receiving Cards (R-Card)', 'Embedded in Cabinet', data.totalRecCards, 'PCS'],
@@ -730,16 +737,15 @@
         ['Installation / Configuration', 'Structure, setup & commissioning', 1, 'LS'],
         ['Transport / Logistics', 'Shipping/freight to site', 1, 'LS']
       ];
-      if (data.controllerType.includes('Modular')){
+      if (data.controllerType.indexOf('Modular')>-1){
         boqData.push(['Modular Splicer Frame', data.splicerSolution || 'Not Specified', 1, 'PCS']);
         boqData.push(['Output Card (Sending)', data.outputCardModel, data.requiredSendCards, 'PCS']);
         boqData.push(['Input Card (User Config)', data.inputCardModel, data.inputCardQty, 'PCS']);
       }
-      doc.autoTable({ startY: y+2, head: [['Item','Description / Model','Quantity','Unit']], body: boqData, margin:{left:margin,right:margin,bottom:0}, theme:'grid', headStyles:{ fillColor: primaryColor, halign:'center' }, styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 2:{ halign:'right' }, 3:{ halign:'center' } } });
+      doc.autoTable({ startY: y+2, head: [['Item','Description / Model','Quantity','Unit']], body: boqData, margin:{left:margin,right:margin,bottom:0}, theme:'grid', headStyles:{ fillColor: [13,71,161], halign:'center' }, styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 2:{ halign:'right' }, 3:{ halign:'center' } } });
       y = doc.lastAutoTable.finalY + lineHeight * 2;
 
-      // 6. Terms
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('6. Standard Terms & Conditions for Active LED', margin, y); y+=lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('6. Standard Terms & Conditions for Active LED', margin, y); y+=lineHeight;
       doc.setFontSize(8); doc.setTextColor(50,50,50);
       const terms = [
         '1. Validity: Quotation remains valid for 30 days from the issue date.',
@@ -752,22 +758,26 @@
         '8. Delivery & Access: Safe site access, storage space, and lifting equipment (if needed) to be arranged by client.'
       ];
       const pageW2 = doc.internal.pageSize.getWidth();
-      terms.forEach(term=>{ const split = doc.splitTextToSize(term, pageW2 - 2*margin); doc.text(split, margin, y); y += (split.length * 3.5) + 1; });
+      terms.forEach(function(term){
+        const split = doc.splitTextToSize(term, pageW2 - 2*margin);
+        doc.text(split, margin, y);
+        y += (split.length * 3.5) + 1;
+      });
       y += lineHeight * 0.5;
       if (y > doc.internal.pageSize.getHeight() - margin - 20){ doc.addPage(); y = margin; }
       doc.setFontSize(7); doc.setTextColor(100,100,100);
-      doc.text(`Note: Design Power/Weight include a ${MARGIN_PERCENT_TEXT} safety margin for planning.`, margin, y, { maxWidth: pageW2 - 2*margin });
+      doc.text('Note: Design Power/Weight include a ' + MARGIN_PERCENT_TEXT + ' safety margin for planning.', margin, y);
       doc.setFontSize(8); doc.setTextColor(176,196,222);
       doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala', pageW2/2, doc.internal.pageSize.getHeight()-10, {align:'center'});
 
-      doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
+      doc.save('PeopleLink_LED_Config_' + data.finalResW + 'x' + data.finalResH + '_BOQ.pdf');
     }
 
     // Init
-    document.addEventListener('DOMContentLoaded', ()=>{
+    document.addEventListener('DOMContentLoaded', function(){
       toggleMeasurementFields();
       populateModalControllers(); populateModalOutputCards(); populateModalInputCards();
-      window.addEventListener('click', (evt)=>{
+      window.addEventListener('click', function(evt){
         const modal = document.getElementById('controllerModal');
         if (evt.target === modal){ closeControllerModal(); }
       });
