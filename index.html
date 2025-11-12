@@ -101,7 +101,7 @@
 <body>
   <div class="main-wrapper">
     <div class="input-panel" id="formContainer">
-      <h2>LED Video Wall Configuration Calculator <span class="tag" /span></h2>
+      <h2>LED Video Wall Configuration Calculator</h2>
       <div id="enteredValuesDisplay" class="hidden">
         <span id="enteredSummaryText"></span><br />
         Actual Final Aspect Ratio: <strong><span id="aspectRatioValue">--</span></strong>
@@ -617,4 +617,5 @@
       document.getElementById('numCabinets').innerHTML = '<strong>Total Cabinets (W x H) :</strong><small>' + data.totalCabinets + ' (' + data.numCabW + ' x ' + data.numCabH + ')</small>';
       document.getElementById('totalModules').innerHTML = '<strong>Total Modules Required :</strong><small>' + data.totalModules + ' (' + data.modulesPerCab + ' per cabinet)</small>';
       document.getElementById('finalDiagonal').innerHTML = '<strong>Final Diagonal Size :</strong><small>' + data.finalDiagonal_in.toFixe
+
 
