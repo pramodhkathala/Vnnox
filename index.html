@@ -9,83 +9,78 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
-      --bg: #eef2f7;
+      --bg: #eef1f8;
       --card: #ffffff;
-      --ink: #111827;
-      --ink-2: #475569;
+      --ink: #1c2738;
+      --ink-2: #444;
       --brand: #0d47a1;
       --accent: #b71c1c;
-      --muted: #f8fafc;
+      --muted: #f7f9fc;
       --ok: #1b5e20;
-      --ring: rgba(13,71,161,.15);
     }
     html, body { height: 100%; }
-    body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; background: radial-gradient(1200px 600px at 20% -10%, #f3f6fb 0%, var(--bg) 60%); color: var(--ink); font-size: 14px; }
+    body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; background: var(--bg); color: var(--ink); font-size: 14px; }
     .main-wrapper { max-width: 1200px; margin: auto; }
-
-    h2 { text-align: center; color: var(--brand); margin: 0 0 30px; font-weight: 700; font-size: 1.9em; letter-spacing:.2px; display: flex; align-items: center; justify-content: center; gap:10px; }
+    h2 { text-align: center; color: var(--brand); margin: 0 0 30px; font-weight: 700; font-size: 1.8em; display: flex; align-items: center; justify-content: center; }
 
     /* Input/Form */
-    .input-panel { background: var(--card); padding: 28px; border-radius: 16px; box-shadow: 0 10px 30px rgba(2,6,23,.06), 0 2px 8px rgba(2,6,23,.04); transition: all .5s ease; border:1px solid #e5e7eb; }
-    .input-panel.minimized { height: 120px; padding-top: 15px; padding-bottom: 10px; opacity: .96; overflow: hidden; background: var(--muted); }
+    .input-panel { background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: all 0.6s ease-out; }
+    .input-panel.minimized { height: 120px; padding-top: 15px; padding-bottom: 10px; opacity: 0.95; overflow: hidden; background: var(--muted); }
     .input-panel.minimized > *:not(h2):not(#enteredValuesDisplay):not(.back-btn-placeholder) { opacity: 0; max-height: 0; overflow: hidden; pointer-events: none; }
     .input-panel.minimized h2 { margin-bottom: 5px; }
 
     .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 30px; }
     .input-group { margin-top: 0; }
-    label { display: block; margin-bottom: 6px; font-weight: 600; color: var(--ink-2); }
-    select, input[type="number"], input[type="text"] { width: 100%; padding: 12px 14px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 10px; box-sizing: border-box; transition: border-color .2s, box-shadow .2s, transform .05s; background: #fff; }
-    select:focus, input:focus { border-color: var(--brand); box-shadow: 0 0 0 4px var(--ring); outline: none; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; color: var(--ink-2); }
+    select, input[type="number"], input[type="text"] { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; background: #fff; }
+    select:focus, input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.2); outline: none; }
 
     /* Buttons */
-    .btn { background-color: var(--brand); color: white; padding: 14px; border: none; border-radius: 12px; font-size: 16px; width: 100%; cursor: pointer; transition: background-color .15s, transform .1s, box-shadow .15s; font-weight: 600; box-shadow: 0 10px 20px rgba(13,71,161,.15); }
-    .btn:hover { background-color: #165ac9; transform: translateY(-1px); box-shadow: 0 12px 22px rgba(13,71,161,.22); }
-    .btn.gray { background-color: #6b7280; box-shadow:none; }
-    .btn.gray:hover { background-color: #4b5563; }
+    .btn { background-color: var(--brand); color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; width: 100%; cursor: pointer; transition: background-color 0.2s, transform 0.15s; font-weight: 600; }
+    .btn:hover { background-color: #1565c0; transform: translateY(-1px); }
+    .btn.gray { background-color: #6c757d; }
+    .btn.gray:hover { background-color: #5a6268; }
     .btn.ok { background-color: var(--ok); }
     .btn.ok:hover { background-color: #2e7d32; }
 
     /* Helper text */
-    .tag { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius:999px; background:#eef2ff; color:#3730a3; font-size:12px; font-weight:600; }
     .hidden { display: none !important; }
-    .error-message { color: var(--accent); font-weight: 700; text-align: center; margin-top: 15px; padding: 12px 15px; background: #ffebee; border: 2px solid var(--accent); border-radius: 10px; }
+    .error-message { color: var(--accent); font-weight: 700; text-align: center; margin-top: 15px; padding: 12px 15px; background: #ffebee; border: 2px solid var(--accent); border-radius: 8px; }
     #enteredValuesDisplay { text-align: center; font-size: 0.95em; color: #444; margin-bottom: 15px; line-height: 1.4; display: none; }
     .input-panel.minimized #enteredValuesDisplay { display: block !important; }
 
     /* Output */
-    .visualization { background: var(--card); padding: 28px; border-radius: 16px; box-shadow: 0 10px 30px rgba(2,6,23,.06), 0 2px 8px rgba(2,6,23,.04); opacity: 0; max-height: 0; overflow-y: hidden; transition: opacity .5s ease, max-height .8s ease; margin-top: 30px; border:1px solid #e5e7eb; }
-    .visualization.visible { opacity: 1; max-height: 2200px; }
-    .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 16px; }
+    .visualization { background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); opacity: 0; max-height: 0; overflow-y: hidden; transition: opacity 0.6s ease-out, max-height 1s ease-out; margin-top: 30px; }
+    .visualization.visible { opacity: 1; max-height: 2000px; }
+    .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
 
-    .vis-box, .details-box { border: 1px solid #e5e7eb; padding: 18px; border-radius: 14px; background: linear-gradient(180deg,#fbfdff, #f7f9fc); }
-    .details-box h4 { margin: 0 0 12px; color: var(--brand); border-bottom: 1px dashed #e5e7eb; padding-bottom: 8px; font-size: 1.06em; display:flex; justify-content:space-between; align-items:center; }
+    .vis-box, .details-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: var(--muted); }
+    .details-box h4 { margin: 0 0 15px; color: var(--brand); border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; font-size: 1.1em; }
 
-    .vis-details { display: grid; grid-template-columns: 1fr; gap: 8px; font-size: 0.95em; color: #111827; }
-    .vis-details span { display: flex; align-items: center; line-height: 1.4; padding-bottom: 8px; border-bottom: 1px dotted #e5e7eb; }
-    .vis-details strong { color: #111827; font-weight: 600; min-width: 260px; text-align: left; margin-right: 16px; }
-    .vis-details small { font-size: 0.98em; color: #0f172a; font-weight: 700; }
+    .vis-details { display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 0.95em; color: #333; }
+    .vis-details span { display: flex; align-items: center; line-height: 1.4; padding-bottom: 6px; border-bottom: 1px dotted #e0e0e0; }
+    .vis-details strong { color: #333; font-weight: 500; min-width: 250px; text-align: left; margin-right: 15px; }
+    .vis-details small { font-size: 1em; color: var(--accent); font-weight: 700; }
 
     .edit-btn { background: none; border: none; color: var(--brand); font-size: 0.9em; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 10px; }
 
-    .vis-content { position: relative; width: 100%; margin-bottom: 12px; padding: 26px 45px 10px 0; box-sizing: border-box; }
-    .grid { position: relative; width: 100%; border: 3px solid var(--accent); min-height: 120px; overflow: hidden; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-radius: 10px; }
+    .vis-content { position: relative; width: 100%; margin-bottom: 20px; padding-top: 35px; padding-right: 45px; padding-bottom: 10px; box-sizing: border-box; }
+    .grid { position: relative; width: 100%; border: 3px solid var(--accent); min-height: 100px; overflow: hidden; background: linear-gradient(135deg, #e3f2fd, #bbdefb); }
     #cabinetOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box; pointer-events: none; z-index: 5; display: grid; }
-    .dimension-label { position: absolute; color: var(--accent); background: rgba(255,255,255,0.96); padding: 4px 7px; font-size: 0.9em; border-radius: 6px; font-weight: 800; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .dim-top { top: 6px; left: 50%; transform: translateX(-50%); }
+    .dimension-label { position: absolute; color: var(--accent); background: rgba(255,255,255,0.95); padding: 3px 6px; font-size: 0.9em; border-radius: 3px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .dim-top { top: 5px; left: 50%; transform: translateX(-50%); }
     .dim-right { top: 50%; right: 10px; transform: translateY(-50%) rotate(90deg); transform-origin: center; }
 
-    #downloadPdfLink { grid-column: 1 / -1; margin-top: 6px; text-align: center; cursor: pointer; color: var(--ok); text-decoration: underline; padding: 8px 0; font-weight: 700; }
+    #downloadPdfLink { grid-column: 1 / -1; margin-top: 15px; text-align: center; cursor: pointer; color: var(--ok); text-decoration: underline; padding: 8px 0; font-weight: 600; }
     #downloadPdfLink:hover { color: #2e7d32; }
 
-    .warn { color:#b45309; background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:6px 10px; font-weight:600; }
+    footer { text-align: center; color: #b0c4de; font-size: 12px; margin-top: 24px; }
 
-    footer { text-align: center; color: #9aa9c6; font-size: 12px; margin-top: 24px; }
-
-    /* Modal */
+    /* Modal (missing earlier) */
     .modal { position: fixed; z-index: 1000; inset: 0; background: rgba(0,0,0,0.4); display: none; }
     .modal.hidden { display: none; }
     .modal:not(.hidden) { display: block; }
-    .modal-content { background: #fff; margin: 5% auto; padding: 24px; border-radius: 14px; width: 90%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); border:1px solid #e5e7eb; }
+    .modal-content { background: #fff; margin: 5% auto; padding: 24px; border-radius: 10px; width: 90%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 16px; }
     .close-btn { background: none; border: 0; font-size: 28px; color: #888; cursor: pointer; }
     .close-btn:hover { color: #000; }
@@ -96,25 +91,12 @@
 
     /* Responsive */
     @media (max-width: 900px) { .input-grid, .output-grid, .modal-grid { grid-template-columns: 1fr; } }
-
-    /* ===== Animations ===== */
-    @keyframes popIn { from { transform: scale(.85); opacity: 0 } to { transform: scale(1); opacity: 1 } }
-    @keyframes fadeUp { from { transform: translateY(6px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-    @keyframes bgPan { 0% { background-position: 0% 50% } 100% { background-position: 100% 50% } }
-    @keyframes pulseLabel { 0%,100% { box-shadow: 0 0 0 0 rgba(183,28,28,.0) } 50% { box-shadow: 0 0 0 6px rgba(183,28,28,.08) } }
-
-    .cabinet-tile { animation: popIn .35s ease-out both; will-change: transform, opacity; }
-    .visualization.visible .details-box { animation: fadeUp .45s both; }
-    .visualization.visible .details-box:nth-of-type(2){ animation-delay: .08s; }
-    .grid { background-size: 200% 200%; animation: bgPan 18s linear infinite; }
-    #visGrid.ready .dimension-label { opacity: 1; }
-    .dimension-label { opacity: 0; transition: opacity .5s ease .15s; animation: pulseLabel 2.4s ease 1.2s 2; }
   </style>
 </head>
 <body>
   <div class="main-wrapper">
     <div class="input-panel" id="formContainer">
-      <h2>LED Video Wall Configuration Calculator <span class="tag" title="V16">V16</span></h2>
+      <h2>LED Video Wall Configuration Calculator</h2>
       <div id="enteredValuesDisplay" class="hidden">
         <span id="enteredSummaryText"></span><br />
         Actual Final Aspect Ratio: <strong><span id="aspectRatioValue">--</span></strong>
@@ -206,15 +188,12 @@
         </div>
 
         <div class="details-box">
-          <h4>
-            Control System Requirements
-            <button class="edit-btn" onclick="openControllerModal()">Edit/View Components ⚙️</button>
-          </h4>
+          <h4>Control System Requirements <button class="edit-btn" onclick="openControllerModal()">Edit/View Components ⚙️</button></h4>
           <div class="vis-details" id="controlSystemDetails"></div>
         </div>
       </div>
 
-      <div class="vis-box" style="margin-top: 8px;">
+      <div class="vis-box" style="margin-top: 30px;">
         <h4>Physical Wall Visualization</h4>
         <div class="vis-content">
           <div class="grid" id="visGrid">
@@ -270,7 +249,7 @@
         </div>
 
         <div class="modal-disclaimer">
-          <p><strong>Note:</strong> Edit input/output card models/quantities as required. The solution regenerates based on total pixels and the <em>Min Long Ports</em> rule. Default input card qty is 2 × 4K.</p>
+          <p><strong>Note:</strong> Edit input/output card models/quantities as required. The solution regenerates based on total pixels and the <em>Max Ports per Output Card</em> you select. Default input card quantity is 2 × 4K.</p>
         </div>
 
         <button class="btn ok" onclick="applyModalChanges()">Apply Changes & Recalculate</button>
@@ -307,7 +286,7 @@
       outdoor_100:{ name: "PeopleLink SMD Outdoor (10.0mm)", pitch_mm: 10.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 96, cabPixH: 96, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }
     };
 
-    // ===== Controllers =====
+    // ===== Controllers ===== (remove numeric separators for compatibility)
     const CONTROLLER_MODELS = [
       { name: "TB40",            type: "Multimedia Player",   ports: 2,  maxPixels: 1300000,  maxW: 10240, maxH: 8192,  priority: 1 },
       { name: "TB60",            type: "Multimedia Player",   ports: 4,  maxPixels: 2300000,  maxW: 4096,  maxH: 4096,  priority: 2 },
@@ -316,11 +295,11 @@
       { name: "VX1000 Pro / DSP1000 Pro", type: "All-in-One Processor", ports: 10, maxPixels: 6500000,  maxW: 10240, maxH: 8192, priority: 5 },
       { name: "4K Prime",       type: "All-in-One Processor", ports: 16, maxPixels: 10400000, maxW: 16384, maxH: 8192, priority: 6 },
       { name: "4K Prime Pro",   type: "All-in-One Processor", ports: 20, maxPixels: 13000000, maxW: 16384, maxH: 8192, priority: 7 },
-      { name: "H2 (2U)",        type: "Modular Splicer",      ports: 20, maxPixels: 26000000, maxW: 16384, maxH: 8192, priority: 8, slots: 8 },
-      { name: "H5 (5U)",        type: "Modular Splicer",      ports: 20, maxPixels: 39000000, maxW: 16384, maxH: 8192, priority: 9, slots: 16 },
-      { name: "H9 (9U)",        type: "Modular Splicer",      ports: 20, maxPixels: 65000000, maxW: 16384, maxH: 8192, priority: 10, slots: 32 },
-      { name: "H15 (15U)",      type: "Modular Splicer",      ports: 20, maxPixels: 130000000, maxW: 16384, maxH: 8192, priority: 11, slots: 64 },
-      { name: "H20 (20U)",      type: "Modular Splicer",      ports: 20, maxPixels: 260000000, maxW: 16384, maxH: 8192, priority: 12, slots: 80 }
+      { name: "H2 (2U)",        type: "Modular Splicer",      ports: 20, maxPixels: 26000000, maxW: 16384, maxH: 8192, priority: 8 },
+      { name: "H5 (5U)",        type: "Modular Splicer",      ports: 20, maxPixels: 39000000, maxW: 16384, maxH: 8192, priority: 9 },
+      { name: "H9 (9U)",        type: "Modular Splicer",      ports: 20, maxPixels: 65000000, maxW: 16384, maxH: 8192, priority: 10 },
+      { name: "H15 (15U)",      type: "Modular Splicer",      ports: 20, maxPixels: 130000000, maxW: 16384, maxH: 8192, priority: 11 },
+      { name: "H20 (20U)",      type: "Modular Splicer",      ports: 20, maxPixels: 260000000, maxW: 16384, maxH: 8192, priority: 12 }
     ].sort(function(a,b){ return a.priority - b.priority; });
 
     const H_SERIES_DEFAULTS = {
@@ -367,7 +346,7 @@
       CONTROLLER_MODELS.forEach(function(c){
         const opt = document.createElement('option');
         opt.value = c.name;
-        opt.textContent = c.name + " (" + c.type + ", " + formatLargeNumber(c.maxPixels) + " max px, " + c.ports + " ports)";
+        opt.textContent = c.name + " (" + c.type + ", " + formatLargeNumber(c.maxPixels) + " max px)";
         select.appendChild(opt);
       });
     }
@@ -405,7 +384,6 @@
       populateModalInputCards();
       const suggestedControllerName = finalCalculationData.controllerOverrideName || (finalCalculationData.controllerName ? finalCalculationData.controllerName.split('(')[0].trim() : '');
       const controllerSelect = document.getElementById('modalControllerModel');
-      if (controllerSelect.querySelector('option[value="'+suggestedControllerName+'"]').){}
       if (controllerSelect.querySelector('option[value="'+suggestedControllerName+'"]')) controllerSelect.value = suggestedControllerName;
       document.getElementById('modalSplicerSolution').value = finalCalculationData.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME;
 
@@ -439,22 +417,21 @@
       closeControllerModal(); showVisualization();
     }
 
-    // Select the smallest model that meets: pixel capacity, resolution bounds, and MIN PORTS
-    function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey, minPortsRequired, inputCardQty, outputCardPorts){
-      function fitsNonModular(c){ return c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH && c.ports>=minPortsRequired; }
-      function fitsModular(c, slotsNeeded){ return c.type==="Modular Splicer" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH && (c.slots||0) >= slotsNeeded; }
+    function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey){
       const isOutdoor = productKey.indexOf('outdoor')===0;
       const isSmallIndoor = totalPixels < 1500000;
-      const requiredOutputCards = Math.max(1, Math.ceil(minPortsRequired / (outputCardPorts||20)));
-      const inQty = inputCardQty || 2;
-      const totalSlotsNeeded = requiredOutputCards + inQty; // simple slot model: inputs + outputs
-
       var suggested = null;
-      if (isOutdoor || isSmallIndoor){ suggested = CONTROLLER_MODELS.find(function(c){ return c.type==="Multimedia Player" && fitsNonModular(c); }); }
-      if (!suggested){ suggested = CONTROLLER_MODELS.find(function(c){ return c.type==="All-in-One Processor" && fitsNonModular(c); }); }
-      if (!suggested){ suggested = CONTROLLER_MODELS.find(function(c){ return c.name.indexOf('4K Prime')>-1 && fitsNonModular(c); }); }
+      if (isOutdoor || isSmallIndoor){
+        suggested = CONTROLLER_MODELS.find(function(c){ return c.type==="Multimedia Player" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; });
+      }
       if (!suggested){
-        const mods = CONTROLLER_MODELS.filter(function(c){ return fitsModular(c, totalSlotsNeeded); }).sort(function(a,b){ return a.maxPixels-b.maxPixels; });
+        suggested = CONTROLLER_MODELS.find(function(c){ return c.type==="All-in-One Processor" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; });
+      }
+      if (!suggested){
+        suggested = CONTROLLER_MODELS.find(function(c){ return c.name.indexOf('4K Prime')>-1 && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; });
+      }
+      if (!suggested){
+        const mods = CONTROLLER_MODELS.filter(function(c){ return c.type==="Modular Splicer" && c.maxPixels>=totalPixels && c.maxW>=finalResW && c.maxH>=finalResH; }).sort(function(a,b){ return a.maxPixels-b.maxPixels; });
         suggested = mods[0] || CONTROLLER_MODELS[CONTROLLER_MODELS.length-1];
       }
       return suggested;
@@ -528,19 +505,13 @@
       const ratioGCD = gcd(finalResW, finalResH); const aspectRatioText = (finalResW/ratioGCD) + ':' + (finalResH/ratioGCD);
       const finalDiagonal_mm = Math.sqrt(finalW_mm*finalW_mm + finalH_mm*finalH_mm); const finalDiagonal_in = finalDiagonal_mm / MM_PER_INCH;
 
-      // Viewing distance rule (per your requirement): meters ≈ pixel pitch in mm. Comfort = 1.5×, Ideal = 2×
-      const minView_m = details.pitch_mm;              // 2.5mm -> 2.5m, 10mm -> 10m
-      const comfortView_m = details.pitch_mm * 1.5;    // more relaxed viewing
-      const idealView_m = details.pitch_mm * 2.0;      // presentation comfort
-      const minView_ft = minView_m * METER_TO_FEET;    // convert meters to feet
+      // Viewing distance rule (revised): min ≈ 1× pitch (m); comfort ≈ 2×; ideal ≈ 3×
+      const minView_m = details.pitch_mm / 1000;
+      const comfortView_m = (details.pitch_mm * 2) / 1000;
+      const idealView_m = (details.pitch_mm * 3) / 1000;
+      const minView_ft = minView_m * METER_TO_FEET;
       const comfortView_ft = comfortView_m * METER_TO_FEET;
       const idealView_ft = idealView_m * METER_TO_FEET;
-
-      // Ports by bandwidth vs. wiring topology (one long run per column)
-      const portsByBandwidth = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
-      const portsByColumns = numCabW; // one home-run per column (cannot stop mid-column)
-      const requiredLongPorts = Math.max(portsByBandwidth, portsByColumns);
-      const requiredShortEthernet = Math.max(0, totalCabinets - requiredLongPorts);
 
       // Power/Weight
       const actualPower_W_unbuffered = finalArea_m2 * details.maxPower_W_m2;
@@ -548,34 +519,21 @@
       const actualCurrent_A = actualPower_W_unbuffered / 220; const maxCurrent_A_buffered = maxPower_W_buffered / 220;
       const actualCabinetWeight_unbuffered = details.weight_kg * totalCabinets; const totalWallWeight_buffered = actualCabinetWeight_unbuffered * WEIGHT_BUFFER;
 
-      // Controller suggestion considers MIN PORTS now
-      const suggestedController = getSuggestedControllerModel(
-        totalPixels, finalResW, finalResH, productKey,
-        requiredLongPorts,
-        (finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY),
-        (finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS)
-      );
-      const controllerName = suggestedController.name;
-      const controllerType = suggestedController.type;
-
-      // If user previously overrode with a model that has too few ports, flag it
-      const override = finalCalculationData.controllerOverrideName || null;
-      let effectiveController = suggestedController;
-      let controllerWarning = '';
-      if (override){
-        const overModel = CONTROLLER_MODELS.find(m=>m.name===override) || suggestedController;
-        effectiveController = (overModel.ports >= requiredLongPorts && overModel.maxPixels>=totalPixels) ? overModel : suggestedController;
-        if (overModel.name!==effectiveController.name){ controllerWarning = `Selected ${overModel.name} has ${overModel.ports} ports < required ${requiredLongPorts}. Upgrading to ${suggestedController.name}.`; }
-      }
+      // Controller suggestion
+      const suggestedController = getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey);
+      const isHSeries = suggestedController.type.indexOf('Modular')>-1;
 
       const outputCardPorts = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
       const outputCardModel = finalCalculationData.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
       const inputCardModel = finalCalculationData.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
       const inputCardQty = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
-      const isHSeries = effectiveController.type.indexOf('Modular')>-1;
       const splicerSolution = finalCalculationData.splicerSolution || (isHSeries ? H_SERIES_DEFAULTS.SPLICER_NAME : 'N/A');
 
-      const requiredSendCards = Math.max(1, Math.ceil(requiredLongPorts / outputCardPorts));
+      const requiredPorts = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
+      const requiredSendCards = Math.max(1, Math.ceil(requiredPorts / outputCardPorts));
+      const requiredShortEthernet = Math.max(0, totalCabinets - requiredPorts);
+
+      const controllerName = finalCalculationData.controllerOverrideName || suggestedController.name;
 
       finalCalculationData = {
         productName: details.name,
@@ -593,12 +551,11 @@
         actualPower_W_unbuffered: actualPower_W_unbuffered, maxPower_W: maxPower_W_buffered,
         actualCurrent_A: actualCurrent_A, maxCurrent_A_buffered: maxCurrent_A_buffered,
         actualWallWeight_unbuffered: actualCabinetWeight_unbuffered, totalWallWeight_buffered: totalWallWeight_buffered,
-        controllerName: effectiveController.name, controllerType: effectiveController.type,
-        requiredPortsBandwidth: portsByBandwidth, requiredPortsByColumns: portsByColumns, requiredPorts: requiredLongPorts,
-        requiredShortEthernet: requiredShortEthernet,
+        controllerName: controllerName, controllerType: suggestedController.type,
+        requiredPorts: requiredPorts, requiredShortEthernet: requiredShortEthernet,
         outputCardPorts: outputCardPorts, outputCardModel: outputCardModel, requiredSendCards: requiredSendCards,
         inputCardModel: inputCardModel, inputCardQty: inputCardQty, splicerSolution: splicerSolution,
-        controllerWarning: controllerWarning
+        controllerOverrideName: finalCalculationData.controllerOverrideName || null
       };
       return finalCalculationData;
     }
@@ -630,72 +587,53 @@
       document.getElementById('finalDiagonal').innerHTML = '<strong>Final Diagonal Size :</strong><small>' + data.finalDiagonal_in.toFixed(1) + ' in</small>';
       document.getElementById('finalArea').innerHTML = '<strong>Final Area :</strong><small>' + data.finalArea_m2.toFixed(2) + ' m²</small>';
       document.getElementById('totalPixels').innerHTML = '<strong>Total Pixels :</strong><small>' + formatLargeNumber(data.totalPixels) + '</small>';
-      document.getElementById('viewingDistance').innerHTML = '<strong>Viewing Distance (min / comfort / ideal) :</strong><small>' +
-        minMaxStr(data.minView_m, data.comfortView_m, data.idealView_m, data.minView_ft, data.comfortView_ft, data.idealView_ft) + '</small>';
+      document.getElementById('viewingDistance').innerHTML =
+        '<strong>Viewing Distance (min / comfort / ideal) :</strong><small>' + data.minView_m.toFixed(2) + 'm / ' + data.comfortView_m.toFixed(2) + 'm / ' + data.idealView_m.toFixed(2) + 'm  —  ' + data.minView_ft.toFixed(1) + 'ft / ' + data.comfortView_ft.toFixed(1) + 'ft / ' + data.idealView_ft.toFixed(1) + 'ft</small>';
       document.getElementById('cabinetSize').innerHTML = '<strong>Cabinet Size (WxH) :</strong><small>' + data.cabinetW_mm + 'mm x ' + data.cabinetH_mm + 'mm</small>';
       document.getElementById('cabinetPixels').innerHTML = '<strong>Cabinet Pixels (WxH) :</strong><small>' + data.cabPixW + ' x ' + data.cabPixH + '</small>';
 
       const isHSeries = data.controllerType.indexOf('Modular')>-1;
-      const controlSystemDetailsDiv = document.getElementById('controlSystemDetails');
-      let htmlContent = '';
-      htmlContent += '<span style="grid-column:1/-1;font-weight:700;color:#0D47A1;border-bottom:1px solid #0D47A1;padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Control System Summary</span>';
-      htmlContent += '<span id="suggestedControllerModel"><strong>Controller/Processor Model ('+ data.controllerType +') :</strong><small>'+ data.controllerName +'</small></span>';
-      if (data.controllerWarning){ htmlContent += '<span class="warn">'+ data.controllerWarning +'</span>'; }
+      const controlDiv = document.getElementById('controlSystemDetails');
+      var html = ''
+        + '<span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Control System Summary</span>'
+        + '<span id="suggestedControllerModel"><strong>Controller/Processor Model (' + data.controllerType + ') :</strong><small>' + data.controllerName + '</small></span>';
       if (isHSeries){
-        htmlContent += '<div id="modularDetails" class="vis-details" style="grid-column:1/-1;gap:5px;border-top:1px solid #e0e0e0;padding-top:10px;margin-top:5px;">' +
-          '<span style="grid-column:1/-1;font-weight:700;color:#B71C1C;margin-bottom:5px;">Modular Components (H-Series)</span>' +
-          '<span id="splicerSolution"><strong>Splicer Frame/Solution :</strong><small>'+ (data.splicerSolution || 'N/A') +'</small></span>' +
-          '<span id="sendingCardModel"><strong>Output Card ('+ data.outputCardPorts +' ports/card) :</strong><small>'+ data.requiredSendCards +' x '+ data.outputCardModel +'</small></span>' +
-          '<span id="inputCardModel"><strong>Input Card (User Specified) :</strong><small>'+ data.inputCardQty +' x '+ data.inputCardModel +'</small></span>' +
-          '</div>';
+        html += ''
+          + '<div id="modularDetails" class="vis-details" style="grid-column:1/-1;gap:5px;border-top:1px solid #e0e0e0;padding-top:10px;margin-top:5px;">'
+          +   '<span style="grid-column:1/-1;font-weight:700;color:var(--accent);margin-bottom:5px;">Modular Components (H-Series)</span>'
+          +   '<span id="splicerSolution"><strong>Splicer Frame/Solution :</strong><small>' + (data.splicerSolution||'N/A') + '</small></span>'
+          +   '<span id="sendingCardModel"><strong>Output Card (' + data.outputCardPorts + ' ports/card) :</strong><small>' + data.requiredSendCards + ' x ' + data.outputCardModel + '</small></span>'
+          +   '<span id="inputCardModel"><strong>Input Card (User Specified) :</strong><small>' + data.inputCardQty + ' x ' + data.inputCardModel + '</small></span>'
+          + '</div>';
       }
-      htmlContent += '<span style="grid-column:1/-1;font-weight:700;color:#0D47A1;border-bottom:1px solid #0D47A1;padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Connection Summary</span>';
-      htmlContent += '<span id="requiredRecCards"><strong>Total Receiving Cards Required :</strong><small>'+ data.totalRecCards +'</small></span>';
-      htmlContent += '<span id="controllerLongPorts"><strong>Long Ethernet Ports/Runs :</strong><small>'+ data.requiredPorts +' (Max of bandwidth '+ data.requiredPortsBandwidth +' and columns '+ data.requiredPortsByColumns +') </small></span>';
-      htmlContent += '<span id="controllerShortPorts"><strong>Short Ethernet Cables :</strong><small>'+ data.requiredShortEthernet +' (Between Cabinets) </small></span>';
-      htmlContent += '<span style="grid-column:1/-1;font-weight:700;color:#0D47A1;border-bottom:1px solid #0D47A1;padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Power and Weight</span>';
-      htmlContent += '<span id="wallPowerActual"><strong>Max Power Consumption (Actual) :</strong><small>'+ formatNumber(data.actualPower_W_unbuffered, 0) +' W</small></span>';
-      htmlContent += '<span id="wallCurrent"><strong>Max Current Draw (Actual @220V) :</strong><small>'+ data.actualCurrent_A.toFixed(2) +' A</small></span>';
-      htmlContent += '<span id="cabinetWeightActual"><strong>Total Wall Weight (Actual Cabinets) :</strong><small>'+ formatNumber(data.actualWallWeight_unbuffered, 1) +' kg</small></span>';
-      controlSystemDetailsDiv.innerHTML = htmlContent;
+      html += ''
+        + '<span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Connection Summary</span>'
+        + '<span id="requiredRecCards"><strong>Total Receiving Cards Required :</strong><small>' + data.totalRecCards + '</small></span>'
+        + '<span id="controllerLongPorts"><strong>Long Ethernet Ports/Runs :</strong><small>' + data.requiredPorts + ' (Controller → Wall)</small></span>'
+        + '<span id="controllerShortPorts"><strong>Short Ethernet Cables :</strong><small>' + data.requiredShortEthernet + ' (Between Cabinets)</small></span>'
+        + '<span style="grid-column:1/-1;font-weight:700;color:var(--brand);border-bottom:1px solid var(--brand);padding-bottom:5px;margin-bottom:5px;margin-top:10px;">Power and Weight</span>'
+        + '<span id="wallPowerActual"><strong>Max Power Consumption (Actual) :</strong><small>' + formatNumber(data.actualPower_W_unbuffered,0) + ' W</small></span>'
+        + '<span id="wallCurrent"><strong>Max Current Draw (Actual @220V) :</strong><small>' + data.actualCurrent_A.toFixed(2) + ' A</small></span>'
+        + '<span id="cabinetWeightActual"><strong>Total Wall Weight (Actual Cabinets) :</strong><small>' + formatNumber(data.actualWallWeight_unbuffered,1) + ' kg</small></span>';
+      controlDiv.innerHTML = html;
 
-      // Visualization box sizing
-      const aspectRatio = data.finalW_mm / data.finalH_mm;
-      const visualizationHeight = 300;
-      const visGrid = document.getElementById('visGrid');
-      if (visualizationHeight * aspectRatio > 800) {
-        visGrid.style.width = '800px';
-        visGrid.style.height = (800 / aspectRatio) + 'px';
-      } else {
-        visGrid.style.height = visualizationHeight + 'px';
-        visGrid.style.width = (visualizationHeight * aspectRatio) + 'px';
-      }
+      const aspectRatio = data.finalW_mm / data.finalH_mm; const visualizationHeight = 300; const visGrid = document.getElementById('visGrid');
+      if (visualizationHeight * aspectRatio > 800){ visGrid.style.width = '800px'; visGrid.style.height = (800 / aspectRatio) + 'px'; }
+      else { visGrid.style.height = visualizationHeight + 'px'; visGrid.style.width = (visualizationHeight * aspectRatio) + 'px'; }
       visGrid.style.margin = '0 auto';
-
       document.getElementById('visWidthLabel').textContent = finalW_M.toFixed(2) + ' m (W)';
       document.getElementById('visHeightLabel').textContent = finalH_M.toFixed(2) + ' m (H)';
-
       const cabinetOverlay = document.getElementById('cabinetOverlay');
-      // reset label animation state
-      visGrid.classList.remove('ready');
-      cabinetOverlay.innerHTML = '';
+      cabinetOverlay.innerHTML='';
       cabinetOverlay.style.gridTemplateColumns = 'repeat(' + data.numCabW + ', 1fr)';
       cabinetOverlay.style.gridTemplateRows = 'repeat(' + data.numCabH + ', 1fr)';
-      cabinetOverlay.style.display = 'grid';
-
-      for (let r = 0; r < data.numCabH; r++) {
-        for (let c = 0; c < data.numCabW; c++) {
-          const cell = document.createElement('div');
-          cell.className = 'cabinet-tile';
-          cell.style.border = '1px dashed rgba(13,71,161,0.35)';
-          cell.style.boxSizing = 'border-box';
-          cell.style.animationDelay = ((r * data.numCabW + c) * 30) + 'ms';
+      for (var r=0;r<data.numCabH;r++){
+        for (var c=0;c<data.numCabW;c++){
+          const cell=document.createElement('div');
+          cell.style.border='1px dashed rgba(13,71,161,0.4)'; cell.style.boxSizing='border-box';
           cabinetOverlay.appendChild(cell);
         }
       }
-
-      // trigger label fade-in once tiles are in DOM
-      setTimeout(function(){ visGrid.classList.add('ready'); }, 0);
       document.getElementById('downloadPdfLink').classList.remove('hidden');
     }
 
@@ -705,159 +643,144 @@
       document.getElementById('submitButton').classList.remove('hidden');
       document.querySelector('.back-btn-placeholder').classList.add('hidden');
       document.getElementById('downloadPdfLink').classList.add('hidden');
-      const vg = document.getElementById('visGrid'); if (vg) vg.classList.remove('ready');
     }
 
-    function minMaxStr(minM, comfortM, idealM, minF, comfortF, idealF){
-      function f(x){ return (x||0).toFixed(2); }
-      return `${f(minM)}m / ${f(comfortM)}m / ${f(idealM)}m — ${f(minF)}ft / ${f(comfortF)}ft / ${f(idealF)}ft`;
-    }
-
-    // --- PDF ---
+    // ===== PDF (no watermark, no contact gate) =====
     function proceedToDownloadPdf(){
-      const data = finalCalculationData; if (!data || !data.totalPixels){
-        const em = document.getElementById('errorMessage');
-        em.textContent = 'ERROR: Please calculate the LED wall configuration first.';
-        em.classList.remove('hidden'); em.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
+      const data = finalCalculationData; 
+      if (!data || !data.totalPixels){
+        const e = document.getElementById('errorMessage');
+        e.textContent = 'ERROR: Please calculate the LED wall configuration first.'; e.classList.remove('hidden');
+        e.scrollIntoView({ behavior:'smooth', block:'center' }); return;
       }
       const dims = calculateDimensions(data);
-      const finalW_M = dims.finalW_M, finalH_M = dims.finalH_M, finalW_FT = dims.finalW_FT, finalH_FT = dims.finalH_FT;
-      const { jsPDF } = window.jspdf; const doc = new jsPDF('p', 'mm', 'a4');
+      const jsPDFObj = window.jspdf.jsPDF;
+      const doc = new jsPDFObj('p','mm','a4');
       let y = 10; const margin = 15; const lineHeight = 7; const pageW = doc.internal.pageSize.getWidth();
-      const primaryColor = [13, 71, 161]; const secondaryColor = [183, 28, 28];
+      const primaryColor = [13,71,161]; const secondaryColor = [183,28,28];
 
-      doc.setFontSize(18); doc.setTextColor(...primaryColor);
-      doc.text('PeopleLink LED Video Wall Technical Summary', pageW/2, y, { align: 'center' }); y += lineHeight;
-      doc.setFontSize(8); doc.setTextColor(100, 100, 100);
-      doc.text(`Generated: ${new Date().toLocaleDateString()} | Model: ${data.productName}`, pageW/2, y, { align: 'center' }); y += lineHeight*2;
+      doc.setFontSize(18); doc.setTextColor(primaryColor[0],primaryColor[1],primaryColor[2]);
+      doc.text('PeopleLink LED Video Wall Technical Summary', pageW/2, y, {align:'center'});
+      y += lineHeight; doc.setFontSize(8); doc.setTextColor(100,100,100);
+      doc.text('Generated: ' + new Date().toLocaleDateString() + ' | Model: ' + data.productName, pageW/2, y, {align:'center'});
+      y += lineHeight * 1.5;
 
-      // 1. Performance & Dimensions
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('1. Wall Performance & Dimensions', margin, y); y += lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('1. Wall Performance & Dimensions', margin, y); y+=lineHeight;
       const performanceData = [
-        ['Actual Final Dimensions (WxH) :', `(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) - ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m`],
-        ['Actual Final Resolution (WxH) :', `${data.finalResW} x ${data.finalResH}`],
+        ['Actual Final Dimensions (WxH) :', '(' + dims.finalW_FT.toFixed(2) + 'ft x ' + dims.finalH_FT.toFixed(2) + 'ft) — ' + dims.finalW_M.toFixed(2) + 'm x ' + dims.finalH_M.toFixed(2) + 'm'],
+        ['Actual Final Resolution (WxH) :', data.finalResW + ' x ' + data.finalResH],
         ['Aspect Ratio :', data.aspectRatioText],
-        ['Final Diagonal Size :', `${data.finalDiagonal_in.toFixed(1)} inches`],
-        ['Total Pixels / Area :', `${formatLargeNumber(data.totalPixels)} / ${data.finalArea_m2.toFixed(2)} m²`],
-        ['Viewing Distance (min/comfort/ideal) :', `${data.minView_m.toFixed(2)}m / ${data.comfortView_m.toFixed(2)}m / ${data.idealView_m.toFixed(2)}m`],
+        ['Final Diagonal Size :', data.finalDiagonal_in.toFixed(1) + ' inches'],
+        ['Total Pixels / Area :', formatLargeNumber(data.totalPixels) + ' / ' + data.finalArea_m2.toFixed(2) + ' m²'],
+        ['Viewing Distance (min / comfort / ideal) :', 
+          data.minView_m.toFixed(2) + ' m / ' + data.comfortView_m.toFixed(2) + ' m / ' + data.idealView_m.toFixed(2) + ' m  —  ' + data.minView_ft.toFixed(1) + ' ft / ' + data.comfortView_ft.toFixed(1) + ' ft / ' + data.idealView_ft.toFixed(1) + ' ft']
       ];
-      doc.autoTable({ startY: y+2, body: performanceData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'striped', headStyles: { fillColor: primaryColor, halign: 'center' }, styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } } });
+      doc.autoTable({ startY: y+2, body: performanceData, margin:{left:margin,right:margin,bottom:0}, theme:'striped', headStyles:{ fillColor: primaryColor, halign:'center' }, styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
       y = doc.lastAutoTable.finalY + lineHeight;
 
-      // 2. Physical & Cabinet Specs
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('2. Physical & Cabinet Specifications', margin, y); y += lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('2. Physical & Cabinet Specifications', margin, y); y+=lineHeight;
       const specsData = [
-        ['Pixel Pitch :', `${data.pixelPitch_mm} mm`],
-        ['Cabinet Dimensions (W x H) :', `${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm`],
-        ['Cabinet Pixels (W x H) :', `${data.cabPixW} x ${data.cabPixH}`],
-        ['Cabinet Matrix (W x H) :', `${data.numCabW} x ${data.numCabH}`],
-        ['Total Cabinets Required :', `${data.totalCabinets}`],
-        ['Total Modules Required :', `${data.totalModules}`],
-        ['Brightness Range :', data.nits_range ? `${data.nits_range} cd/m²` : 'N/A'],
+        ['Pixel Pitch :', data.pixelPitch_mm + ' mm'],
+        ['Cabinet Dimensions (W x H) :', data.cabinetW_mm + 'mm x ' + data.cabinetH_mm + 'mm'],
+        ['Cabinet Pixels (W x H) :', data.cabPixW + ' x ' + data.cabPixH],
+        ['Cabinet Matrix (W x H) :', data.numCabW + ' x ' + data.numCabH],
+        ['Total Cabinets Required :', '' + data.totalCabinets],
+        ['Total Modules Required :', '' + data.totalModules],
+        ['Brightness Range :', data.nits_range ? (data.nits_range + ' cd/m²') : 'N/A']
       ];
-      doc.autoTable({ startY: y+2, body: specsData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'plain', styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } } });
+      doc.autoTable({ startY: y+2, body: specsData, margin:{left:margin,right:margin,bottom:0}, theme:'plain', styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
       y = doc.lastAutoTable.finalY + lineHeight;
 
-      // 3. Control System & Connections
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('3. Control System & Connections', margin, y); y += lineHeight;
-      let controllerData = [
-        ['Controller/Processor Model :', `${data.controllerName} (${data.controllerType})`],
-        ['Total Receiving Cards :', `${data.totalRecCards}`],
-        ['Long Ethernet Ports/Runs : (Controller to Wall)', `${data.requiredPorts}`],
-        ['Short Ethernet Cables : (Between Cabinets)', `${data.requiredShortEthernet}`],
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('3. Control System & Connections', margin, y); y+=lineHeight;
+      var controllerData = [
+        ['Controller/Processor Model :', data.controllerName + ' (' + data.controllerType + ')'],
+        ['Total Receiving Cards :', '' + data.totalRecCards],
+        ['Long Ethernet Ports/Runs : (Controller to Wall)', '' + data.requiredPorts],
+        ['Short Ethernet Cables : (Between Cabinets)', '' + data.requiredShortEthernet]
       ];
       if (data.controllerType.indexOf('Modular')>-1){
         controllerData.push(['Modular Splicer Frame :', data.splicerSolution || 'Not Specified']);
-        controllerData.push(['Output Card (Sending) :', `${data.requiredSendCards} x ${data.outputCardModel} (${data.outputCardPorts} ports/card)`]);
-        controllerData.push(['Input Card (User Config) :', `${data.inputCardQty} x ${data.inputCardModel}`]);
+        controllerData.push(['Output Card (Sending) :', data.requiredSendCards + ' x ' + data.outputCardModel]);
+        controllerData.push(['Input Card (User Config) :', data.inputCardQty + ' x ' + data.inputCardModel]);
       }
-      doc.autoTable({ startY: y+2, body: controllerData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'striped', styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } } });
+      doc.autoTable({ startY: y+2, body: controllerData, margin:{left:margin,right:margin,bottom:0}, theme:'striped', styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
       y = doc.lastAutoTable.finalY + lineHeight;
 
-      // 4. Power and Weight
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('4. Power and Weight', margin, y); y += lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('4. Power and Weight', margin, y); y+=lineHeight;
       const powerWeightData = [
-        ['Actual Max Power Consumption (W) :', `${formatNumber(data.actualPower_W_unbuffered, 0)} W`],
-        ['Design Max Power Consumption (W) :', `${formatNumber(data.maxPower_W, 0)} W`],
-        ['Max Current Draw (Actual @220V) :', `${data.actualCurrent_A.toFixed(2)} A`],
-        ['Max Current Draw (Design @220V) :', `${data.maxCurrent_A_buffered.toFixed(2)} A`],
-        ['Actual Wall Weight (kg) :', `${formatNumber(data.actualWallWeight_unbuffered, 1)} kg`],
-        ['Total Wall Weight (Installation Design) :', `${formatNumber(data.totalWallWeight_buffered, 1)} kg`],
+        ['Actual Max Power Consumption (W) :', formatNumber(data.actualPower_W_unbuffered,0) + ' W'],
+        ['Design Max Power Consumption (W) :', formatNumber(data.maxPower_W,0) + ' W'],
+        ['Max Current Draw (Actual @220V) :', data.actualCurrent_A.toFixed(2) + ' A'],
+        ['Max Current Draw (Design @220V) :', data.maxCurrent_A_buffered.toFixed(2) + ' A'],
+        ['Actual Wall Weight (kg) :', formatNumber(data.actualWallWeight_unbuffered,1) + ' kg'],
+        ['Total Wall Weight (Installation Design) :', formatNumber(data.totalWallWeight_buffered,1) + ' kg']
       ];
-      doc.autoTable({ startY: y+2, body: powerWeightData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'plain', styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 1: { halign: 'right' } } });
-      y = doc.lastAutoTable.finalY + lineHeight*2;
+      doc.autoTable({ startY: y+2, body: powerWeightData, margin:{left:margin,right:margin,bottom:0}, theme:'plain', styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 1:{ halign:'right' } } });
+      y = doc.lastAutoTable.finalY + lineHeight * 2;
 
-      // 5. BOQ
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('5. Bill of Quantities (BOQ)', margin, y); y += lineHeight;
-      let boqData = [
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('5. Bill of Quantities (BOQ)', margin, y); y+=lineHeight;
+      const sparesModules = Math.max(2, Math.ceil(data.totalModules * 0.03));
+      const sparesRcv = Math.max(2, Math.ceil(data.totalRecCards * 0.02));
+      const sparesPSU = Math.max(2, Math.ceil(data.totalCabinets * 0.02));
+      var boqData = [
         ['LED Cabinets', data.productName, data.totalCabinets, 'PCS'],
         ['Controller/Processor', data.controllerName, 1, 'PCS'],
         ['Receiving Cards (R-Card)', 'Embedded in Cabinet', data.totalRecCards, 'PCS'],
+        ['Spare LED Modules', 'Recommended ~3% spares', sparesModules, 'PCS'],
+        ['Spare Receiving Cards', 'Recommended ~2% spares', sparesRcv, 'PCS'],
+        ['Spare Power Supplies', 'Recommended ~2% spares', sparesPSU, 'PCS'],
         ['Long Ethernet Cables', 'Controller to Wall runs (CAT6/7)', data.requiredPorts, 'PCS'],
         ['Short Ethernet Cables', 'Cabinet interconnect (CAT6/7)', data.requiredShortEthernet, 'PCS'],
-        ['Structure & Installation', 'Wall/stacking frame, alignment, cabling, commissioning', 1, 'LS'],
+        ['Mounting Structure', 'Wall/stacking structure as per site', 1, 'LS'],
+        ['Power Distribution', 'PDU/breakers as per load plan', 1, 'LS'],
+        ['Control PC/Laptop', 'Optional control workstation', 1, 'OPT'],
+        ['Installation / Configuration', 'Structure, setup & commissioning', 1, 'LS'],
         ['Transport / Logistics', 'Shipping/freight to site', 1, 'LS']
       ];
       if (data.controllerType.indexOf('Modular')>-1){
         boqData.push(['Modular Splicer Frame', data.splicerSolution || 'Not Specified', 1, 'PCS']);
-        boqData.push(['Output Card (Sending)', data.outputCardModel + ` (${data.outputCardPorts} ports)`, data.requiredSendCards, 'PCS']);
+        boqData.push(['Output Card (Sending)', data.outputCardModel, data.requiredSendCards, 'PCS']);
         boqData.push(['Input Card (User Config)', data.inputCardModel, data.inputCardQty, 'PCS']);
       }
-      doc.autoTable({ startY: y+2, head: [['Item','Description / Model','Quantity','Unit']], body: boqData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'grid', headStyles: { fillColor: [13,71,161], halign: 'center' }, styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 2: { halign: 'right' }, 3: { halign: 'center' } } });
-      y = doc.lastAutoTable.finalY + lineHeight*2;
+      doc.autoTable({ startY: y+2, head: [['Item','Description / Model','Quantity','Unit']], body: boqData, margin:{left:margin,right:margin,bottom:0}, theme:'grid', headStyles:{ fillColor: [13,71,161], halign:'center' }, styles:{ fontSize:8, cellPadding:1.5 }, columnStyles:{ 0:{ fontStyle:'bold' }, 2:{ halign:'right' }, 3:{ halign:'center' } } });
+      y = doc.lastAutoTable.finalY + lineHeight * 2;
 
-      // 6. Terms
-      doc.setFontSize(12); doc.setTextColor(...secondaryColor); doc.text('6. Standard Terms & Conditions for Active LED', margin, y); y += lineHeight;
+      doc.setFontSize(12); doc.setTextColor(secondaryColor[0],secondaryColor[1],secondaryColor[2]); doc.text('6. Standard Terms & Conditions for Active LED', margin, y); y+=lineHeight;
       doc.setFontSize(8); doc.setTextColor(50,50,50);
       const terms = [
-        '1. Price Validity: Quotation valid for 30 days from date of issue.',
-        '2. Payment Terms: 50% advance, 40% on delivery, 10% after commissioning (unless specified otherwise).',
-        '3. Civil Work/Structure: Any civil works (wall reinforcement/recess) are by client unless included in BOQ.',
-        '4. Power & Data: Client to provide stable power and data drops (LAN/control) near the installation area.',
-        '5. Warranty: Standard 1 year on LED panels/accessories; excludes surge/misuse/unauthorized repair damages.',
-        '6. Site Access: Safe/unrestricted access and site-provided lifting equipment (if required) during work hours.'
+        '1. Validity: Quotation remains valid for 30 days from the issue date.',
+        '2. Payment: 50% advance, 40% on delivery, 10% on commissioning unless agreed otherwise.',
+        '3. Scope Exclusions: Civil works, electrical cabling beyond designated points, and network backbone are by client unless explicitly included.',
+        '4. Power & Data: Client to provide stable power near the wall and LAN/control connectivity in the rack/console area.',
+        '5. Cable Length Assumptions: Standard rack interconnects up to 10 m included. Long runs/fiber extenders (if required) are extra.',
+        '6. Warranty: 1-year standard on LED panels and supplied electronics against manufacturing defects. Physical damage, surge, or unauthorized repair excluded.',
+        '7. Acceptance & Training: System acceptance after commissioning with basic user training provided on-site or remote.',
+        '8. Delivery & Access: Safe site access, storage space, and lifting equipment (if needed) to be arranged by client.'
       ];
       const pageW2 = doc.internal.pageSize.getWidth();
       terms.forEach(function(term){
         const split = doc.splitTextToSize(term, pageW2 - 2*margin);
-        doc.text(split, margin, y); y += (split.length * 3.5) + 1;
+        doc.text(split, margin, y);
+        y += (split.length * 3.5) + 1;
       });
-
-      // Footer
+      y += lineHeight * 0.5;
+      if (y > doc.internal.pageSize.getHeight() - margin - 20){ doc.addPage(); y = margin; }
+      doc.setFontSize(7); doc.setTextColor(100,100,100);
+      doc.text('Note: Design Power/Weight include a ' + MARGIN_PERCENT_TEXT + ' safety margin for planning.', margin, y);
       doc.setFontSize(8); doc.setTextColor(176,196,222);
-      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala', pageW2/2, doc.internal.pageSize.getHeight()-10, { align: 'center' });
+      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala', pageW2/2, doc.internal.pageSize.getHeight()-10, {align:'center'});
 
-      doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
+      doc.save('PeopleLink_LED_Config_' + data.finalResW + 'x' + data.finalResH + '_BOQ.pdf');
     }
 
-    // ===== Simple Test Harness (runs in console) =====
-    function runSelfTests(){
-      const must = (cond, msg) => { if(!cond) throw new Error('Test failed: '+msg); };
-      must(typeof toggleMeasurementFields === 'function', 'toggleMeasurementFields() should exist');
-      must(typeof showVisualization === 'function', 'showVisualization() should exist');
-      must(typeof calculateLEDWall === 'function', 'calculateLEDWall() should exist');
-      // Minimal smoke test with known model + diagonal
-      document.getElementById('productModel').value = 'indoor_25';
-      document.getElementById('unit').value = 'inches';
-      toggleMeasurementFields();
-      document.getElementById('diagonal').value = '136';
-      document.getElementById('aspectRatio').value = '16:9';
-      const data = calculateLEDWall();
-      must(!!data, 'calculateLEDWall returns data');
-      must(data.finalResW>0 && data.finalResH>0, 'resolution computed');
-      console.log('%cSelf-tests passed','color:green;font-weight:bold');
-    }
-
+    // Init
     document.addEventListener('DOMContentLoaded', function(){
       toggleMeasurementFields();
-      // Modal click-away close
-      window.onclick = function(event){
-        const controllerModal = document.getElementById('controllerModal');
-        if (event.target === controllerModal) closeControllerModal();
-      };
-      // Run tests after a tick to ensure DOM wired
-      setTimeout(function(){ try { runSelfTests(); } catch(e){ console.warn(e.message); } }, 0);
+      populateModalControllers(); populateModalOutputCards(); populateModalInputCards();
+      window.addEventListener('click', function(evt){
+        const modal = document.getElementById('controllerModal');
+        if (evt.target === modal){ closeControllerModal(); }
+      });
     });
   </script>
 </body>
