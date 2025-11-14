@@ -7,56 +7,71 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
-    /* (Mostly your previous styles + small additions for wiring visualization) */
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; background: #eef1f8; color: #1c2738; font-size: 14px; }
     .main-wrapper { max-width: 1200px; margin: auto; }
     h2 { text-align: center; color: #0D47A1; margin-top: 0; margin-bottom: 30px; font-weight: 700; font-size: 1.8em; display: flex; align-items: center; justify-content: center; }
     .input-panel { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: all 0.6s ease-out; }
     .input-panel.minimized { height: 120px; padding-top: 15px; padding-bottom: 10px; opacity: 0.9; overflow: hidden; background: #f7f9fc; }
+    .input-panel.minimized > *:not(h2):not(#enteredValuesDisplay):not(.back-btn-placeholder) { opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.3s ease-out, max-height 0.3s ease-out; pointer-events: none; }
+    .input-panel.minimized h2 { margin-bottom: 5px; }
     .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 30px; }
     .input-group { margin-top: 0; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; }
-    select, input[type="number"], input[type="text"] { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
-    select:focus, input[type="number"]:focus, input[type="text"]:focus { border-color: #0D47A1; box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.15); outline: none; }
+    select, input[type="number"], input[type="text"], input[type="email"], input[type="tel"] { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
+    select:focus, input[type="number"]:focus, input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus { border-color: #0D47A1; box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.15); outline: none; }
     .submit-btn { margin-top: 18px; grid-column: 1 / -1; background-color: #0D47A1; color: white; padding: 10px 12px; border: none; border-radius: 8px; font-size: 14px; width: 220px; max-width: 100%; cursor: pointer; transition: background-color 0.2s, transform 0.12s; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
+    .submit-btn:hover { background-color: #1565C0; transform: translateY(-1px); }
+    .back-btn { background-color: #6c757d; margin-top: 30px; color: #fff; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+    .back-btn:hover { background-color: #5a6268; }
     .hidden { display: none !important; }
     .error-message { color: #B71C1C; font-weight: bold; text-align: center; margin-top: 15px; padding: 12px; min-height: 20px; background: #ffebee; border: 2px solid #B71C1C; border-radius: 8px; transition: all 0.3s ease; }
     #enteredValuesDisplay { text-align: center; font-size: 0.95em; color: #444; margin-bottom: 15px; line-height: 1.4; display: none; }
+    .input-panel.minimized #enteredValuesDisplay { display: block !important; opacity: 1; transition: opacity 0.3s ease-out 0.3s; }
     .visualization { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); opacity: 0; max-height: 0; overflow-y: hidden; transition: opacity 0.6s ease-out, max-height 1s ease-out; margin-top: 30px; }
     .visualization.visible { opacity: 1; max-height: 2000px; }
+    .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
+    .vis-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: #f7f9fc; }
     .vis-content { position: relative; width: 100%; margin-bottom: 20px; padding-top: 35px; padding-right: 45px; padding-bottom: 10px; box-sizing: border-box; }
     .grid { position: relative; width: 100%; border: 3px solid #B71C1C; min-height: 100px; overflow: hidden; background: linear-gradient(135deg, #e3f2fd, #bbdefb); display: flex; align-items: center; justify-content: center; }
     #cabinetOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box; pointer-events: none; z-index: 5; display: grid; gap: 0; }
-    /* cabinet cells — pointer events allowed so we show hover tooltip */
-    #cabinetOverlay > div {
-      display:flex; align-items:center; justify-content:center; position:relative; pointer-events:auto;
-    }
-    #cabinetOverlay > div .cab-label { font-size:12px; color:rgba(13,71,161,0.95); font-weight:700; background:rgba(255,255,255,0.9); padding:2px 6px; border-radius:4px; box-shadow:0 1px 3px rgba(0,0,0,0.08); pointer-events:none; }
-    #cabinetOverlay > div:hover { transform: translateY(-2px); background: rgba(13,71,161,0.03); }
-    .tooltip-cab { position:absolute; z-index:50; background:white; color:#213444; border:1px solid rgba(13,71,161,0.12); padding:6px 8px; font-size:11px; border-radius:5px; box-shadow:0 6px 18px rgba(0,0,0,0.08); pointer-events:none; display:none; white-space:nowrap; }
-    .dimension-label { position:absolute; color:#B71C1C; background:rgba(255,255,255,0.95); padding:3px 6px; font-size:0.9em; border-radius:3px; font-weight:700; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
-    .dim-top { top:5px; left:50%; transform:translateX(-50%); }
-    .dim-right { top:50%; right:10px; transform:translateY(-50%) rotate(90deg); transform-origin:center center; }
-    .details-box { border:1px solid #e0e0e0; padding:20px; border-radius:8px; background:#f7f9fc; }
-    .details-box h4 { margin-top:0; color:#0D47A1; border-bottom:2px solid #e0e0e0; padding-bottom:8px; margin-bottom:15px; font-size:1.1em; }
-    .vis-details { display:grid; grid-template-columns:1fr; gap:10px; font-size:0.95em; color:#333; }
-    .vis-details span { display:flex; justify-content:flex-start; align-items:center; line-height:1.4; padding-bottom:5px; border-bottom:1px dotted #e0e0e0; }
-    .vis-details strong { color:#333; font-weight:400; min-width:250px; text-align:left; margin-right:15px; }
-    .vis-details small { font-size:1.0em; color:#B71C1C; font-weight:700; }
-    .edit-btn { background:none; border:none; color:#0D47A1; font-size:0.9em; cursor:pointer; text-decoration:underline; padding:0; margin-left:10px; }
-    #downloadPdfLink { grid-column:1 / -1; margin-top:15px; text-align:center; cursor:pointer; color:#1B5E20; text-decoration:underline; padding:8px 0; font-weight:600; }
-    footer.page-footer { text-align:center; margin-top:30px; color:#b0c4de; }
+    #cabinetOverlay > div { display: flex; align-items: center; justify-content: center; position: relative; cursor: default; transition: background 0.15s ease, transform 0.08s ease; pointer-events: auto; }
+    #cabinetOverlay > div .cab-label { font-size: 12px; color: rgba(13,71,161,0.95); font-weight: 700; background: rgba(255,255,255,0.9); padding: 2px 6px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); pointer-events: none; }
+    #cabinetOverlay > div:hover { background: rgba(13,71,161,0.04); transform: translateY(-2px); }
+    .tooltip-cab { position: absolute; z-index: 50; background: white; color: #213444; border: 1px solid rgba(13,71,161,0.12); padding: 6px 8px; font-size: 11px; border-radius: 5px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); pointer-events: none; display: none; white-space: nowrap; }
+    .dimension-label { position: absolute; color: #B71C1C; background: rgba(255, 255, 255, 0.95); padding: 3px 6px; font-size: 0.9em; border-radius: 3px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .dim-top { top: 5px; left: 50%; transform: translateX(-50%); }
+    .dim-right { top: 50%; right: 10px; transform: translateY(-50%) rotate(90deg); transform-origin: center center; }
+    .details-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: #f7f9fc; }
+    .details-box h4 { margin-top: 0; color: #0D47A1; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 15px; font-size: 1.1em; }
+    .vis-details { display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 0.95em; color: #333; }
+    .vis-details span { display: flex; justify-content: flex-start; align-items: center; line-height: 1.4; padding-bottom: 5px; border-bottom: 1px dotted #e0e0e0; }
+    .vis-details strong { color: #333; font-weight: 400; min-width: 250px; text-align: left; margin-right: 15px; }
+    .vis-details small { font-size: 1.0em; color: #B71C1C; font-weight: 700; }
+    .edit-btn { background: none; border: none; color: #0D47A1; font-size: 0.9em; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 10px; }
+    #downloadPdfLink { grid-column: 1 / -1; margin-top: 15px; text-align: center; cursor: pointer; color: #1B5E20; text-decoration: underline; padding: 8px 0; font-weight: 600; }
+    #downloadPdfLink:hover { color: #2E7D32; }
+    .modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); display: none; }
+    .modal-content { background-color: #fefefe; margin: 5% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+    .close-btn { color: #aaa; font-size: 28px; font-weight: bold; }
+    .close-btn:hover, .close-btn:focus { color: #000; text-decoration: none; cursor: pointer; }
+    .modal-input-group { margin-bottom: 15px; }
+    .modal-input-group label { font-weight: 600; color: #0D47A1; margin-bottom: 5px; display:block; }
+    .modal-submit { background-color: #1B5E20; margin-top: 15px; }
+    .modal-submit:hover { background-color: #2E7D32; }
+    .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .modal-grid-span-2 { grid-column: 1 / -1; }
+    .modal-disclaimer { margin-top: 15px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 5px; font-size: 0.85em; color: #616161; }
+    footer.page-footer { text-align: center; margin-top: 30px; color: #b0c4de; }
 
-    /* BOQ preview styles */
-    #boqPreviewTable { width:100%; border-collapse:collapse; margin-top:18px; font-size:13px; }
-    #boqPreviewTable th, #boqPreviewTable td { border:1px solid #e2e8f0; padding:8px 10px; text-align:left; }
-    #boqPreviewTable th { background: linear-gradient(90deg, rgba(13,71,161,0.06), rgba(27,94,32,0.02)); color:#0D47A1; font-weight:700; }
-    #boqPreviewTable td.small { font-size:12px; color:#334155; }
-    .boq-section { margin-top:20px; }
-
-    /* SVG overlay holds connection lines; placed above cabinetOverlay */
-    #svgOverlay { position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; pointer-events:none; }
-    .controller-dot { width:12px; height:12px; background:#1B5E20; border-radius:50%; position:absolute; z-index:60; pointer-events:none; box-shadow:0 2px 6px rgba(0,0,0,0.15); }
+    /* BOQ preview table styles (combined column) */
+    #boqPreviewTable { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 13px; }
+    #boqPreviewTable th, #boqPreviewTable td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; vertical-align: top; }
+    #boqPreviewTable th { background: linear-gradient(90deg, rgba(13,71,161,0.06), rgba(27,94,32,0.02)); color: #0D47A1; font-weight: 700; }
+    #boqPreviewTable td.small { font-size: 12px; color: #334155; }
+    .boq-section { margin-top: 20px; }
+    /* condensed mobile */
+    @media (max-width:900px){ .input-grid{grid-template-columns:1fr;} .output-grid{grid-template-columns:1fr;}}
   </style>
 </head>
 <body>
@@ -136,8 +151,8 @@
     </div>
 
     <div class="visualization" id="visualization">
-      <div class="output-grid" style="display:block;">
-        <div class="details-box" style="margin-bottom:12px;">
+      <div class="output-grid">
+        <div class="details-box">
             <h4>LED Wall Specifications</h4>
             <div class="vis-details">
                 <span id="pixelPitchDisplay"><strong>--</strong><small>--</small></span>
@@ -150,40 +165,31 @@
                 <span id="totalPixels"><strong>--</strong><small>--</small></span>
                 <span id="cabinetSize"><strong>--</strong><small>--</small></span>
                 <span id="cabinetPixels"><strong>--</strong><small>--</small></span>
-                <span id="pixelDensity"><strong>--</strong><small>--</small></span>
             </div>
         </div>
 
-        <div class="details-box" style="margin-bottom:12px;">
+        <div class="details-box">
             <h4>Control System Requirements <button class="edit-btn" onclick="openControllerModal()">Edit/View Components ⚙️</button></h4>
             <div class="vis-details" id="controlSystemDetails"></div>
         </div>
       </div>
 
-     <div class="details-box" style="margin-top: 10px;">
-          <h4>Physical Wall Visualization & LAN Map</h4>
+     <div class="details-box" style="margin-top: 30px;">
+          <h4>Physical Wall Visualization</h4>
           <div class="vis-content">
              <div class="grid" id="visGrid">
-                 <!-- SVG overlay for lines -->
-                 <svg id="svgOverlay" xmlns="http://www.w3.org/2000/svg"></svg>
-                 <!-- cabinet grid -->
                  <div id="cabinetOverlay"></div>
                  <span class="dimension-label dim-top" id="visWidthLabel">-- W --</span>
                  <span class="dimension-label dim-right" id="visHeightLabel">-- H --</span>
-                 <!-- controller position marker -->
-                 <div id="controllerDot" class="controller-dot" style="display:none;"></div>
              </div>
-             <small style="display:block;margin-top:8px;color:#444">Green lines = Long Ethernet (Controller → Cabinet). Gray lines = inter-cabinet CAT6 links.</small>
           </div>
       </div>
 
-      <div id="boqPreviewContainer"></div>
-
       <span id="downloadPdfLink" onclick="openContactModal()" class="hidden">Download PDF Technical Summary 📄</span>
+
        <button class="back-btn" id="backButton" onclick="hideVisualization()">Modify Configuration</button>
     </div>
 
-    <!-- controller modal (same structure as before) -->
     <div id="controllerModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
@@ -221,17 +227,21 @@
                 <label for="modalInputCardQty">Input Card Quantity:</label>
                 <input type="number" id="modalInputCardQty" min="1" step="1" placeholder="e.g., 2">
             </div>
+
+            <div class="modal-input-group">
+                <label style="display:block;">Optional Add-ons</label>
+                <label style="font-weight:500;"><input type="checkbox" id="modalIncludeHdmiOutput"> Include H_4 x HDMI Output Card (optional for modular systems)</label>
+            </div>
         </div>
 
         <div class="modal-disclaimer">
-            <p><strong>Crucial Disclaimer:</strong> You can edit the types and quantities of input cards/sending cards and accessories as required. The system will regenerate a solution based on your pixel count and the *Max Ports per Output Card* value you select. **The default input card quantity is 2 (2x 4K card) and should be changed 'as per site requirement/number of inputs actual requirement'.**</p>
+            <p><strong>Crucial Disclaimer:</strong> You can edit the types and quantities of input cards/sending cards and accessories as required. The system will regenerate a solution based on your pixel count and the *Max Ports per Output Card* value you select. <strong>The default input card quantity is 2 (2x 4K card) and should be changed as per site requirement.</strong></p>
         </div>
 
         <button class="submit-btn modal-submit" onclick="applyModalChanges()">Apply Changes & Recalculate</button>
       </div>
     </div>
 
-    <!-- contact modal -->
     <div id="contactModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -272,7 +282,7 @@
     const WEIGHT_BUFFER = 1.15;
     const MARGIN_PERCENT_TEXT = "15%";
 
-    // --- PeopleLink LED Models (same as yours) ---
+    // --- PeopleLink LED Models ---
     const LED_PRODUCTS = {
         'cob_09': { name: "PeopleLink COB (0.9375mm)", pitch_mm: 0.9375, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 640, cabPixH: 360, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-1000", maxPower_W_m2: 300 },
         'cob_125': { name: "PeopleLink COB (1.25mm)", pitch_mm: 1.25, cabW_mm: 600, cabH_mm: 337.5, cabPixW: 480, cabPixH: 270, modulesPerCab: 8, weight_kg: 4.6, nits_range: "600-800", maxPower_W_m2: 300 },
@@ -286,7 +296,7 @@
         'outdoor_100': { name: "PeopleLink SMD Outdoor (10.0mm)", pitch_mm: 10.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 96, cabPixH: 96, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }
     };
 
-    // --- Controller Models (unchanged) ---
+    // --- Controller Models (unchanged list — used for suggestion) ---
     const CONTROLLER_MODELS = [
         { name: "TB40", type: "Multimedia Player", ports: 2, maxPixels: 1300000, maxW: 10240, maxH: 8192, priority: 1 },
         { name: "TB60", type: "Multimedia Player", ports: 4, maxPixels: 2300000, maxW: 4096, maxH: 4096, priority: 2 },
@@ -317,33 +327,68 @@
         OUTPUT_CARD_16_MODEL: "H_16xRJ45 Sending Card",
     };
 
-    // Cabinets-per-long-LAN mapping
+    // Cabinets-per-long-LAN mapping — buffer fields replaced by global 5% buffer
     const CABINETS_PER_LONG_LAN = {
         'cob_09': { cabinetsPerRun: 2 },       // COB 0.9375 mm → 2 cabinets / long LAN cable
         'cob_125': { cabinetsPerRun: 5 },     // COB 1.25 mm → 5 cabinets / long LAN cable
         'cob_15': { cabinetsPerRun: 7 },      // COB 1.5625 mm → 7 cabinets / long LAN cable
+        // SMD handled separately (pixel->port + 5% buffer)
     };
 
-    // Part catalog (kept)
+    // --- Parts Catalog (from provided spreadsheet image) ---
     const PARTS_CATALOG = {
+      // Controllers
       'TB40': { part: 'TP-VWC-NS-TB40', desc: 'LED Video Wall Controller: TB40' },
       'TB60': { part: 'TP-VWC-NS-TB60', desc: 'LED Video Wall Controller: TB60' },
       'VX400': { part: 'TP-VWC-NS-VX400', desc: 'LED Video Wall Controller (VX400 Pro)' },
+      'VX600': { part: 'TP-VWC-NS-VX600', desc: 'LED Video Wall Controller (VX600 Pro)' },
+      'VX1000': { part: 'TP-VWC-NS-VX1000', desc: 'LED Video Wall Controller (VX1000 Pro)' },
+      '4K Prime': { part: 'TP-VWC-NS-4K-PRM', desc: 'LED Video Wall Controller (4K Prime)' },
+      'H2': { part: 'TP-XMF-H2', desc: 'LED Video Wall Controller (H2)' },
       'H5': { part: 'TP-XMF-H5', desc: 'LED Video Wall Controller (H5)' },
-      'H_20_RJ45': { part: 'TP-XOC-RJ45-20', desc: 'H_20 x RJ45 Sending Card' },
-      'H_16_RJ45_2fib': { part: 'TP-XOC-RJ45-16-OF2', desc: 'H_16 x RJ45 + 2x Fiber Sending Card' },
+      'H9': { part: 'TP-XMF-H9', desc: 'LED Video Wall Controller (H9)' },
+      'H15': { part: 'TP-XMF-H15', desc: 'LED Video Wall Controller (H15)' },
+      'H15E': { part: 'TP-XMF-H15E', desc: 'LED Video Wall Controller (H15 Enhanced)' },
+      'H20': { part: 'TBD', desc: 'LED Video Wall Controller (H20)' },
+
+      // Input cards
+      'H_4xHDMI': { part: 'TP-XIC-HDMI4', desc: 'H_4 x HDMI Input Card' },
       'H_1xHDMI': { part: 'TP-XIC-HDMI', desc: 'H_1 x HDMI 2.0 Input Card' },
+      'H_2xHDMI': { part: 'TP-XIC-HDMI2', desc: 'H_2 x HDMI 2.0 Input Card' },
+
+      // Sending / Output cards
+      'H_16_RJ45_2fib': { part: 'TP-XOC-RJ45-16-OF2', desc: 'H_16 x RJ45 + 2x Fiber Sending Card' },
+      'H_20_RJ45': { part: 'TP-XOC-RJ45-20', desc: 'H_20 x RJ45 Sending Card' },
       'H_4_HDMI_Out': { part: 'TP-XOC-HDMI4', desc: 'H_4 x HDMI Output Card' },
+
+      // Power / accessories
       'H_800W_PSU': { part: 'TP-XPS-H800W', desc: 'H_800W Power Supply' },
-      'PPL-COB-125': { part: 'PPL-COB-MDL-CU-12', desc: 'PeopleLink Active LED | 1.25PP COB (Including Modules)' },
+      'H_preview_card': { part: 'TP-XOC-RJ45-2-HDMI1', desc: 'H_2 x RJ45 + 1 x HDMI preview card' },
+      'VNNOX_Cloud': { part: 'TBD', desc: 'One-Stop Cloud Platform VNNOX Standard' },
+      'H_audio_card': { part: 'TBD', desc: 'H_2xAudio input+2xAudio output card' },
+
+      // Active LED Products / Modules (COB)
       'PPL-COB-09': { part: 'PPL-COB-MDL-CU-09', desc: 'PeopleLink Active LED | 0.9PP COB (Including Modules)' },
+      'PPL-COB-125': { part: 'PPL-COB-MDL-CU-12', desc: 'PeopleLink Active LED | 1.25PP COB (Including Modules)' },
+      'PPL-COB-156': { part: 'PPL-COB-MDL-CU-12', desc: 'PeopleLink Active LED | 1.56PP COB (Including Modules)' },
+      
+      // SMB Indoor
       'PPL-SMD-18': { part: 'PPL-SMD-MDL-CU-18', desc: 'PeopleLink ActiveLED | 1.8PP Video LED Cabinets (Including Modules)' },
+      'PPL-ALD-CU': { part: 'PPL-ALD-CU', desc: 'PeopleLink ActiveLED | Video Wall Cabinet Unit (640x480mm)' },
+      'PDS-TP-15-T': { part: 'PDS-TP-15-T', desc: 'PeopleLink ActiveLED | 2.0PP Video LED Modules' },
+
+      // SMB Outdoor
       'PPL-SMD-40': { part: 'PPL-SMD-MDL-CU-40', desc: 'PeopleLink ActiveLED | 4PP Video LED Cabinets' },
+      'PPL-SMD-60': { part: 'PPL-SMD-MDL-CU-60', desc: 'PeopleLink ActiveLED | 6PP Video LED Cabinets' },
+
+      // Installation & transport
       'ALED-INST-IN': { part: 'ALED-INST-IN', desc: 'Installation & Configuration - Indoor' },
       'ALED-TRS-IN-REG': { part: 'ALED-TRS-IN-REG', desc: 'Transportation (No of Cabinets) - Indoor' },
-      'TP-XPS-H800W': { part: 'TP-XPS-H800W', desc: 'H_800W Power Supply' }
+      'ALED-INST-OU': { part: 'ALED-INST-OU', desc: 'Installation & Configuration - Outdoor' },
+      'ALED-TRS-OU': { part: 'TBD', desc: 'Transportation (No of Cabinets) - Outdoor' }
     };
 
+    // --- Global Store ---
     let finalCalculationData = {};
     let contactInfo = { email: '', phone: '' };
 
@@ -351,7 +396,7 @@
     function formatLargeNumber(n){ if(n>=1e6) return (n/1e6).toFixed(2)+"M"; if(n>=1e3) return (n/1e3).toFixed(1)+"K"; return n.toLocaleString(); }
     function gcd(a,b){ return b===0 ? a : gcd(b, a%b); }
 
-    // Populate modals
+    // --- Modal population (unchanged) ---
     function populateModalControllers() {
         const select = document.getElementById('modalControllerModel');
         select.innerHTML = '';
@@ -368,6 +413,8 @@
         const cards = [
             { model: H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS },
             { model: H_SERIES_DEFAULTS.OUTPUT_CARD_16_MODEL, ports: H_SERIES_DEFAULTS.OUTPUT_CARD_16_PORTS },
+            // Include H_4_HDMI_Out as an option (user can opt to include it)
+            { model: 'H_4_HDMI_Out', ports: 4 }
         ];
         cards.forEach(card => {
             const opt = document.createElement('option');
@@ -401,7 +448,7 @@
             controllerSelect.value = suggestedControllerName;
         }
         document.getElementById('modalSplicerSolution').value = finalCalculationData.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME;
-        const currentOutputCardValue = `${finalCalculationData.outputCardModel}|${finalCalculationData.outputCardPorts}`;
+        const currentOutputCardValue = `${finalCalculationData.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL}|${finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS}`;
         const outputCardSelect = document.getElementById('modalOutputCardModel');
         if (outputCardSelect.querySelector(`option[value="${currentOutputCardValue}"]`)) {
             outputCardSelect.value = currentOutputCardValue;
@@ -414,6 +461,7 @@
         const matchingOption = Array.from(inputCardSelect.options).find(opt => opt.value.startsWith(desiredModel));
         if (matchingOption) inputCardSelect.value = matchingOption.value; else inputCardSelect.selectedIndex = 0;
         document.getElementById('modalInputCardQty').value = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
+        document.getElementById('modalIncludeHdmiOutput').checked = !!finalCalculationData.includeHdmiOutput;
         document.getElementById('controllerModal').style.display = 'block';
     }
     function closeControllerModal() { document.getElementById('controllerModal').style.display = 'none'; }
@@ -426,11 +474,17 @@
         const inputCardModelSelect = document.getElementById('modalInputCardModel');
         finalCalculationData.inputCardModel = inputCardModelSelect.value.split('|')[0];
         finalCalculationData.inputCardQty = parseFloat(document.getElementById('modalInputCardQty').value);
+        finalCalculationData.includeHdmiOutput = document.getElementById('modalIncludeHdmiOutput').checked;
         closeControllerModal();
         showVisualization();
     }
 
-    // Controller suggestion (same)
+    /**
+     * Controller suggestion now considers:
+     *  - requiredPortsBuffered (controller ports requirement after buffer)
+     *  - requiredLongEthRuns (long runs count; used as additional tie-breaker/consideration)
+     *  - totalPixels & resolution (finalResW/H)
+     */
     function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey, requiredPortsBuffered, requiredLongEthRuns) {
         const exactMatch = CONTROLLER_MODELS.find(c => c.ports >= requiredPortsBuffered && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
         if (exactMatch) return exactMatch;
@@ -442,7 +496,134 @@
         return CONTROLLER_MODELS[CONTROLLER_MODELS.length - 1];
     }
 
-    // --- Calculation with LAN/port rules & 5% buffer (unchanged) ---
+    // small HTML-escape util
+    function escapeHtml(text) {
+      if (!text && text !== 0) return '';
+      return String(text).replace(/[&<>"'`=\/]/g, function (s) {
+          return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+          })[s];
+      });
+    }
+
+    // Helper: build BOQ items using calculated data + parts catalog
+    function generateBOQList(data) {
+      // returns array of { combined, partcode, qty, unit }
+      const list = [];
+
+      // Controller
+      let ctrlKey = null;
+      if (data.controllerName) {
+        const m = data.controllerName.match(/(TB40|TB60|VX400|VX600|VX1000|4K Prime|4K Prime Pro|H2|H5|H9|H15|H15E|H20)/i);
+        if (m) ctrlKey = m[0];
+        else {
+          if (data.controllerName.includes('TB40')) ctrlKey = 'TB40';
+          if (data.controllerName.includes('TB60')) ctrlKey = 'TB60';
+          if (data.controllerName.includes('H5')) ctrlKey = 'H5';
+          if (data.controllerName.includes('H2')) ctrlKey = 'H2';
+        }
+      }
+      const ctrlPart = (ctrlKey && PARTS_CATALOG[ctrlKey]) ? PARTS_CATALOG[ctrlKey].part : (PARTS_CATALOG[data.controllerName] ? PARTS_CATALOG[data.controllerName].part : 'TBD');
+      const ctrlDesc = (ctrlKey && PARTS_CATALOG[ctrlKey]) ? PARTS_CATALOG[ctrlKey].desc : (data.controllerName || 'Controller/Processor');
+      list.push({ combined: `Controller/Processor — ${ctrlDesc}`, partcode: ctrlPart || 'TBD', qty: 1, unit: 'PCS' });
+
+      // Receiving Cards (embedded)
+      list.push({ combined: `Receiving Cards (embedded) — ${data.totalRecCards} R-cards`, partcode: 'Embedded', qty: data.totalRecCards, unit: 'PCS' });
+
+      // Sending / Output cards (modular)
+      if (data.controllerType && data.controllerType.includes('Modular')) {
+        const outCardModel = data.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
+        let outPart = 'TBD';
+        if (outCardModel === 'H_20xRJ45 Sending Card' || outCardModel.includes('20xRJ45') || outCardModel.startsWith('H_20')) outPart = PARTS_CATALOG['H_20_RJ45'] ? PARTS_CATALOG['H_20_RJ45'].part : 'TBD';
+        if (PARTS_CATALOG[outCardModel]) outPart = PARTS_CATALOG[outCardModel].part;
+        list.push({ combined: `Output (Sending) Cards — ${outCardModel}`, partcode: outPart || 'TBD', qty: data.requiredSendCards, unit: 'PCS' });
+
+        // Input cards
+        const inCardModel = data.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
+        const inPart = PARTS_CATALOG[inCardModel] ? PARTS_CATALOG[inCardModel].part : (PARTS_CATALOG['H_1xHDMI'] ? PARTS_CATALOG['H_1xHDMI'].part : 'TBD');
+        list.push({ combined: `Input Cards — ${inCardModel}`, partcode: inPart || 'TBD', qty: data.inputCardQty || 2, unit: 'PCS' });
+
+        // Splicer frame
+        list.push({ combined: `Modular Splicer Frame — ${data.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME}`, partcode: PARTS_CATALOG['H5'] ? PARTS_CATALOG['H5'].part : 'TBD', qty: 1, unit: 'PCS' });
+
+        // Optional: H_4 x HDMI Output Card only if the user explicitly checked includeHdmiOutput
+        if (data.includeHdmiOutput) {
+          list.push({ combined: `Optional Output Card — H_4 x HDMI Output Card (optional)`, partcode: PARTS_CATALOG['H_4_HDMI_Out'] ? PARTS_CATALOG['H_4_HDMI_Out'].part : 'TBD', qty: 1, unit: 'PCS' });
+        }
+      } else {
+        // Don't add H_4_HDMI_Out by default for all-in-one; user must opt-in via modal (we do not include by default)
+        // If user explicitly set includeHdmiOutput (rare), respect it only if modular not required; keep optional
+        if (finalCalculationData.includeHdmiOutput && finalCalculationData.controllerType && !finalCalculationData.controllerType.includes('Modular')) {
+          list.push({ combined: `Optional Output Card — H_4 x HDMI Output Card (optional)`, partcode: PARTS_CATALOG['H_4_HDMI_Out'] ? PARTS_CATALOG['H_4_HDMI_Out'].part : 'TBD', qty: 1, unit: 'PCS' });
+        }
+      }
+
+      // Long ethernet ports / controller ports
+      list.push({ combined: `Controller → Wall Long Ethernet Ports (post-buffer)`, partcode: 'TBD', qty: data.requiredPortsBuffered, unit: 'PCS' });
+      list.push({ combined: `Inter-Cabinet Short Ethernet (CAT6)`, partcode: 'TBD', qty: data.requiredShortEthernet, unit: 'PCS' });
+
+      // LED Cabinets & Modules
+      const ledPartKey = (() => {
+        if (data.pixelPitch_mm <= 1.0) return 'PPL-COB-09';
+        if (data.pixelPitch_mm <= 1.3) return 'PPL-COB-125';
+        if (data.pixelPitch_mm <= 1.7) return 'PPL-COB-156';
+        if (data.cabinetW_mm === 640) return 'PPL-SMD-18';
+        if (data.cabinetW_mm === 960) return 'PPL-SMD-40';
+        return 'PPL-ALD-CU';
+      })();
+      const ledPart = PARTS_CATALOG[ledPartKey] ? PARTS_CATALOG[ledPartKey].part : 'TBD';
+      list.push({ combined: `LED Cabinets (including modules) — ${data.productName}`, partcode: ledPart || 'TBD', qty: data.totalCabinets, unit: 'PCS' });
+
+      // Spare modules
+      const sparePct = (data.productName && data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
+      const spareModulesQty = Math.max(1, Math.round(data.totalModules * sparePct));
+      list.push({ combined: `Spare Modules (${Math.round(sparePct*100)}%) — site spares`, partcode: 'TBD', qty: spareModulesQty, unit: 'PCS' });
+
+      // Power / weight items
+      list.push({ combined: `Estimated Design Power Capacity`, partcode: 'TBD', qty: Math.round(data.maxPower_W), unit: 'W' });
+
+      // Installation & transport
+      list.push({ combined: `Installation & Configuration (Indoor)`, partcode: 'ALED-INST-IN', qty: data.totalCabinets, unit: 'Per Cabinet' });
+      list.push({ combined: `Transportation (Indoor)`, partcode: 'ALED-TRS-IN-REG', qty: data.totalCabinets, unit: 'Per Cabinet' });
+
+      // PSU estimate
+      list.push({ combined: `Power Supply (est.) — H_800W units`, partcode: PARTS_CATALOG['H_800W_PSU'] ? PARTS_CATALOG['H_800W_PSU'].part : 'TBD', qty: Math.max(1, Math.ceil(data.totalCabinets / 10)), unit: 'PCS' });
+
+      return list;
+    }
+
+    // Render BOQ preview under visualization (combined column)
+    function renderBOQPreview(data) {
+      const list = generateBOQList(data);
+      let html = `<div class="boq-section"><h4>Bill of Quantities (Preview)</h4><table id="boqPreviewTable"><thead><tr><th>#</th><th>Item / Description</th><th>Partcode</th><th style="text-align:right">Qty</th><th>Unit</th></tr></thead><tbody>`;
+      list.forEach((row, idx) => {
+        html += `<tr>
+          <td>${idx+1}</td>
+          <td class="small">${escapeHtml(row.combined)}</td>
+          <td>${escapeHtml(row.partcode)}</td>
+          <td style="text-align:right">${row.qty}</td>
+          <td>${row.unit}</td>
+        </tr>`;
+      });
+      html += `</tbody></table></div>`;
+
+      let previewContainer = document.getElementById('boqPreviewContainer');
+      if (!previewContainer) {
+        previewContainer = document.createElement('div');
+        previewContainer.id = 'boqPreviewContainer';
+        document.querySelector('.visualization').appendChild(previewContainer);
+      }
+      previewContainer.innerHTML = html;
+    }
+
+    // --- Remaining functions (calculation + UI) ---
     function toggleMeasurementFields(){
         const unit = document.getElementById('unit').value;
         const isDiagonal = (unit === 'inches');
@@ -549,37 +730,26 @@
         const actualCabinetWeight_unbuffered = details.weight_kg * totalCabinets;
         const totalWallWeight_buffered = actualCabinetWeight_unbuffered * WEIGHT_BUFFER;
 
-        // --- LAN / Port Rules implementation with global 5% buffer ---
+        // --- LAN / Port Rules with global 5% buffer ---
 
-        // 1) Calculate ports needed by pixels (fallback)
         const ports_by_pixels = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
-
-        // 2) If COB: calculate long ethernet runs by cabinetsPerRun rule
         let cabinetsRule = CABINETS_PER_LONG_LAN[productKey];
         let requiredLongEthRuns = 0;
         let ports_by_cabinets = 0;
 
         if (cabinetsRule) {
             requiredLongEthRuns = Math.max(1, Math.ceil(totalCabinets / cabinetsRule.cabinetsPerRun));
-            ports_by_cabinets = requiredLongEthRuns; // long runs equate to controller-to-wall ports needed
+            ports_by_cabinets = requiredLongEthRuns;
         } else {
-            // SMD (indoor/outdoor) -> compute based on pixels
-            requiredLongEthRuns = Math.max(1, ports_by_pixels); // controller->wall runs driven by pixels for SMD
+            requiredLongEthRuns = Math.max(1, ports_by_pixels);
             ports_by_cabinets = requiredLongEthRuns;
         }
 
-        // 3) Use the greater of pixel-driven ports and cabinet-driven long runs
         let requiredPorts = Math.max(ports_by_pixels, ports_by_cabinets);
-
-        // 4) Apply GLOBAL_PORT_BUFFER_PCT (5%) to requiredPorts
         const requiredPortsBuffered = Math.max(1, Math.ceil(requiredPorts * (1 + GLOBAL_PORT_BUFFER_PCT)));
-
-        // 5) Calculate required sending cards based on chosen output card ports
         const outputCardPorts = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
         const outputCardModel = finalCalculationData.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
         const requiredSendCards = Math.max(1, Math.ceil(requiredPortsBuffered / outputCardPorts));
-
-        // 6) Short ethernet between cabinets (approx)
         const requiredShortEthernet = Math.max(0, totalCabinets - requiredPortsBuffered);
 
         // pick controller based on pixels & resolution AND requiredPortsBuffered
@@ -590,7 +760,6 @@
         const splicerSolution = finalCalculationData.splicerSolution || (isHSeries ? H_SERIES_DEFAULTS.SPLICER_NAME : 'N/A');
         const controllerName = finalCalculationData.controllerOverrideName || suggestedController.name;
 
-        // Store everything
         finalCalculationData = {
             ...finalCalculationData,
             productName: details.name,
@@ -635,84 +804,7 @@
             splicerSolution: splicerSolution
         };
 
-        // compute a LAN wiring map to be used by visualization & PDF
-        finalCalculationData.lanMap = buildLanMap(finalCalculationData, productKey);
-
         return finalCalculationData;
-    }
-
-    // Build LAN map: choose which cabinets receive long Ethernet runs (controller → cabinet),
-    // and define inter-cabinet short links (neighboring cabinets horizontally).
-    // Strategy:
-    //  - For COB: use cabinetsPerRun to group columns and pick one cabinet per run as the long-run termination.
-    //  - For SMD: distribute requiredPortsBuffered evenly across columns.
-    function buildLanMap(data, productKey) {
-        const { numCabW, numCabH, totalCabinets, requiredPortsBuffered } = data;
-        const cabRule = CABINETS_PER_LONG_LAN[productKey];
-        const longRunCabinets = []; // array of {row, col, index}
-        // convert grid to zero-based indices, index = row * numCabW + col
-        if (cabRule) {
-            // group by "run length" horizontally: we will pick termination cabinets by scanning left-to-right, top-to-bottom
-            const perRun = cabRule.cabinetsPerRun;
-            let assigned = 0;
-            for (let r = 0; r < numCabH; r++) {
-                for (let c = 0; c < numCabW; c += perRun) {
-                    if (assigned >= requiredPortsBuffered) break;
-                    // pick the first cabinet in the group as the termination
-                    const chosenCol = c;
-                    longRunCabinets.push({ row: r, col: chosenCol, index: r * numCabW + chosenCol });
-                    assigned++;
-                }
-                if (assigned >= requiredPortsBuffered) break;
-            }
-            // if still ports remain (unlikely), fill next columns
-            if (longRunCabinets.length < requiredPortsBuffered) {
-                for (let r = 0; r < numCabH && longRunCabinets.length < requiredPortsBuffered; r++) {
-                    for (let c = 0; c < numCabW && longRunCabinets.length < requiredPortsBuffered; c++) {
-                        const idx = r * numCabW + c;
-                        if (!longRunCabinets.some(x => x.index === idx)) {
-                            longRunCabinets.push({ row: r, col: c, index: idx });
-                        }
-                    }
-                }
-            }
-        } else {
-            // SMD fallback: distribute across columns evenly
-            const perColumn = Math.max(1, Math.ceil(requiredPortsBuffered / numCabW));
-            let assigned = 0;
-            for (let c = 0; c < numCabW; c++) {
-                for (let r = 0; r < Math.min(numCabH, perColumn); r++) {
-                    if (assigned >= requiredPortsBuffered) break;
-                    longRunCabinets.push({ row: r, col: c, index: r * numCabW + c });
-                    assigned++;
-                }
-                if (assigned >= requiredPortsBuffered) break;
-            }
-            if (longRunCabinets.length < requiredPortsBuffered) {
-                for (let r = 0; r < numCabH && longRunCabinets.length < requiredPortsBuffered; r++) {
-                    for (let c = 0; c < numCabW && longRunCabinets.length < requiredPortsBuffered; c++) {
-                        const idx = r * numCabW + c;
-                        if (!longRunCabinets.some(x => x.index === idx)) longRunCabinets.push({ row: r, col: c, index: idx });
-                    }
-                }
-            }
-        }
-
-        // short links: we'll create a set of neighbor links (between horizontally adjacent cabinets)
-        const shortLinks = [];
-        for (let r = 0; r < data.numCabH; r++) {
-            for (let c = 0; c < data.numCabW - 1; c++) {
-                const a = { row: r, col: c, index: r * data.numCabW + c };
-                const b = { row: r, col: c+1, index: r * data.numCabW + (c+1) };
-                shortLinks.push({ a, b });
-            }
-        }
-
-        return {
-            controllerPosition: { x: -1, y: Math.floor(data.numCabH / 2) }, // place controller left outside center row
-            longRunCabinets,
-            shortLinks
-        };
     }
 
     function calculateDimensions(data) {
@@ -723,85 +815,6 @@
         return { finalW_M, finalH_M, finalW_FT, finalH_FT };
     }
 
-    // Build HTML escape util
-    function escapeHtml(text) {
-      if (!text && text !== 0) return '';
-      return String(text).replace(/[&<>"'`=\/]/g, function (s) {
-          return ({"&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;", "/": "&#x2F;", "`": "&#x60;", "=": "&#x3D;"})[s];
-      });
-    }
-
-    // Helper: build BOQ (keeps combined/compact earlier approach)
-    function generateBOQList(data) {
-      const list = [];
-      const ctrlPart = 'TBD';
-      list.push({ item: 'Controller/Processor', partcode: ctrlPart, desc: data.controllerName || 'Suggested Controller', qty: 1, unit: 'PCS', combined: `Controller/Processor — ${data.controllerName || 'Suggested'}` });
-
-      if (data.controllerType && data.controllerType.includes('Modular')) {
-        list.push({ item: 'Splicer Frame', partcode: 'TBD', desc: data.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME, qty: 1, unit: 'PCS', combined: `Modular Splicer Frame — ${data.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME}`});
-        list.push({ item: 'Output Card (Sending)', partcode: data.outputCardModel || 'TBD', desc: `${data.outputCardModel || 'H_20xRJ45'}`, qty: data.requiredSendCards, unit: 'PCS', combined: `Output Card (Sending) — ${data.outputCardModel || 'H_20xRJ45'}`});
-        list.push({ item: 'Input Card', partcode: data.inputCardModel || 'TBD', desc: `${data.inputCardQty || 2} x ${data.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL}`, qty: data.inputCardQty || 2, unit: 'PCS', combined: `Input Card(s) — ${data.inputCardQty || 2} x ${data.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL}`});
-      } else {
-        list.push({ item: 'Output Card (Integrated/Optional)', partcode: 'TBD', desc: 'H_4 x HDMI Output Card (Optional / integrated)', qty: 1, unit: 'PCS', combined: 'Output Card (Integrated/Optional) — H_4 x HDMI (if required)' });
-      }
-
-      list.push({ item: 'Receiving Cards', partcode: 'Embedded', desc: 'Receiving cards embedded within each cabinet', qty: data.totalRecCards, unit: 'PCS', combined: `Receiving Cards (embedded) — ${data.totalRecCards} PCS` });
-      list.push({ item: 'Long Ethernet Ports', partcode: 'TBD', desc: 'Controller → Wall long Ethernet runs (post-buffer)', qty: data.requiredPortsBuffered, unit: 'PCS', combined: `Controller → Wall Long Ethernet Ports (post-buffer) — ${data.requiredPortsBuffered}` });
-      list.push({ item: 'Short Ethernet (CAT6)', partcode: 'TBD', desc: 'Inter-cabinet CAT6 short links', qty: data.requiredShortEthernet, unit: 'PCS', combined: `Inter-cabinet CAT6 short links — ${data.requiredShortEthernet}` });
-
-      // LED Cabinets
-      const ledPartKey = (() => {
-        if (data.pixelPitch_mm <= 1.0) return 'PPL-COB-09';
-        if (data.pixelPitch_mm <= 1.3) return 'PPL-COB-125';
-        if (data.cabinetW_mm === 640) return 'PPL-SMD-18';
-        if (data.cabinetW_mm === 960) return 'PPL-SMD-40';
-        return 'PPL-SMD-18';
-      })();
-      list.push({ item: 'LED Cabinets (Including Modules)', partcode: LED_PRODUCTS ? ledPartKey : 'TBD', desc: data.productName, qty: data.totalCabinets, unit: 'PCS', combined: `LED Cabinets (Including Modules) — ${data.productName}` });
-
-      // Spare modules
-      const sparePct = (data.productName && data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
-      const spareModulesQty = Math.max(1, Math.round(data.totalModules * sparePct));
-      list.push({ item: `Spare Modules (${Math.round(sparePct*100)}%)`, partcode: 'TBD', desc: 'Spare modules (site spares)', qty: spareModulesQty, unit: 'PCS', combined: `Spare Modules (${Math.round(sparePct*100)}%) — ${spareModulesQty} PCS` });
-
-      // Power / installation
-      list.push({ item: 'Design Power (W)', partcode: 'TBD', desc: 'Design power capacity (W)', qty: Math.round(data.maxPower_W), unit: 'W', combined: `Design Max Power (W) — ${Math.round(data.maxPower_W)} W` });
-      list.push({ item: 'Installation / Config - Indoor', partcode: 'ALED-INST-IN', desc: 'Installation & configuration (per cabinet)', qty: data.totalCabinets, unit: 'Per Cabinet', combined: `Installation & Configuration (Indoor) — ${data.totalCabinets} Per Cabinet`});
-      list.push({ item: 'Transportation - Indoor', partcode: 'ALED-TRS-IN-REG', desc: 'Transportation per cabinet (indoor)', qty: data.totalCabinets, unit: 'Per Cabinet', combined: `Transportation (Indoor) — ${data.totalCabinets} Per Cabinet` });
-      list.push({ item: 'Power Supply', partcode: 'TP-XPS-H800W', desc: 'H_800W Power Supply (estimate)', qty: Math.max(1, Math.ceil(data.totalCabinets / 10)), unit: 'PCS', combined: `Power Supply — TP-XPS-H800W x ${Math.max(1, Math.ceil(data.totalCabinets/10))}` });
-
-      return list;
-    }
-
-    // Render BOQ preview (unchanged)
-    function renderBOQPreview(data) {
-      const list = generateBOQList(data);
-      let html = `<div class="boq-section"><h4>Bill of Quantities (Preview)</h4><table id="boqPreviewTable"><thead><tr><th>#</th><th>Item</th><th>Partcode</th><th>Description</th><th style="text-align:right">Qty</th><th>Unit</th></tr></thead><tbody>`;
-      list.forEach((row, idx) => {
-        html += `<tr>
-          <td>${idx+1}</td>
-          <td>${escapeHtml(row.item)}</td>
-          <td class="small">${escapeHtml(row.partcode)}</td>
-          <td>${escapeHtml(row.desc)}</td>
-          <td style="text-align:right">${row.qty}</td>
-          <td>${row.unit}</td>
-        </tr>`;
-      });
-      // empty rows for unit price & total price
-      html += `<tr><td>${list.length+1}</td><td> </td><td> </td><td>Unit Price</td><td> </td><td> </td></tr>`;
-      html += `<tr><td>${list.length+2}</td><td>Grand Total</td><td> </td><td>Total Price</td><td> </td><td> </td></tr>`;
-
-      html += `</tbody></table></div>`;
-      let previewContainer = document.getElementById('boqPreviewContainer');
-      if (!previewContainer) {
-        previewContainer = document.createElement('div');
-        previewContainer.id = 'boqPreviewContainer';
-        document.querySelector('.visualization').appendChild(previewContainer);
-      }
-      previewContainer.innerHTML = html;
-    }
-
-    // Visualization + wiring overlay rendering
     function showVisualization(){
         const data = calculateLEDWall();
         if (!data) return;
@@ -813,7 +826,6 @@
         document.querySelector('.back-btn-placeholder').classList.remove('hidden');
         document.getElementById('visualization').classList.add('visible');
 
-        // details
         document.getElementById('pixelPitchDisplay').innerHTML = `<strong>Pixel Pitch :</strong><small>${data.pixelPitch_mm} mm</small>`;
         document.getElementById('finalDimensions').innerHTML = `<strong>Actual Final Dimensions (WxH) :</strong><small>(${finalW_FT.toFixed(2)}ft x ${finalH_FT.toFixed(2)}ft) - ${finalW_M.toFixed(2)}m x ${finalH_M.toFixed(2)}m</small>`;
         document.getElementById('resolution').innerHTML = `<strong>Actual Final Resolution (WxH) :</strong><small>${data.finalResW} x ${data.finalResH}</small>`;
@@ -824,8 +836,6 @@
         document.getElementById('totalPixels').innerHTML = `<strong>Total Pixels :</strong><small>${formatLargeNumber(data.totalPixels)}</small>`;
         document.getElementById('cabinetSize').innerHTML = `<strong>Cabinet Size (WxH) :</strong><small>${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm</small>`;
         document.getElementById('cabinetPixels').innerHTML = `<strong>Cabinet Pixels (WxH) :</strong><small>${data.cabPixW} x ${data.cabPixH}</small>`;
-        const pixelDensity = Math.round(data.totalPixels / Math.max(0.0001, data.finalArea_m2));
-        document.getElementById('pixelDensity').innerHTML = `<strong>Pixel Density :</strong><small>${pixelDensity.toLocaleString()} pixels/m²</small>`;
 
         const isHSeries = data.controllerType.includes("Modular");
         const controlSystemDetailsDiv = document.getElementById('controlSystemDetails');
@@ -844,6 +854,9 @@
                     <span id="inputCardModel"><strong>Input Card (User Specified) :</strong><small>${data.inputCardQty} x ${data.inputCardModel}</small></span>
                 </div>
             `;
+            if (data.includeHdmiOutput) {
+              htmlContent += `<div style="margin-top:8px;"><small style="color:#444">Note: HDMI Output Card (optional) included per user selection.</small></div>`;
+            }
         }
 
         htmlContent += `
@@ -862,16 +875,15 @@
 
         controlSystemDetailsDiv.innerHTML = htmlContent;
 
-        // visualization sizing
         const aspectRatio = data.finalW_mm / data.finalH_mm;
-        const visualizationHeight = 350;
+        const visualizationHeight = 300;
         const visGrid = document.getElementById('visGrid');
 
         visGrid.style.width = '100%';
         setTimeout(()=>{
             try {
-                const w = visGrid.clientWidth || Math.min(window.innerWidth - 200, 900);
-                const computedH = Math.max(120, Math.min(visualizationHeight, Math.round(w / Math.max(0.3, aspectRatio))));
+                const w = visGrid.clientWidth || Math.min(window.innerWidth - 200, 800);
+                const computedH = Math.max(120, Math.min(visualizationHeight, Math.round(w / aspectRatio)));
                 visGrid.style.height = `${computedH}px`;
             } catch(e) { visGrid.style.height = `${visualizationHeight}px`; }
         },50);
@@ -879,14 +891,13 @@
         document.getElementById('visWidthLabel').textContent = `${finalW_M.toFixed(2)} m (W)`;
         document.getElementById('visHeightLabel').textContent = `${finalH_M.toFixed(2)} m (H)`;
 
-        // Build cabinet grid
+        // Cabinet overlay
         const cabinetOverlay = document.getElementById('cabinetOverlay');
         cabinetOverlay.innerHTML = '';
         cabinetOverlay.style.gridTemplateColumns = `repeat(${data.numCabW}, 1fr)`;
         cabinetOverlay.style.gridTemplateRows = `repeat(${data.numCabH}, 1fr)`;
         cabinetOverlay.style.display = 'grid';
 
-        // tooltip element
         let tooltip = document.getElementById('cabTooltip');
         if (!tooltip) {
           tooltip = document.createElement('div');
@@ -895,27 +906,21 @@
           document.body.appendChild(tooltip);
         }
 
-        // create cell elements and label them (row-col)
-        const cellElements = [];
         for (let r = 0; r < data.numCabH; r++) {
             for (let c = 0; c < data.numCabW; c++) {
                 const cabDiv = document.createElement('div');
-                cabDiv.style.border = '2px solid rgba(13, 71, 161, 0.12)';
+                cabDiv.style.border = '2px solid rgba(13, 71, 161, 0.25)';
                 cabDiv.style.boxSizing = 'border-box';
                 cabDiv.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02))';
                 cabDiv.style.position = 'relative';
                 cabDiv.style.overflow = 'hidden';
-                cabDiv.style.padding = '4px';
-                // label inside cabinet
-                const label = document.createElement('div');
+                const label = document.createElement('span');
                 label.className = 'cab-label';
-                label.textContent = `${r+1}×${c+1}`;
+                label.textContent = `${r+1},${c+1}`;
                 cabDiv.appendChild(label);
-
-                // events show tooltip with pixel resolution
                 cabDiv.addEventListener('mouseenter', (ev) => {
                   const cabPixW = data.cabPixW, cabPixH = data.cabPixH;
-                  const txt = `Cabinet: R${r+1} C${c+1} — Pixels: ${cabPixW} x ${cabPixH}`;
+                  const txt = `Cabinet: ${r+1} x ${c+1} — Pixels: ${cabPixW} x ${cabPixH}`;
                   tooltip.style.display = 'block';
                   tooltip.textContent = txt;
                 });
@@ -928,126 +933,11 @@
                 });
 
                 cabinetOverlay.appendChild(cabDiv);
-                cellElements.push(cabDiv);
             }
         }
 
-        // Prepare SVG overlay (clear and draw)
-        const svg = document.getElementById('svgOverlay');
-        while(svg.firstChild) svg.removeChild(svg.firstChild);
-
-        // place controller dot (left center) visually
-        const controllerDot = document.getElementById('controllerDot');
-        controllerDot.style.display = 'none'; // we'll position it via JS after measuring
-
-        // We need the bounding boxes of each cabinet cell to draw lines
-        setTimeout(()=>{
-            // measure cells and compute centers
-            const cells = [];
-            for (let i = 0; i < cellElements.length; i++) {
-                const el = cellElements[i];
-                const rect = el.getBoundingClientRect();
-                const parentRect = document.getElementById('visGrid').getBoundingClientRect();
-                // svg uses relative coords inside visGrid; compute local x,y
-                const x = rect.left - parentRect.left + rect.width/2;
-                const y = rect.top - parentRect.top + rect.height/2;
-                cells.push({ el, x, y, width: rect.width, height: rect.height });
-            }
-
-            // controller visual position: left outside center row
-            const gridRect = document.getElementById('visGrid').getBoundingClientRect();
-            const parentRect = gridRect;
-            const controllerX = 8; // small left inset
-            const controllerY = gridRect.height / 2;
-            controllerDot.style.display = 'block';
-            controllerDot.style.left = (gridRect.left + window.scrollX + controllerX - 6) + 'px';
-            controllerDot.style.top = (gridRect.top + window.scrollY + controllerY - 6) + 'px';
-
-            // Draw long runs (green) from controller to chosen cabinets
-            const longRunCabinets = (data.lanMap && data.lanMap.longRunCabinets) ? data.lanMap.longRunCabinets : [];
-            longRunCabinets.forEach(item => {
-                const idx = item.index;
-                if (idx >= 0 && idx < cells.length) {
-                    const c = cells[idx];
-                    // draw line (controller -> c)
-                    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-                    line.setAttribute('x1', controllerX);
-                    line.setAttribute('y1', controllerY);
-                    line.setAttribute('x2', c.x);
-                    line.setAttribute('y2', c.y);
-                    line.setAttribute('stroke', '#1B5E20'); // green
-                    line.setAttribute('stroke-width', 2.5);
-                    line.setAttribute('stroke-dasharray', '4,0');
-                    svg.appendChild(line);
-
-                    // mark cabinet circle
-                    const circ = document.createElementNS('http://www.w3.org/2000/svg','circle');
-                    circ.setAttribute('cx', c.x);
-                    circ.setAttribute('cy', c.y);
-                    circ.setAttribute('r', Math.max(4, Math.min(8, Math.min(c.width, c.height)/8)));
-                    circ.setAttribute('fill', '#1B5E20');
-                    svg.appendChild(circ);
-                }
-            });
-
-            // Draw short inter-cabinet CAT6 links (light gray) between centers of horizontally adjacent cabinets
-            const shortLinks = data.lanMap.shortLinks || [];
-            shortLinks.forEach(link => {
-                const aIdx = link.a.index;
-                const bIdx = link.b.index;
-                if (aIdx < cells.length && bIdx < cells.length) {
-                    const a = cells[aIdx];
-                    const b = cells[bIdx];
-                    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-                    line.setAttribute('x1', a.x);
-                    line.setAttribute('y1', a.y);
-                    line.setAttribute('x2', b.x);
-                    line.setAttribute('y2', b.y);
-                    line.setAttribute('stroke', 'rgba(100,100,100,0.25)');
-                    line.setAttribute('stroke-width', 1.6);
-                    svg.appendChild(line);
-                }
-            });
-
-            // small legend icons on SVG (top-left)
-            const legendX = 20, legendY = 14;
-            // green square
-            const gRect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-            gRect.setAttribute('x', legendX);
-            gRect.setAttribute('y', legendY - 8);
-            gRect.setAttribute('width', 10);
-            gRect.setAttribute('height', 10);
-            gRect.setAttribute('fill', '#1B5E20');
-            svg.appendChild(gRect);
-            // label
-            const gTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
-            gTxt.setAttribute('x', legendX + 16);
-            gTxt.setAttribute('y', legendY);
-            gTxt.setAttribute('font-size', '11');
-            gTxt.setAttribute('fill', '#213444');
-            gTxt.textContent = 'Long Ethernet (Controller → Cabinet)';
-            svg.appendChild(gTxt);
-            // gray line legend
-            const gl = document.createElementNS('http://www.w3.org/2000/svg','line');
-            gl.setAttribute('x1', legendX);
-            gl.setAttribute('y1', legendY + 12);
-            gl.setAttribute('x2', legendX + 12);
-            gl.setAttribute('y2', legendY + 12);
-            gl.setAttribute('stroke', 'rgba(100,100,100,0.4)');
-            gl.setAttribute('stroke-width', 2);
-            svg.appendChild(gl);
-            const glTxt = document.createElementNS('http://www.w3.org/2000/svg','text');
-            glTxt.setAttribute('x', legendX + 16);
-            glTxt.setAttribute('y', legendY + 16);
-            glTxt.setAttribute('font-size', '11');
-            glTxt.setAttribute('fill', '#213444');
-            glTxt.textContent = 'Inter-cabinet CAT6';
-            svg.appendChild(glTxt);
-
-        },80);
-
-        // Render BOQ
         try { renderBOQPreview(data); } catch(e){ /* ignore */ }
+
         document.getElementById('downloadPdfLink').classList.remove('hidden');
     }
 
@@ -1057,12 +947,12 @@
         document.getElementById('submitButton').classList.remove('hidden');
         document.querySelector('.back-btn-placeholder').classList.add('hidden');
         document.getElementById('downloadPdfLink').classList.add('hidden');
-        // remove BOQ preview
+
         const preview = document.getElementById('boqPreviewContainer');
         if (preview) preview.remove();
     }
 
-    // --- PDF Generation with wiring schematic (controller → chosen cabinets & short links) ---
+    // --- PDF Generation (condensed, single-page attempt) ---
     function openContactModal() {
         if (!finalCalculationData || finalCalculationData.totalPixels === 0) {
             document.getElementById('errorMessage').textContent = 'ERROR: Please calculate the LED wall configuration first.';
@@ -1070,7 +960,6 @@
             document.getElementById('errorMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
-        // If no contact info provided previously, allow immediate download without forcing user to enter email/phone
         if (!contactInfo.email && !contactInfo.phone) {
             proceedToDownloadPdf();
             return;
@@ -1099,242 +988,141 @@
         proceedToDownloadPdf();
     }
 
-    // Draw a wiring schematic in the PDF: small grid with boxes and lines
-    function drawWiringSchematicInPdf(doc, x, y, width, height, data) {
-        // layout
-        const cols = data.numCabW;
-        const rows = data.numCabH;
-        const cellW = Math.min(18, (width - 10) / Math.max(1, cols));
-        const cellH = Math.min(12, (height - 10) / Math.max(1, rows));
-        const startX = x + 4;
-        const startY = y + 4;
-
-        // draw grid boxes
-        doc.setDrawColor(200);
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                const bx = startX + c * cellW;
-                const by = startY + r * cellH;
-                doc.rect(bx, by, cellW - 2, cellH - 2);
-                // label inside
-                doc.setFontSize(6);
-                doc.text(`${r+1}x${c+1}`, bx + 1.5, by + cellH/2 - 1);
-            }
-        }
-
-        // draw controller as small circle at left-middle
-        const ctrlX = startX - 6;
-        const ctrlY = startY + Math.floor(rows/2) * cellH + cellH/2 - 1;
-        doc.setFillColor(27,94,32);
-        doc.circle(ctrlX, ctrlY, 1.8, 'F');
-
-        // mapping: convert lanMap long-run cabinets to schematic positions and draw green lines
-        const longRuns = (data.lanMap && data.lanMap.longRunCabinets) ? data.lanMap.longRunCabinets : [];
-        doc.setDrawColor(27,94,32);
-        doc.setLineWidth(0.8);
-        longRuns.forEach(item => {
-            const r = item.row, c = item.col;
-            const bx = startX + c * cellW + (cellW-2)/2;
-            const by = startY + r * cellH + (cellH-2)/2;
-            // draw line
-            doc.line(ctrlX, ctrlY, bx, by);
-            // draw small filled dot at cabinet
-            doc.circle(bx, by, 1.2, 'F');
-        });
-
-        // draw short inter-cabinet links (horizontal neighbors) as light gray lines
-        doc.setDrawColor(160,160,160);
-        doc.setLineWidth(0.3);
-        (data.lanMap.shortLinks || []).forEach(link => {
-            const a = link.a, b = link.b;
-            const ax = startX + a.col * cellW + (cellW-2)/2;
-            const ay = startY + a.row * cellH + (cellH-2)/2;
-            const bx = startX + b.col * cellW + (cellW-2)/2;
-            const by = startY + b.row * cellH + (cellH-2)/2;
-            doc.line(ax, ay, bx, by);
-        });
-
-        // legend
-        doc.setFontSize(7);
-        doc.setTextColor(50,50,50);
-        doc.text('Wiring Schematic (top view)', x, y - 1);
-        doc.setFillColor(27,94,32);
-        doc.rect(x + width - 46, y, 4, 4, 'F');
-        doc.text('Long Ethernet (Controller → Cabinet)', x + width - 38, y + 3);
-        doc.setDrawColor(160,160,160);
-        doc.line(x + width - 46, y + 8, x + width - 42, y + 8);
-        doc.text('Inter-cabinet CAT6', x + width - 38, y + 10);
-    }
-
     function proceedToDownloadPdf() {
         const data = finalCalculationData;
         const { finalW_M, finalH_M, finalW_FT, finalH_FT } = calculateDimensions(data);
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
-        let y = 10;
-        const margin = 12;
-        const lineHeight = 6;
+        let y = 8;
+        const margin = 10;
+        const lineHeight = 5.5;
         const pageW = doc.internal.pageSize.getWidth();
         const primaryColor = [13, 71, 161];
-        const secondaryColor = [183, 28, 28];
+        const secondaryColor = [27, 94, 32];
 
-        // PDF metadata
+        // metadata
         try {
           doc.setProperties({
             title: `PeopleLink LED Config - ${data.finalResW}x${data.finalResH}`,
-            subject: `Long Ethernet runs: ${data.requiredPortsBuffered}`,
+            subject: `Contact: ${contactInfo.phone || 'N/A'}`,
             author: contactInfo.email || 'PeopleLink Unified Communications',
             keywords: `LED,VideoWall,PeopleLink,${data.productName}`,
             creator: 'PeopleLink LED Configurator'
           });
-        } catch(e){ /* ignore */ }
+        } catch(e){}
 
-        // Header
-        doc.setFontSize(16);
+        // Header (compact)
+        doc.setFontSize(14);
         doc.setTextColor(...primaryColor);
-        doc.text('PeopleLink Unified Communications Pvt. Ltd.', margin, y);
-        doc.setFontSize(11);
-        doc.setTextColor(70,70,70);
-        doc.text('Technical Quotation & Wiring Summary', pageW/2, y, { align: 'center' });
-        y += 8;
+        doc.text('PeopleLink LED Video Wall - Technical Summary', margin, y);
+        y += lineHeight;
         doc.setFontSize(8);
         doc.setTextColor(90,90,90);
-        doc.text(`Generated: ${new Date().toLocaleString()}`, pageW - margin, y - 6, { align: 'right' });
-        doc.text(`Contact: ${contactInfo.email || 'N/A'} | ${contactInfo.phone || 'N/A'}`, pageW - margin, y - 1, { align: 'right' });
-        y += 6;
+        doc.text(`Model: ${data.productName} | Generated: ${new Date().toLocaleDateString()}`, margin, y);
+        doc.text(`Contact: ${contactInfo.email || 'N/A'} ${contactInfo.phone ? ' | ' + contactInfo.phone : ''}`, pageW - margin, y, { align: 'right' });
+        y += lineHeight + 2;
 
-        // 1) Wall Performance (two columns)
-        doc.setFontSize(10); doc.setTextColor(...secondaryColor);
-        doc.text('1. Wall Performance & Dimensions', margin, y);
-        y += 6;
-        doc.setFontSize(8); doc.setTextColor(40,40,40);
-        const leftX = margin;
-        const rightX = pageW/2 + 6;
-        doc.text('Final Dimensions (mm):', leftX, y);
-        doc.text(`${(data.finalW_mm).toLocaleString()} x ${(data.finalH_mm).toLocaleString()} mm`, leftX + 56, y);
-        doc.text('Final Dimensions (ft):', rightX, y);
-        doc.text(`${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} x ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`, rightX + 60, y);
-        y += lineHeight;
+        // Compact two-column summary (dimensions / performance)
+        doc.setFontSize(9);
+        doc.setTextColor(40,40,40);
+        const leftColX = margin;
+        const rightColX = pageW / 2 + 4;
+        let curY = y;
 
-        doc.text('Final Diagonal:', leftX, y);
-        doc.text(`${data.finalDiagonal_in.toFixed(0)} inch`, leftX + 56, y);
-        doc.text('Final Area:', rightX, y);
-        doc.text(`${data.finalArea_m2.toFixed(2)} m² / ${(data.finalArea_m2*10.7639).toFixed(2)} ft²`, rightX + 60, y);
-        y += lineHeight;
+        doc.text('Final Dimensions (mm):', leftColX, curY);
+        doc.text(`${(data.finalW_mm).toLocaleString()} x ${(data.finalH_mm).toLocaleString()} mm`, leftColX + 45, curY);
+        doc.text('Final Dimensions (ft):', rightColX, curY);
+        doc.text(`${finalW_FT.toFixed(2)} x ${finalH_FT.toFixed(2)} ft`, rightColX + 50, curY);
+        curY += lineHeight;
 
-        doc.text('Pixel Pitch:', leftX, y);
-        doc.text(`P ${data.pixelPitch_mm}`, leftX + 56, y);
-        doc.text('Aspect Ratio:', rightX, y);
-        doc.text(`${data.aspectRatioText}`, rightX + 60, y);
-        y += lineHeight;
+        doc.text('Final Diagonal:', leftColX, curY);
+        doc.text(`${data.finalDiagonal_in.toFixed(0)} inch`, leftColX + 45, curY);
+        doc.text('Final Area:', rightColX, curY);
+        doc.text(`${data.finalArea_m2.toFixed(2)} m² / ${(data.finalArea_m2*10.7639).toFixed(2)} ft²`, rightColX + 50, curY);
+        curY += lineHeight;
 
-        doc.text('Resolution:', leftX, y);
-        doc.text(`${data.finalResW} x ${data.finalResH} px`, leftX + 56, y);
-        doc.text('Total Pixels:', rightX, y);
-        doc.text(`${formatLargeNumber(data.totalPixels)}`, rightX + 60, y);
-        y += lineHeight;
+        doc.text('Pixel Pitch:', leftColX, curY);
+        doc.text(`P ${data.pixelPitch_mm}`, leftColX + 45, curY);
+        doc.text('Final Aspect Ratio:', rightColX, curY);
+        doc.text(`${data.aspectRatioText}`, rightColX + 50, curY);
+        curY += lineHeight;
 
-        const pixelDensity = Math.round(data.totalPixels / Math.max(0.0001, data.finalArea_m2));
-        doc.text('Pixel Density:', leftX, y);
-        doc.text(`${pixelDensity.toLocaleString()} pixels/m²`, leftX + 56, y);
-        doc.text('Required Sending Ports:', rightX, y);
-        doc.text(`${data.requiredPortsBuffered}`, rightX + 60, y);
-        y += lineHeight * 1.2;
+        doc.text('Resolution:', leftColX, curY);
+        doc.text(`${data.finalResW} x ${data.finalResH} px`, leftColX + 45, curY);
+        doc.text('Total Pixels:', rightColX, curY);
+        doc.text(`${formatLargeNumber(data.totalPixels)}`, rightColX + 50, curY);
+        curY += lineHeight;
 
-        // 2) BOQ heading
-        doc.setFontSize(10); doc.setTextColor(...secondaryColor);
-        doc.text('2. Bill of Quantities (BOQ)', margin, y);
-        y += lineHeight;
+        doc.text('Pixel Density:', leftColX, curY);
+        const pixDensity = Math.round(data.totalPixels / data.finalArea_m2);
+        doc.text(`${pixDensity.toLocaleString()} pixels/m²`, leftColX + 45, curY);
+        doc.text('Required Sending Ports:', rightColX, curY);
+        doc.text(`${data.requiredPortsBuffered}`, rightColX + 50, curY);
+        curY += lineHeight;
 
-        // Prepare BOQ rows
+        doc.text('Cabinet Size:', leftColX, curY);
+        doc.text(`${data.cabinetW_mm}mm x ${data.cabinetH_mm}mm`, leftColX + 45, curY);
+        doc.text('Module Size:', rightColX, curY);
+        // module size often derived — try to show best guess
+        const moduleW = Math.round(data.cabinetW_mm / (data.cabPixW / (data.modulesPerCab || 1)));
+        doc.text(`${moduleW}mm x ${(data.cabinetH_mm / (data.cabPixH / (data.modulesPerCab || 1))).toFixed(2)}mm`, rightColX + 50, curY);
+        curY += lineHeight;
+
+        doc.text('Total Cabinets:', leftColX, curY);
+        doc.text(`${data.numCabW} x ${data.numCabH} (${data.totalCabinets})`, leftColX + 45, curY);
+        doc.text('Total Modules:', rightColX, curY);
+        doc.text(`${data.modulesPerCab} x ${data.totalCabinets}`, rightColX + 50, curY);
+        curY += lineHeight;
+
+        doc.text('Total Power (Est.):', leftColX, curY);
+        doc.text(`${(data.maxPower_W/1000).toFixed(2)} kW`, leftColX + 45, curY);
+        doc.text('Total Weight (Est.):', rightColX, curY);
+        doc.text(`${formatNumber(data.totalWallWeight_buffered,1)} kg`, rightColX + 50, curY);
+        curY += lineHeight + 2;
+
+        y = curY + 2;
+
+        // BOQ table (compact)
         const boqList = generateBOQList(data);
-        const boqRows = boqList.map((row, idx) => [String(idx+1), row.item, row.partcode || 'TBD', String(row.qty), row.unit, '', '']);
-        // two empty rows for unit price & grand total
-        boqRows.push([String(boqRows.length+1), '', '', '', '', '', '']);
-        boqRows.push([String(boqRows.length+1), 'Grand Total (INR)', '', '', '', '', '']);
+        const boqRows = boqList.map(r => [r.combined, r.partcode, String(r.qty), r.unit]);
 
         doc.autoTable({
           startY: y,
-          head: [['S.No','Item / Description','Partcode','Qty','Unit','Unit Price','Total Price']],
+          head: [['Item / Description', 'Partcode', 'Qty', 'Unit']],
           body: boqRows,
           margin: { left: margin, right: margin },
           theme: 'grid',
           headStyles: { fillColor: primaryColor, textColor: 255, fontSize: 8 },
-          styles: { fontSize: 8, cellPadding: 2 },
-          columnStyles: {
-            0: { cellWidth: 10, halign: 'center' },
-            1: { cellWidth: 70 },
-            2: { cellWidth: 30 },
-            3: { cellWidth: 15, halign: 'right' },
-            4: { cellWidth: 18, halign: 'center' },
-            5: { cellWidth: 22, halign: 'right' },
-            6: { cellWidth: 22, halign: 'right' }
-          }
+          styles: { fontSize: 8, cellPadding: 2.5 },
+          columnStyles: { 0: { cellWidth: 86 }, 1: { cellWidth: 36 }, 2: { cellWidth: 16, halign: 'right' }, 3: { cellWidth: 16, halign: 'center' } }
         });
 
-        y = doc.lastAutoTable.finalY + 6;
+        y = doc.lastAutoTable.finalY + 4;
 
-        // 3) Power, weight & connections (compact)
-        doc.setFontSize(10); doc.setTextColor(...secondaryColor);
-        doc.text('3. Power, Weight & Connections', margin, y);
-        y += 6;
-        doc.setFontSize(9); doc.setTextColor(40,40,40);
-        doc.text(`Design Max Power (W): ${Math.round(data.maxPower_W)} W`, margin, y);
-        doc.text(`Design Wall Weight (kg): ${data.totalWallWeight_buffered.toFixed(1)} kg`, pageW/2 + 10, y);
-        y += lineHeight;
-        doc.text(`Controller Ports Required (post-buffer): ${data.requiredPortsBuffered}`, margin, y);
-        doc.text(`Inter-cabinet short Ethernet runs: ${data.requiredShortEthernet}`, pageW/2 + 10, y);
-        y += lineHeight * 1.2;
-
-        // 4) Wiring schematic: draw a small grid and lines
-        const schematicWidth = 100;
-        const schematicHeight = 60;
-        const sx = pageW - margin - schematicWidth;
-        const sy = y;
-        try {
-          drawWiringSchematicInPdf(doc, sx, sy, schematicWidth, schematicHeight, data);
-        } catch (e) {
-          // fail silently if any drawing error
-        }
-
-        // Add textual list of long run cabinets (human friendly)
-        y += schematicHeight + 4;
-        doc.setFontSize(9); doc.setTextColor(18,54,102);
-        doc.text('4. Long Ethernet Run List (Controller → Cabinet)', margin, y);
-        y += 5;
-        doc.setFontSize(8);
-        const longRuns = (data.lanMap && data.lanMap.longRunCabinets) ? data.lanMap.longRunCabinets : [];
-        const lrText = longRuns.map(it => `R${it.row+1}C${it.col+1}`).join(', ');
-        const lrStr = lrText || '—';
-        const lrLines = doc.splitTextToSize(lrStr, pageW - margin*2);
-        doc.text(lrLines, margin, y);
-        y += lrLines.length * 4 + 4;
-
-        // Terms & Conditions (short)
-        doc.setFontSize(10); doc.setTextColor(18,54,102);
-        doc.text('5. Standard Terms & Conditions', margin, y);
-        y += 6;
-        doc.setFontSize(8); doc.setTextColor(60,60,60);
+        // T&Cs — condensed to try to maintain single page but kept essential points
         const terms = [
-            "1. Price Validity: This quotation is valid for 30 days from the date of issue.",
-            "2. Payment Terms: Standard terms are 50% advance, 40% upon delivery, and 10% upon successful commissioning.",
-            "3. Civil Work/Structure: All necessary civil works and primary mounting structure must be provided by the client unless included in the BOQ.",
-            "4. Power and Data: Stable power sources (UPS/Dedicated Circuit) and necessary LAN drops must be provided near the installation area.",
-            "5. Warranty: Standard warranty is 1 year on LED panels and accessories (manufacturing defects only).",
-            "6. Figures include a 15% safety margin for design power & weight."
+          "1) Price validity: 30 days.",
+          "2) Payment: 50% advance, 40% delivery, 10% commissioning.",
+          "3) Civil works & primary mounting by client unless specified.",
+          "4) Power & LAN drops to be provided near installation area.",
+          "5) Warranty: 1 year (manufacturing defects). Excludes misuse, surges, unauthorized repairs.",
+          "6) Site access and lifting equipment to be provided by client."
         ];
-        terms.forEach(t => {
-          if (y > doc.internal.pageSize.getHeight() - 40) { doc.addPage(); y = margin; }
-          const split = doc.splitTextToSize(t, pageW - margin*2);
-          doc.text(split, margin, y);
-          y += split.length * 4;
+
+        doc.setFontSize(8);
+        let tcy = y;
+        terms.forEach(t=>{
+          if (tcy > doc.internal.pageSize.getHeight() - 30) {
+            doc.addPage(); tcy = margin;
+          }
+          doc.text(t, margin, tcy);
+          tcy += 4.5;
         });
 
         // Footer
-        doc.setFontSize(8);
+        doc.setFontSize(7);
         doc.setTextColor(120,120,120);
-        doc.text('Prepared by: PeopleLink Unified Communications Pvt. Ltd. | sales@peoplelink.in', pageW/2, doc.internal.pageSize.getHeight()-8, { align:'center' });
-        doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd. All rights reserved.', pageW/2, doc.internal.pageSize.getHeight()-4, { align:'center' });
+        doc.text('Design figures include a 15% safety margin for power/weight. © 2025 PeopleLink Unified Communications Pvt. Ltd.', pageW/2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
 
         // Save
         doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
@@ -1354,9 +1142,8 @@
         }
     });
   </script>
-
 <footer class="page-footer">
-    © 2025 PeopleLink Unified Communications Pvt. Ltd. All rights reserved.
+    © 2025 PeopleLink Unified Communications Pvt. Ltd.
 </footer>
 </body>
 </html>
