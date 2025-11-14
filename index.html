@@ -11,7 +11,7 @@
   <style>
     /* PAGE */
     :root{--brand:#0D47A1;--accent:#B71C1C;--muted:#6b7280}
-    body { font-family: 'Inter', sans-serif; margin: 0; padding: 28px; background: #eef6fb; color: #1c2738; font-size: 14px; -webkit-font-smoothing:antialiased; }
+    body { font-family: 'Inter', sans-serif; margin: 0; padding: 18px; background: #eef6fb; color: #1c2738; font-size: 14px; -webkit-font-smoothing:antialiased; }
     .main-wrapper { max-width: 1200px; margin: auto; }
 
     /* HEADER */
@@ -203,6 +203,7 @@
             <div class="spec-row"><div class="label">Controller Ports (post buffer):</div><div class="value" id="ctrl_ports">--</div></div>
             <div class="spec-row hseries-only"><div class="label">Sending Cards needed:</div><div class="value" id="ctrl_sending">--</div></div>
             <div class="spec-row"><div class="label">Inter-cabinet Short Ethernet:</div><div class="value" id="ctrl_shorteth">--</div></div>
+            <div class="spec-row"><div class="label">Long Ethernet Cables (Input):</div><div class="value" id="ctrl_longeth">--</div></div>
             <div class="spec-row"><div class="label">Total Power Cables:</div><div class="value" id="ctrl_pwr_cables">--</div></div>
             <div class="spec-row"><div class="label">Max Power (Est.):</div><div class="value" id="spec_power">--</div></div>
             <div class="spec-row"><div class="label">Total Weight (Est.):</div><div class="value" id="spec_weight">--</div></div>
@@ -245,7 +246,7 @@
           <select id="modalOutputCardModel" onchange="updatePortsFromOutputCard()"></select>
         </div>
         <div>
-          <label class="form-label">Max Ports per Output Card</label>
+          <label class="form-label">Max Pixels per Output Card</label>
           <input id="modalMaxPortsPerCard" readonly />
         </div>
       </div>
@@ -324,8 +325,8 @@
       { name:"VX400 Pro", type:"All-in-One", ports:4, maxPixels:2600000, priority:3, maxPortsPerOutputCard: 650000 },
       { name:"VX600 Pro", type:"All-in-One", ports:6, maxPixels:3900000, priority:4, maxPortsPerOutputCard: 650000 },
       { name:"VX1000 Pro", type:"All-in-One", ports:10, maxPixels:6500000, priority:5, maxPortsPerOutputCard: 650000 },
-      { name:"4K Prime", type:"All-in-One", ports:16, maxPixels:10400000, priority:6, maxPortsPerOutputCard: 650000 },
-      { name:"H2", type:"Modular", ports:20, maxPixels:26000000, maxSendCards:2, priority:7, maxPortsPerOutputCard: 1300000 }, // R5 cards are 1.3M
+      { name:"4K Prime", type:"All-in-One", ports:16, maxPixels:10400000, priority:6, maxPortsPerOutputCard: 650000 }, // Added 4K Prime
+      { name:"H2", type:"Modular", ports:20, maxPixels:26000000, maxSendCards:2, priority:7, maxPortsPerOutputCard: 1300000 }, 
       { name:"H5", type:"Modular", ports:20, maxPixels:39000000, maxSendCards:3, priority:8, maxPortsPerOutputCard: 1300000 },
       { name:"H9", type:"Modular", ports:20, maxPixels:65000000, maxSendCards:6, priority:9, maxPortsPerOutputCard: 1300000 },
       { name:"H15", type:"Modular", ports:20, maxPixels:130000000, maxSendCards:12, priority:10, maxPortsPerOutputCard: 1300000 },
@@ -333,7 +334,7 @@
     ];
     // basic parts catalogue for BOQ
     const PARTS_CATALOG = {
-      'TB40': { part:'TP-VWC-NS-TB40', desc:'LED Video Wall Controller: TB40' }, 'TB60': { part:'TP-VWC-NS-TB60', desc:'LED Video Wall Controller: TB60' }, 'VX400': { part:'TP-VWC-NS-VX400', desc:'LED Video Wall Controller: VX400 Pro' }, 'VX600': { part:'TP-VWC-NS-VX600', desc:'LED Video Wall Controller: VX600 Pro' }, 'VX1000': { part:'TP-VWC-NS-VX1000', desc:'LED Video Wall Controller: VX1000 Pro' },
+      'TB40': { part:'TP-VWC-NS-TB40', desc:'LED Video Wall Controller: TB40' }, 'TB60': { part:'TP-VWC-NS-TB60', desc:'LED Video Wall Controller: TB60' }, 'VX400': { part:'TP-VWC-NS-VX400', desc:'LED Video Wall Controller: VX400 Pro' }, 'VX600': { part:'TP-VWC-NS-VX600', desc:'LED Video Wall Controller: VX600 Pro' }, 'VX1000': { part:'TP-VWC-NS-VX1000', desc:'LED Video Wall Controller: VX1000 Pro' }, '4K': { part:'TP-VWC-NS-4K', desc:'LED Video Wall Controller: 4K Prime' },
       'H2': { part:'TP-XMF-H2', desc:'LED Video Wall Controller (H2)' }, 'H5': { part:'TP-XMF-H5', desc:'LED Video Wall Controller (H5)' }, 'H9': { part:'TP-XMF-H9', desc:'LED Video Wall Controller (H9)' }, 'H15': { part:'TP-XMF-H15', desc:'LED Video Wall Controller (H15)' }, 'H20': { part:'TBD-H20', desc:'LED Video Wall Controller (H20)' },
       // Modular Output Cards
       'H_20_RJ45': { part:'TP-XOC-RJ45-20', desc:'H_20 x RJ45 Sending Card', pixels: 1300000 },
@@ -391,7 +392,6 @@
       let desiredW_mm=0, desiredH_mm=0;
       
       // Calculate Desired Dimensions (mm)
-      // ... (unchanged logic for calculating desiredW_mm, desiredH_mm based on unit/aspectRatio)
       if(unit === 'inches'){
         const ratio = aspectRatioKey || '16:9';
         const [rw,rh] = ratio.split(':').map(Number);
@@ -447,21 +447,24 @@
       const actualWeight = totalCabinets * details.weight_kg;
       const designWeight = actualWeight * WEIGHT_BUFFER;
       
-      // NEW Power Cable Calculation
-      const totalPowerRuns = Math.ceil(designPowerW / MAX_POWER_PER_RUN_W);
+      // NEW Power Cable Calculation (CORRECTED)
+      // Total Power Runs from Controller to Wall (Max 2000W per run)
+      const totalPowerRuns = Math.max(1, Math.ceil(designPowerW / MAX_POWER_PER_RUN_W)); 
       // Total Power Cables = Daisy-chain cables (1/cabinet) + Long Input Power Cables (1/run)
       const requiredPowerCables = totalCabinets + totalPowerRuns;
 
-      // Control system calculation
-      const requiredPorts = Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT);
-      const requiredPortsBuffered = Math.ceil(requiredPorts * (1 + GLOBAL_PORT_BUFFER_PCT));
-      
-      // --- UPDATED Cable Logic ---
+      // --- UPDATED Controller Port & Cable Logic ---
+
+      // 1. Ports required by Pixel Capacity (Standard Constraint)
+      const requiredPortsByPixels = Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT);
+      const requiredPortsByPixelsBuffered = Math.ceil(requiredPortsByPixels * (1 + GLOBAL_PORT_BUFFER_PCT));
+
+      // 2. Long Ethernet Runs required by Cabinet Grouping (Cabling Constraint)
       let requiredLongEthRuns = 0;
       let shortCableBuffer = 0;
+      let cabsPerRun = 0;
 
       if (details.name.includes('COB')) {
-          let cabsPerRun = 0;
           if (productKey === 'cob_09') {
               cabsPerRun = 2; // 1 long cable supports 2 cabinets
               shortCableBuffer = 0; // No buffer for 0.9
@@ -472,32 +475,37 @@
               cabsPerRun = 7; // 1 long cable supports 7 cabinets
               shortCableBuffer = 0.05; // 5% buffer
           }
-          // Long runs are calculated by total cabinets / cabinets per run
-          requiredLongEthRuns = Math.ceil(totalCabinets / cabsPerRun);
+          requiredLongEthRuns = Math.max(1, Math.ceil(totalCabinets / cabsPerRun));
+
       } else {
-          // SMD Indoor/Outdoor: Long cables needed = Buffered Ports
-          requiredLongEthRuns = requiredPortsBuffered;
+          // SMD Indoor/Outdoor: Use the buffered pixel port requirement as the number of long runs.
+          requiredLongEthRuns = requiredPortsByPixelsBuffered;
           shortCableBuffer = 0.05; // 5% buffer for SMD
       }
 
-      // Calculate Short Ethernet Cables (Inter-cabinet)
-      // Base: Total Cabinets - Long Runs (simplified for COB/SMD connections)
+      // Final Required Controller Ports (The MAX of the two constraints)
+      // The controller must have enough physical ports to accommodate the pixel density OR the cabling runs, whichever is higher.
+      const requiredPorts = Math.max(requiredPortsByPixelsBuffered, requiredLongEthRuns); 
+
+      // 3. Short Ethernet Cables (Inter-cabinet) (CORRECTED)
+      // Base: Total Cabinets - Long Runs (Interconnects needed are for cabinets *not* being fed by a long run)
       let baseShortEthRuns = Math.max(0, totalCabinets - requiredLongEthRuns); 
 
       // Apply buffer
-      let requiredShortEthernet = baseShortEthRuns;
-      if (shortCableBuffer > 0) {
-          requiredShortEthernet = Math.ceil(baseShortEthRuns * (1 + shortCableBuffer));
-      }
-      // If we are left with zero, it should be at least (total_cabs * 2) - long_runs (simplified: let's ensure it's at least total_cabs)
-      requiredShortEthernet = Math.max(totalCabinets, requiredShortEthernet); // Ensure we have enough for daisy-chain
+      let requiredShortEthernet = Math.ceil(baseShortEthRuns * (1 + shortCableBuffer));
+      
+      // Edge Case: If a 2x1 wall has 1 long run (1/2 cabs/run), baseShortEthRuns = 1. Buffer 0%. Result is 1. Correct.
+      // For 5x5 cob_15: totalCabs=25, runs=4. baseShort=21. Buffer 5%. ceil(21 * 1.05) = 23. Correct.
+      requiredShortEthernet = Math.max(requiredShortEthernet, 0);
 
-      // Find suggested controller
+
+      // Find suggested controller (MUST use the new `requiredPorts` which is the Max)
       let suggested = CONTROLLER_MODELS.slice().sort((a,b) => a.priority - b.priority).find(c => {
         if(c.type === 'Modular') {
-          return c.maxPixels >= totalPixels;
+          return c.maxPixels >= totalPixels; // Modular only cares about total pixels/cards
         } else {
-          return c.maxPixels >= totalPixels && c.ports >= requiredPortsBuffered;
+          // All-in-One must meet both the required port count AND pixel capacity
+          return c.maxPixels >= totalPixels && c.ports >= requiredPorts; 
         }
       }) || CONTROLLER_MODELS[CONTROLLER_MODELS.length-1];
       
@@ -508,13 +516,12 @@
 
       // Determine the max pixels per port based on controller type or user selection
       const outputCardModel = controllerModalData.outputCardModel || 'H_20_RJ45';
-      const outputCardPorts = PARTS_CATALOG[outputCardModel] ? PARTS_CATALOG[outputCardModel].pixels : (currentControllerObj.maxPortsPerOutputCard || PIXELS_PER_PORT_DEFAULT);
+      const outputCardPixels = PARTS_CATALOG[outputCardModel] ? PARTS_CATALOG[outputCardModel].pixels : (currentControllerObj.maxPortsPerOutputCard || PIXELS_PER_PORT_DEFAULT);
 
       let requiredSendCards = 0;
       if (currentControllerObj.type === 'Modular') {
-          requiredSendCards = Math.max(1, Math.ceil(totalPixels / outputCardPorts)); // Use total pixels for modular cards
+          requiredSendCards = Math.max(1, Math.ceil(totalPixels / outputCardPixels)); // Use total pixels for modular cards
       } else {
-          // For All-in-One, the ports are fixed
           requiredSendCards = 0;
       }
       
@@ -526,17 +533,22 @@
 
       // store
       finalCalculationData = {
-        productKey, productName: details.name, pixelPitch_mm: details.pitch_mm, cabinetW_mm: details.cabW_mm, cabinetH_mm: details.cabH_mm, cabPixW: details.cabPixW, cabPixH: details.cabPixH, numCabW, numCabH, totalCabinets, totalModules, finalW_mm, finalH_mm, finalArea_m2, finalResW, finalResH, totalPixels, aspectRatioText, finalDiagonal_in, pixelDensity, actualPowerW, designPowerW, designWeight, requiredPortsBuffered, requiredShortEthernet, requiredLongEthRuns, requiredSendCards, 
+        productKey, productName: details.name, pixelPitch_mm: details.pitch_mm, cabinetW_mm: details.cabW_mm, cabinetH_mm: details.cabH_mm, cabPixW: details.cabPixW, cabPixH: details.cabPixH, numCabW, numCabH, totalCabinets, totalModules, finalW_mm, finalH_mm, finalArea_m2, finalResW, finalResH, totalPixels, aspectRatioText, finalDiagonal_in, pixelDensity, actualPowerW, designPowerW, designWeight, 
+        requiredPortsBuffered: requiredPorts, 
+        requiredShortEthernet, 
+        requiredLongEthRuns, 
+        requiredSendCards, 
         controllerName: currentControllerObj.name, 
         controllerType: currentControllerObj.type, 
-        outputCardPorts: outputCardPorts, 
+        outputCardPixels: outputCardPixels, 
         outputCardModel: outputCardModel, 
         inputCardModel: controllerModalData.inputCardModel || 'H_1xHDMI', 
         inputCardQty: controllerModalData.inputCardQty || 2, 
-        splicerSolution: controllerModalData.splicerSolution || (currentControllerObj.type==='Modular' ? `${currentControllerObj.name} Splicer` : 'N/A'),
+        splicerSolution: controllerModalData.splicerSolution || (currentControllerObj.type.includes('Modular') ? `${currentControllerObj.name} Splicer` : 'N/A'),
         requiredPowerCables: requiredPowerCables,
         totalPowerRuns: totalPowerRuns,
-        shortCableBuffer: shortCableBuffer
+        shortCableBuffer: shortCableBuffer,
+        cabsPerRun: cabsPerRun,
       };
       
       return finalCalculationData;
@@ -552,6 +564,7 @@
       // 1. Controller/Processor 
       let ctrlKey = data.controllerName.split(' ')[0];
       if(ctrlKey.includes('VX')) ctrlKey = ctrlKey.slice(0, 5); 
+      else if(ctrlKey.includes('4K')) ctrlKey = '4K';
       let ctrlDesc = PARTS_CATALOG[ctrlKey] ? PARTS_CATALOG[ctrlKey].desc : data.controllerName;
       
       if(data.controllerType === 'All-in-One' || data.controllerType === 'Multimedia') {
@@ -566,12 +579,12 @@
       if(data.controllerType && data.controllerType.includes('Modular')){
           const outModel = data.outputCardModel;
           const outPart = PARTS_CATALOG[outModel] ? PARTS_CATALOG[outModel].part : 'TBD';
-          list.push({ item:'Output (Sending) Card', partcode:outPart, desc: `${outModel} (Optional Item, H-Series Only)`, qty:data.requiredSendCards, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
+          list.push({ item:'Output (Sending) Card', partcode:outPart, desc: `${PARTS_CATALOG[outModel].desc} (H-Series Only)`, qty:data.requiredSendCards, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
       
           // 3. Input Card(s) - ONLY FOR H-SERIES (MODULAR)
           const inModel = data.inputCardModel;
           const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
-          list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
+          list.push({ item:'Input Card(s)', partcode:inPart, desc:PARTS_CATALOG[inModel].desc, qty:data.inputCardQty, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
       }
 
       // 4. LED Cabinets
@@ -585,16 +598,25 @@
       list.push({ item:'LED Cabinets', partcode:cabPart, desc:cabDesc, qty:data.totalCabinets, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
       
       // 5. Cables and accessories
-      const bufferText = data.shortCableBuffer > 0 ? ` (+${data.shortCableBuffer*100}%)` : '';
-      list.push({ item:'Short Ethernet Cables', partcode:'TP-ACC-ETH-05', desc:`Inter-cabinet short ethernet cables (0.5m). Total Cabs - Long Runs ${bufferText}`, qty:data.requiredShortEthernet, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
       
-      list.push({ item:'Long Ethernet Cables', partcode:'TP-ACC-ETH-15', desc:`Controller to Wall long ethernet cables (15m)`, qty:data.requiredLongEthRuns, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
+      // Long Ethernet
+      let longEthDesc = `Controller to Wall long ethernet cables (15m). Logic: ${data.totalCabinets} Cabs / ${data.cabsPerRun || data.requiredPortsBuffered} cabs/run`;
+      if(data.cabsPerRun===0) longEthDesc = `Controller to Wall long ethernet cables (15m). Logic: ${data.requiredPortsBuffered} Controller Ports`;
 
-      // UPDATED Power Cables
+      list.push({ item:'Long Ethernet Cables', partcode:'TP-ACC-ETH-15', desc:longEthDesc, qty:data.requiredLongEthRuns, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
+
+
+      // Short Ethernet (Inter-cabinet)
+      const bufferText = data.shortCableBuffer > 0 ? ` (+${data.shortCableBuffer*100}% buffer)` : '';
+      const shortEthDesc = `Inter-cabinet short ethernet cables (0.5m). Logic: (Total Cabs - Long Runs)${bufferText}`;
+      list.push({ item:'Short Ethernet Cables', partcode:'TP-ACC-ETH-05', desc:shortEthDesc, qty:data.requiredShortEthernet, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
+
+      // Power Cables (CORRECTED DESCRIPTION)
+      const pwrCableDesc = `Total Daisy-chain Cables (${data.totalCabinets}) + Long Input Cables (${data.totalPowerRuns}). (Est. Cap: ${MAX_POWER_PER_RUN_W}W/run)`;
       list.push({ 
         item:'Power Cables', 
         partcode:'TP-ACC-PWR-15', 
-        desc:`Total Daisy-chain + Input Runs (Runs: ${data.totalPowerRuns}, Est. Cap: ${MAX_POWER_PER_RUN_W}W/run)`, 
+        desc:pwrCableDesc, 
         qty:data.requiredPowerCables, 
         unit:'PCS', 
         unitPrice:0.00, 
@@ -626,8 +648,6 @@
       document.getElementById('boqPreviewContainer').innerHTML = html; 
     }
     
-    // ... (downloadBOQCSV, drawVisualizationInPdf, proceedToDownloadPdf functions are largely unchanged but use the updated BOQ data)
-
     function downloadBOQCSV(){
       const data = finalCalculationData;
       if(!data || !data.totalCabinets){ alert('Please calculate the wall first.'); return; }
@@ -770,11 +790,12 @@
           ['Controller/Processor:', `${data.controllerName} (${data.controllerType})`],
           ['Splicer/Solution:', data.splicerSolution],
           ['Total Receiving Cards:', `${data.totalCabinets}`],
-          ['Controller Ports (post-buffer):', `${data.requiredPortsBuffered} (Max ${data.outputCardPorts} pixels/port)`],
-          ['Sending Cards needed:', data.controllerType === 'Modular' ? `${data.requiredSendCards}` : 'Integrated'],
-          ['Inter-cabinet Short Ethernet:', `${data.requiredShortEthernet} (Used: ${fmt(data.requiredShortEthernet - data.totalCabinets, 0)} spare)`],
-          ['Long Ethernet Cables (Input):', `${data.requiredLongEthRuns}`],
-          ['Input Card(s):', data.controllerType === 'Modular' ? `${data.inputCardQty} x ${data.inputCardModel}` : 'N/A (Integrated)']
+          ['Controller Ports (post-buffer):', `${data.requiredPortsBuffered} (Max ${formatLarge(data.outputCardPixels)} pixels/port)`],
+          ['Sending Cards needed:', data.controllerType.includes('Modular') ? `${data.requiredSendCards} x ${data.outputCardModel}` : 'Integrated'],
+          ['Long Ethernet Cables (Input):', `${data.requiredLongEthRuns} (Cabling Run Constraint)`],
+          ['Inter-cabinet Short Ethernet:', `${data.requiredShortEthernet} (Base: ${data.totalCabinets - data.requiredLongEthRuns} + ${data.shortCableBuffer*100}% buffer)`],
+          ['Total Power Cables:', `${data.requiredPowerCables} (${data.totalCabinets} Daisy-chain + ${data.totalPowerRuns} Long Input)`],
+          ['Input Card(s):', data.controllerType.includes('Modular') ? `${data.inputCardQty} x ${PARTS_CATALOG[data.inputCardModel].desc}` : 'N/A (Integrated)']
       ];
       
       ctrlRows.forEach(row => {
@@ -942,7 +963,7 @@
           outputCardModel: document.getElementById('modalOutputCardModel').value,
           inputCardModel: document.getElementById('modalInputCardModel').value,
           inputCardQty: parseInt(document.getElementById('modalInputCardQty').value) || 1,
-          outputCardPorts: PARTS_CATALOG[document.getElementById('modalOutputCardModel').value] ? PARTS_CATALOG[document.getElementById('modalOutputCardModel').value].pixels : PIXELS_PER_PORT_DEFAULT
+          outputCardPixels: PARTS_CATALOG[document.getElementById('modalOutputCardModel').value] ? PARTS_CATALOG[document.getElementById('modalOutputCardModel').value].pixels : PIXELS_PER_PORT_DEFAULT
       };
       closeControllerModal();
       // Re-run calculation with overrides and update UI
@@ -968,14 +989,18 @@
 
       // control panel
       document.getElementById('ctrl_name').textContent = d.controllerName + (d.controllerType.includes('Modular') ? ' (Modular)' : '');
-      document.getElementById('ctrl_ports').textContent = `${d.requiredPortsBuffered} (Max ${formatLarge(d.outputCardPorts)}k/port)`;
-      document.getElementById('ctrl_shorteth').textContent = `${d.requiredShortEthernet} (Runs: ${d.requiredLongEthRuns}, Buffer: ${d.shortCableBuffer*100}%)`;
-      document.getElementById('ctrl_pwr_cables').textContent = `${d.requiredPowerCables} (Runs: ${d.totalPowerRuns})`;
+      document.getElementById('ctrl_ports').textContent = `${d.requiredPortsBuffered} (Max ${formatLarge(d.outputCardPixels)}k/port)`;
+      
+      const shortEthBase = d.totalCabinets - d.requiredLongEthRuns;
+      document.getElementById('ctrl_shorteth').textContent = `${d.requiredShortEthernet} (Base: ${shortEthBase}${d.shortCableBuffer > 0 ? ` + ${d.shortCableBuffer*100}% buffer` : ''})`;
+      document.getElementById('ctrl_longeth').textContent = `${d.requiredLongEthRuns} (Cabling Constraint: ${d.cabsPerRun} Cabs/Run)`;
+
+      document.getElementById('ctrl_pwr_cables').textContent = `${d.requiredPowerCables} (${d.totalCabinets} Daisy + ${d.totalPowerRuns} Input)`;
       document.getElementById('spec_power').textContent = `${fmt(d.designPowerW,0)} W`;
       document.getElementById('spec_weight').textContent = `${fmt(d.designWeight,1)} kg`;
       
       const sendingEl = document.querySelector('.spec-row.hseries-only');
-      if(d.controllerType === 'Modular'){
+      if(d.controllerType.includes('Modular')){
         sendingEl.style.display = 'flex';
         document.getElementById('ctrl_sending').textContent = `${d.requiredSendCards} x ${d.outputCardModel}`;
       } else {
@@ -1036,7 +1061,7 @@
       document.getElementById('cabinetOverlay').innerHTML='';
       document.getElementById('boqPreviewContainer').innerHTML='';
       
-      ['spec_model','spec_pitch','spec_dims','spec_res','spec_diag','spec_density','spec_area','spec_cabs','spec_modules','spec_cabsize','spec_cabpix','ctrl_name','ctrl_ports','ctrl_sending','ctrl_shorteth','ctrl_pwr_cables','spec_power','spec_weight'].forEach(id=>{
+      ['spec_model','spec_pitch','spec_dims','spec_res','spec_diag','spec_density','spec_area','spec_cabs','spec_modules','spec_cabsize','spec_cabpix','ctrl_name','ctrl_ports','ctrl_sending','ctrl_shorteth','ctrl_longeth','ctrl_pwr_cables','spec_power','spec_weight'].forEach(id=>{
         const el = document.getElementById(id); if(el) el.textContent = '--';
       });
       finalCalculationData = {};
