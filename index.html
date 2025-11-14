@@ -337,9 +337,9 @@
     // Cabinets-per-long-LAN mapping and buffers per your rules
     const CABINETS_PER_LONG_LAN = {
         'cob_09': { cabinetsPerRun: 2, portBufferPct: 0 },       // COB 0.9375 mm → 2 cabinets / long LAN cable
-        'cob_125': { cabinetsPerRun: 5, portBufferPct: 0.15 },   // COB 1.25 mm → 5 cabinets / long LAN cable, +15% controller-port buffer
-        'cob_15': { cabinetsPerRun: 7, portBufferPct: 0.15 },    // COB 1.5625 mm → 7 cabinets / long LAN cable, +15% controller-port buffer
-        // SMD types handled separately (SMD uses pixels->ports fallback +20% buffer)
+        'cob_125': { cabinetsPerRun: 5, portBufferPct: 0.05 },   // COB 1.25 mm → 5 cabinets / long LAN cable, +5% controller-port buffer
+        'cob_15': { cabinetsPerRun: 7, portBufferPct: 0.05 },    // COB 1.5625 mm → 7 cabinets / long LAN cable, +5% controller-port buffer
+        // SMD types handled separately (SMD uses pixels->ports fallback +5% buffer)
     };
 
     // --- Global Store ---
@@ -979,3 +979,4 @@
 </footer>
 </body>
 </html>
+
