@@ -7,7 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
-    /* (Styles unchanged — same as previous version) */
+    /* (Styles unchanged — same as previous version, with small visual tweaks) */
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; background: #eef1f8; color: #1c2738; font-size: 14px; }
     .main-wrapper { max-width: 1200px; margin: auto; }
     h2 { text-align: center; color: #0D47A1; margin-top: 0; margin-bottom: 30px; font-weight: 700; font-size: 1.8em; display: flex; align-items: center; justify-content: center; }
@@ -33,7 +33,8 @@
     .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
     .vis-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: #f7f9fc; }
     .vis-content { position: relative; width: 100%; margin-bottom: 20px; padding-top: 35px; padding-right: 45px; padding-bottom: 10px; box-sizing: border-box; }
-    .grid { position: relative; width: 100%; border: 3px solid #B71C1C; min-height: 100px; overflow: hidden; background: linear-gradient(135deg, #e3f2fd, #bbdefb); }
+    .grid { position: relative; width: 100%; border: 3px solid #B71C1C; min-height: 100px; overflow: hidden; background: linear-gradient(135deg, #e3f2fd, #bbdefb); display: flex; align-items: center; justify-content: center; }
+    /* cabinetOverlay will use CSS grid to draw cabinets; ensure it fills the .grid box */
     #cabinetOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box; pointer-events: none; z-index: 5; display: grid; gap: 0; }
     .dimension-label { position: absolute; color: #B71C1C; background: rgba(255, 255, 255, 0.95); padding: 3px 6px; font-size: 0.9em; border-radius: 3px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .dim-top { top: 5px; left: 50%; transform: translateX(-50%); }
@@ -59,6 +60,7 @@
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .modal-grid-span-2 { grid-column: 1 / -1; }
     .modal-disclaimer { margin-top: 15px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 5px; font-size: 0.85em; color: #616161; }
+    footer.page-footer { text-align: center; margin-top: 30px; color: #b0c4de; }
   </style>
 </head>
 <body>
@@ -227,18 +229,18 @@
     <div id="contactModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 style="margin:0; color:#1B5E20;">Enter Contact Details to Download</h3>
+                <h3 style="margin:0; color:#1B5E20;">Enter Contact Details to Download (Optional)</h3>
                 <span class="close-btn" onclick="closeContactModal()">&times;</span>
             </div>
 
  <div class="modal-grid modal-grid-span-2">
                 <div class="modal-input-group">
                     <label for="downloadEmail">Email ID:</label>
-                    <input type="email" id="downloadEmail" placeholder="Enter your email ID" required>
+                    <input type="email" id="downloadEmail" placeholder="Enter your email ID (optional)">
                 </div>
                 <div class="modal-input-group">
                     <label for="downloadPhone">Phone Number:</label>
-                    <input type="tel" id="downloadPhone" placeholder="Enter your phone number" required>
+                    <input type="tel" id="downloadPhone" placeholder="Enter your phone number (optional)">
                 </div>
             </div>
 
@@ -698,14 +700,16 @@
         const visualizationHeight = 300;
         const visGrid = document.getElementById('visGrid');
 
-        if (visualizationHeight * aspectRatio > 800) {
-             visGrid.style.width = `800px`;
-             visGrid.style.height = `${800 / aspectRatio}px`;
-        } else {
-             visGrid.style.height = `${visualizationHeight}px`;
-             visGrid.style.width = `${visualizationHeight * aspectRatio}px`;
-        }
-        visGrid.style.margin = '0 auto';
+        // Make the visualization responsive and fill the available width while keeping aspect ratio
+        visGrid.style.width = '100%';
+        // small delay to allow layout to settle then compute height based on available width
+        setTimeout(()=>{
+            try {
+                const w = visGrid.clientWidth || Math.min(window.innerWidth - 200, 800);
+                const computedH = Math.max(120, Math.min(visualizationHeight, Math.round(w / aspectRatio)));
+                visGrid.style.height = `${computedH}px`;
+            } catch(e) { visGrid.style.height = `${visualizationHeight}px`; }
+        },50);
 
         document.getElementById('visWidthLabel').textContent = `${finalW_M.toFixed(2)} m (W)`;
         document.getElementById('visHeightLabel').textContent = `${finalH_M.toFixed(2)} m (H)`;
@@ -719,8 +723,9 @@
         for (let r = 0; r < data.numCabH; r++) {
             for (let c = 0; c < data.numCabW; c++) {
                 const cabDiv = document.createElement('div');
-                cabDiv.style.border = '1px dashed rgba(13, 71, 161, 0.4)';
+                cabDiv.style.border = '1px dashed rgba(13, 71, 161, 0.35)';
                 cabDiv.style.boxSizing = 'border-box';
+                cabDiv.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02))';
                 cabinetOverlay.appendChild(cabDiv);
             }
         }
@@ -744,6 +749,11 @@
             document.getElementById('errorMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
+        // If no contact info provided previously, allow immediate download without forcing user to enter email/phone
+        if (!contactInfo.email && !contactInfo.phone) {
+            proceedToDownloadPdf();
+            return;
+        }
         document.getElementById('downloadEmail').value = contactInfo.email;
         document.getElementById('downloadPhone').value = contactInfo.phone;
         document.getElementById('contactError').classList.add('hidden');
@@ -754,17 +764,16 @@
         const email = document.getElementById('downloadEmail').value.trim();
         const phone = document.getElementById('downloadPhone').value.trim();
         const contactError = document.getElementById('contactError');
-        if (!email || !phone) {
-            contactError.textContent = 'Please enter both a valid Email ID and Phone Number to download.';
-            contactError.classList.remove('hidden');
-            return;
+        // Both fields are OPTIONAL now; if user provides email, validate it. Otherwise accept and proceed.
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                 contactError.textContent = 'Please enter a valid Email ID.';
+                 contactError.classList.remove('hidden');
+                 return;
+            }
         }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-             contactError.textContent = 'Please enter a valid Email ID.';
-             contactError.classList.remove('hidden');
-             return;
-        }
+        // store whatever provided (can be empty)
         contactInfo.email = email;
         contactInfo.phone = phone;
         closeContactModal();
@@ -790,7 +799,7 @@
         doc.setFontSize(8);
         doc.setTextColor(100, 100, 100);
         doc.text(`Generated: ${new Date().toLocaleDateString()} | Model: ${data.productName}`, pageW / 2, y, { align: 'center' });
-        doc.text(`Contact: ${contactInfo.email} | ${contactInfo.phone}`, pageW / 2, y + 4, { align: 'center' });
+        doc.text(`Contact: ${contactInfo.email || 'N/A'} | ${contactInfo.phone || 'N/A'}`, pageW / 2, y + 4, { align: 'center' });
         y += lineHeight * 2;
 
         doc.setFontSize(12);
@@ -926,7 +935,7 @@
 
         doc.setFontSize(8);
         doc.setTextColor(176, 196, 222);
-        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala';
+        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd. | Built for you with compatible with smaller ';
         doc.text(footerText, pageW / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
         doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
@@ -946,10 +955,8 @@
         }
     });
   </script>
-<footer class="text-center text-gray-500 text-sm mt-10" style="color: #b0c4de;">
-    © 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala
+<footer class="page-footer">
+    © 2025 PeopleLink Unified Communications Pvt. Ltd. | Built for you with compatible with smaller
 </footer>
 </body>
 </html>
-
-
