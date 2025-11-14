@@ -231,6 +231,24 @@
                 <span class="close-btn" onclick="closeContactModal()">&times;</span>
             </div>
 
+ <div class="modal-grid modal-grid-span-2">
+                <div class="modal-input-group">
+                    <label for="downloadEmail">Email ID:</label>
+                    <input type="email" id="downloadEmail" placeholder="Enter your email ID" required>
+                </div>
+                <div class="modal-input-group">
+                    <label for="downloadPhone">Phone Number:</label>
+                    <input type="tel" id="downloadPhone" placeholder="Enter your phone number" required>
+                </div>
+            </div>
+
+            <button class="submit-btn" style="background-color: #1B5E20;" onclick="handleDownloadRequest()">Download PDF Now</button>
+            <div id="contactError" class="error-message hidden"></div>
+        </div>
+    </div>
+
+  </div>
+          
   <script>
     // --- Constants ---
     const MM_PER_METER = 1000;
@@ -928,10 +946,8 @@
         }
     });
   </script>
-
 <footer class="text-center text-gray-500 text-sm mt-10" style="color: #b0c4de;">
-        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd. | Built for you';
-        doc.text(footerText, pageW / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+    © 2025 PeopleLink Unified Communications Pvt. Ltd. | Designed by Pramodh Kathala
 </footer>
 </body>
 </html>
