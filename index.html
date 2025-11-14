@@ -7,7 +7,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
-    /* (Styles unchanged — same as previous version, with small visual tweaks) */
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; background: #eef1f8; color: #1c2738; font-size: 14px; }
     .main-wrapper { max-width: 1200px; margin: auto; }
     h2 { text-align: center; color: #0D47A1; margin-top: 0; margin-bottom: 30px; font-weight: 700; font-size: 1.8em; display: flex; align-items: center; justify-content: center; }
@@ -587,9 +586,6 @@
       const ctrlDesc = (ctrlKey && PARTS_CATALOG[ctrlKey]) ? PARTS_CATALOG[ctrlKey].desc : (data.controllerName || 'Controller/Processor');
       list.push({ item: 'Controller/Processor', partcode: ctrlPart || 'TBD', desc: ctrlDesc || data.controllerName, qty: 1, unit: 'PCS' });
 
-      // Receiving Cards (embedded)
-      list.push({ item: 'Receiving Cards (R-Card)', partcode: 'Embedded', desc: 'Receiving cards embedded in cabinets', qty: data.totalRecCards, unit: 'PCS' });
-
       // Sending / Output cards (modular)
       if (data.controllerType && data.controllerType.includes('Modular')) {
         const outCardModel = data.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
@@ -617,7 +613,7 @@
       }
 
       // Long ethernet ports / controller ports
-      list.push({ item: 'Long Ethernet Ports (Controller → Wall)', partcode: 'TBD', desc: 'Controller to wall long ethernet runs (ports)', qty: data.requiredPortsBuffered, unit: 'PCS' });
+      list.push({ item: 'Long Ethernet Ports (Controller to Wall)', partcode: 'TBD', desc: 'Controller to wall long ethernet runs (ports)', qty: data.requiredPortsBuffered, unit: 'PCS' });
       list.push({ item: 'Short Ethernet (Between Cabinets)', partcode: 'TBD', desc: 'Inter-cabinet CAT6 runs', qty: data.requiredShortEthernet, unit: 'PCS' });
 
       // LED Cabinets & Modules
@@ -646,7 +642,7 @@
       list.push({ item: 'Transportation (Indoor)', partcode: 'ALED-TRS-IN-REG', desc: 'Transport (indoor) per cabinet', qty: data.totalCabinets, unit: 'Per Cabinet' });
 
       // Fallback: Controller accessories (PSU, preview)
-      list.push({ item: 'Power Supply (Example)', partcode: PARTS_CATALOG['H_800W_PSU'] ? PARTS_CATALOG['H_800W_PSU'].part : 'TBD', desc: 'Example power supply', qty: Math.max(1, Math.ceil(data.totalCabinets / 10)), unit: 'PCS' });
+      list.push({ item: 'Power Supply', partcode: PARTS_CATALOG['H_800W_PSU'] ? PARTS_CATALOG['H_800W_PSU'].part : 'TBD', desc: 'power supply', qty: Math.max(1, Math.ceil(data.totalCabinets / 10)), unit: 'PCS' });
 
       return list;
     }
@@ -984,12 +980,6 @@
                 cabDiv.style.position = 'relative';
                 cabDiv.style.overflow = 'hidden';
                 
-                // label inside cabinet (row,col)
-                const label = document.createElement('span');
-                label.className = 'cab-label';
-                label.textContent = `${r+1},${c+1}`;
-                cabDiv.appendChild(label);
-                
                 // hover tooltip content with cabinet pixel resolution (approx)
                 cabDiv.addEventListener('mouseenter', (ev) => {
                   const cabPixW = data.cabPixW, cabPixH = data.cabPixH;
@@ -1240,7 +1230,7 @@
 
         doc.setFontSize(8);
         doc.setTextColor(176, 196, 222);
-        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd. | Built for you — compatible with smaller displays';
+        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd.';
         doc.text(footerText, pageW / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
         doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
@@ -1261,7 +1251,8 @@
     });
   </script>
 <footer class="page-footer">
-    © 2025 PeopleLink Unified Communications Pvt. Ltd. | Built for you — compatible with smaller displays
+    © 2025 PeopleLink Unified Communications Pvt. Ltd.
 </footer>
 </body>
 </html>
+
