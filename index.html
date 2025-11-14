@@ -508,31 +508,34 @@
       const requiredPowerRuns = Math.max(1, Math.ceil(designPowerW / powerWPerRun));
 
       // port rules
-      const ports_by_pixels = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
+      const pixels_per_port_with_buffer = PIXELS_PER_PORT_DEFAULT / (1 + GLOBAL_PORT_BUFFER_PCT);
+      const ports_by_pixels = Math.max(1, Math.ceil(totalPixels / pixels_per_port_with_buffer));
+      
       const cabinetsRule = CABINETS_PER_LONG_LAN[productKey];
       let requiredLongEthRuns = 0;
       if(cabinetsRule){
         requiredLongEthRuns = Math.max(1, Math.ceil(totalCabinets / cabinetsRule));
       } else {
-        requiredLongEthRuns = Math.max(1, ports_by_pixels);
+        requiredLongEthRuns = ports_by_pixels; 
       }
-      let requiredPorts = Math.max(ports_by_pixels, requiredLongEthRuns);
+      
+      const requiredPorts = Math.max(ports_by_pixels, requiredLongEthRuns); // Core ports needed based on two rules
       const requiredPortsBuffered = Math.max(1, Math.ceil(requiredPorts * (1 + GLOBAL_PORT_BUFFER_PCT)));
-      const requiredShortEthernet = Math.max(0, totalCabinets - requiredPortsBuffered);
+      const requiredShortEthernet = Math.max(0, totalCabinets - requiredPorts); // Short runs should be total cabinets minus long input runs needed.
 
       // pick suggested controller: smallest that satisfies ports & pixels
       let suggested = CONTROLLER_MODELS.find(c => {
         if(c.type === 'Modular') {
-          // modular handles many ports - but we still try to match by pixels
           return c.maxPixels >= totalPixels;
         } else {
-          return c.maxPixels >= totalPixels && c.ports >= Math.ceil(requiredPortsBuffered * 0.9);
+          // Use core requirement for initial suggestion
+          return c.maxPixels >= totalPixels && c.ports >= requiredPorts; 
         }
       }) || CONTROLLER_MODELS[CONTROLLER_MODELS.length-1];
 
       // if modular candidate requiredSendCards calc
       const outputCardPorts_default = 20;
-      let requiredSendCards = Math.max(1, Math.ceil(requiredPortsBuffered / outputCardPorts_default));
+      let requiredSendCards = Math.max(1, Math.ceil(requiredPorts / outputCardPorts_default));
 
       // If modular and selected H model can't support requiredSendCards, pick next H that can
       if(suggested.type === 'Modular'){
@@ -554,7 +557,7 @@
         cabinetW_mm: details.cabW_mm, cabinetH_mm: details.cabH_mm, cabPixW: details.cabPixW, cabPixH: details.cabPixH, modulesPerCab: details.modulesPerCab,
         numCabW, numCabH, totalCabinets, totalModules, finalW_mm, finalH_mm, finalArea_m2, finalResW, finalResH, totalPixels,
         aspectRatioText, finalDiagonal_in, pixelDensity, actualPowerW, designPowerW, requiredPowerRuns, actualWeight, designWeight,
-        requiredPortsBuffered, requiredShortEthernet, requiredLongEthRuns, requiredSendCards,
+        requiredPorts, requiredPortsBuffered, requiredShortEthernet, requiredLongEthRuns, requiredSendCards,
         controllerName: finalControllerObj.name, controllerType: finalControllerObj.type, suggestedControllerObj: finalControllerObj,
         outputCardPorts: finalCalculationData.outputCardPorts || outputCardPorts_default, 
         outputCardModel: finalCalculationData.outputCardModel || 'H_20_RJ45',
@@ -580,11 +583,8 @@
       document.getElementById('spec_dims').textContent = `${(d.finalW_mm/MM_PER_METER).toFixed(2)} m x ${(d.finalH_mm/MM_PER_METER).toFixed(2)} m`;
       document.getElementById('spec_res').textContent = `${formatLarge(d.finalResW)} × ${formatLarge(d.finalResH)}`;
       document.getElementById('spec_diag').textContent = `${d.finalDiagonal_in.toFixed(1)} in`;
-      // UPDATED: Pixel Density format
       document.getElementById('spec_density').textContent = `${formatLarge(d.pixelDensity)} px/m²`;
-      // UPDATED: Final Area format
       document.getElementById('spec_area').textContent = `${d.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`;
-      // NEW: Total Pixels
       document.getElementById('spec_total_pixels').textContent = `${formatLarge(d.totalPixels)}`;
       document.getElementById('spec_cabs').textContent = `${d.numCabW} × ${d.numCabH} (${d.totalCabinets})`;
       document.getElementById('spec_modules').textContent = `${d.totalModules} (${d.modulesPerCab} per cabinet)`;
@@ -593,7 +593,7 @@
 
       // control panel
       document.getElementById('ctrl_name').textContent = d.controllerName + (d.controllerType ? ` (${d.controllerType})` : '');
-      document.getElementById('ctrl_longeth_combined').textContent = `${d.requiredLongEthRuns} Runs (${d.requiredPortsBuffered} Ports)`; // Combined line
+      document.getElementById('ctrl_longeth_combined').textContent = `${d.requiredLongEthRuns} Runs (${d.requiredPorts} Ports)`; // Showing core ports
       document.getElementById('ctrl_shorteth').textContent = `${d.requiredShortEthernet} (Between Cabinets)`;
       document.getElementById('spec_power').textContent = `${fmt(d.designPowerW,0)} W`;
       document.getElementById('spec_weight').textContent = `${fmt(d.designWeight,1)} kg`;
@@ -690,7 +690,7 @@
       }
       
       // Network cabling
-      list.push({ item:'Long Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall long ethernet ports`, qty:data.requiredPortsBuffered, unit:'Ports' });
+      list.push({ item:'Long Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall long ethernet ports (Core: ${data.requiredPorts})`, qty:data.requiredPorts, unit:'Ports' });
       list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs', qty:data.requiredShortEthernet, unit:'PCS' });
 
       // LED Cabinets
@@ -711,7 +711,7 @@
       list.push({ 
         item:'Total Power Cables (Input Runs)', 
         partcode:'TBD', 
-        desc:`Required runs based on ${fmt(data.designPowerW,0)} W Design Power @ 1000W/run. Daisy chain not required.`, 
+        desc:`Required runs based on ${fmt(data.designPowerW,0)} W Design Power @ 1000W/run.`, 
         qty: data.requiredPowerRuns, 
         unit:'Runs' 
       });
@@ -723,7 +723,7 @@
       const list = generateBOQList(data);
       let html = `<div class="details-panel" style="margin-top:12px"><div style="font-weight:700;color:var(--brand);margin-bottom:8px">Bill of Quantities (Compact View)</div>`;
       
-      // MODIFIED: Added Unit Price (INR) and Total Price (INR) columns (8 total)
+      // MODIFIED: Added Unit Price (INR) and Total Price (INR) columns
       html += `<table id="boqPreviewTable"><thead><tr>
         <th>S.No</th>
         <th>Item</th>
@@ -848,37 +848,12 @@
       proceedToDownloadPdf();
     }
 
-    // Draw a simple grid visualization into the PDF using jsPDF primitives
-    function drawVisualizationInPdf(doc, data, x, y, w, h){
-      doc.setDrawColor(13,71,161);
-      doc.setLineWidth(0.8);
-      doc.rect(x,y,w,h);
-      const cols = data.numCabW, rows = data.numCabH;
-      const cellW = w / cols;
-      const cellH = h / rows;
-      doc.setLineWidth(0.3);
-      for(let i=1;i<cols;i++){
-        const xx = x + i*cellW;
-        doc.line(xx, y, xx, y+h);
-      }
-      for(let j=1;j<rows;j++){
-        const yy = y + j*cellH;
-        doc.line(x, yy, x+w, yy);
-      }
-      // label top-left with resolution and content source
-      doc.setFontSize(8);
-      doc.text(`Resolution: ${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`, x+3, y+8);
-      // Added conceptual content text
-      doc.text(`(Video/Image playback from ${data.controllerName})`, x+3, y+16);
-      
-      // Added conceptual LAN connections text at the bottom
-      doc.text('LAN Connections: Optimized Daisy Chain for up to 7 Cabinets/Run (COB), or Direct per Port.', x+3, y+h-4);
-    }
-
+    // DRAWING THE PDF (Updated for compact view and terms removal)
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
       const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p','mm','a4');
+      // Using 'pt' for better control over font size and spacing
+      const doc = new jsPDF('p','mm','a4'); 
       const pageW = doc.internal.pageSize.getWidth();
       let y = 12;
       const margin = 14;
@@ -910,6 +885,10 @@
       doc.text(`Generated: ${new Date().toLocaleDateString()}  •  Model: ${data.productName}`, margin, y);
       doc.text(`Contact: ${contactInfo.email || 'N/A'}  |  ${contactInfo.phone || 'N/A'}`, pageW - margin, y, { align: 'right' });
       y += 10;
+      
+      doc.setDrawColor(primary[0], primary[1], primary[2]);
+      doc.setLineWidth(0.5);
+      doc.line(margin, y - 1, pageW - margin, y - 1); // separator line
 
       // Section 1 - Key specs table two columns
       doc.setFontSize(11);
@@ -917,27 +896,28 @@
       doc.text('1. Wall Performance & Dimensions', margin, y);
       y += 6;
 
-      // Prepare two-column key-value layout
-      const leftX = margin, leftValX = leftX + 70; 
-      const rightX = pageW/2 + 6, rightValX = rightX + 70;
-      const rowH = 6;
+      // Prepare two-column key-value layout - COMPACTED
+      const leftX = margin; 
+      const leftValX = leftX + 45; // Start value here
+      const rightX = pageW/2 + 6; 
+      const rightValX = rightX + 45; // Start value here
+      const rowH = 5.5; // COMPACT ROW HEIGHT
       doc.setFontSize(9);
+      doc.setFont(undefined, 'normal'); // Set default font
+      
       const kv = [
         ['Final Dimensions (WxH):', `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m × ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m`],
         ['Final Diagonal:', `${data.finalDiagonal_in.toFixed(1)} in`],
-        ['Pixel Pitch:', `${data.pixelPitch_mm} mm`],
         ['Resolution:', `${formatLarge(data.finalResW)} × ${formatLarge(data.finalResH)}`],
-        // UPDATED: Density format
+        ['Aspect Ratio:', data.aspectRatioText],
+        ['Pixel Pitch:', `${data.pixelPitch_mm} mm`],
         ['Pixel Density:', `${formatLarge(data.pixelDensity)} px/m²`],
-        // UPDATED: Area format
         ['Final Area:', `${data.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`],
         ['Total Pixels:', `${formatLarge(data.totalPixels)}`],
         ['Total Cabinets:', `${data.numCabW} × ${data.numCabH} (${data.totalCabinets})`],
-        ['Total Modules:', `${data.totalModules} (${data.modulesPerCab} per cabinet)`],
         ['Cabinet Size:', `${data.cabinetW_mm}mm × ${data.cabinetH_mm}mm`],
         ['Cabinet Pixels:', `${formatLarge(data.cabPixW)} × ${formatLarge(data.cabPixH)}`],
-        ['Total Power (Est.):', `${fmt(data.designPowerW,0)} W`],
-        ['Total Weight (Est.):', `${fmt(data.designWeight,1)} kg`]
+        ['Total Modules:', `${data.totalModules} (${data.modulesPerCab} per cabinet)`]
       ];
 
       // print two columns with fixed positioning
@@ -945,54 +925,68 @@
       for(let i=0;i<half;i++){
         const left = kv[i];
         const right = kv[i+half];
-        doc.setTextColor(40,40,40);
-        doc.text(left[0], leftX, y);
-        doc.setTextColor(...accent); doc.text(left[1], leftValX, y);
+        
+        doc.setTextColor(40,40,40); // Key color
+        doc.text(left[0], leftX, y, { align: 'left' });
+        doc.setTextColor(...accent); // Value color
+        doc.text(left[1], leftValX, y, { align: 'left' });
+
         if(right){
-          doc.setTextColor(40,40,40); doc.text(right[0], rightX, y);
-          doc.setTextColor(...accent); doc.text(right[1], rightValX, y);
+          doc.setTextColor(40,40,40); 
+          doc.text(right[0], rightX, y, { align: 'left' });
+          doc.setTextColor(...accent); 
+          doc.text(right[1], rightValX, y, { align: 'left' });
         }
         y += rowH;
       }
 
       y += 4;
 
-      // Section 2 - Visualization (draw grid)
+      // Section 2 - Control & Connections (was 3)
       doc.setTextColor(...primary);
       doc.setFontSize(11);
-      doc.text('2. Physical Wall Visualization & Content', margin, y);
-      y += 6;
-      const vizW = pageW - margin*2, vizH = 40;
-      drawVisualizationInPdf(doc, data, margin, y, vizW, vizH);
-      y += vizH + 8;
-
-      // Section 3 - Control & Connections
-      doc.setTextColor(...primary);
-      doc.setFontSize(11);
-      doc.text('3. Control System & Connections', margin, y);
+      doc.text('2. Control System & Connections', margin, y);
       y += 6;
       doc.setFontSize(9);
       doc.setTextColor(40,40,40);
+      
+      // Use the same compact column format for control summary
       const ctrlRows = [
         ['Controller/Processor:', `${data.controllerName} (${data.controllerType})`],
         ['Total Receiving Cards:', `${data.totalCabinets}`],
-        ['Long Ethernet Cables (Input) / Ports:', `${data.requiredLongEthRuns} Runs (${data.requiredPortsBuffered} Ports)`], 
-        ['Short Ethernet Cables:', `${data.requiredShortEthernet} (Between Cabinets)`],
-        ['Power Input Runs (1000W/run):', `${data.requiredPowerRuns} Runs`] 
+        ['Max Power (Est.):', `${fmt(data.designPowerW,0)} W`],
+        ['Total Weight (Est.):', `${fmt(data.designWeight,1)} kg`],
+        ['Power Input Runs:', `${data.requiredPowerRuns} Runs`],
+        ['Long Eth Ports:', `${data.requiredPorts} Ports`],
+        ['Short Eth Cables:', `${data.requiredShortEthernet} PCS`]
       ];
       if(data.controllerType && data.controllerType.includes('Modular')){
-          ctrlRows.splice(1, 0, ['Sending Cards needed:', `${data.requiredSendCards} x ${data.outputCardModel}`]);
+          ctrlRows.splice(1, 0, ['Sending Cards:', `${data.requiredSendCards} x ${data.outputCardModel}`]);
       }
       
-      ctrlRows.forEach(r=>{
-        doc.text(r[0], margin, y);
-        doc.setTextColor(...accent); doc.text(r[1], pageW - margin, y, { align:'right' });
+      const ctrlHalf = Math.ceil(ctrlRows.length/2);
+      let tempY = y;
+      for(let i=0;i<ctrlHalf;i++){
+        const left = ctrlRows[i];
+        const right = ctrlRows[i+ctrlHalf];
+        
         doc.setTextColor(40,40,40);
-        y += 6;
-      });
+        doc.text(left[0], leftX, tempY, { align: 'left' });
+        doc.setTextColor(...accent); 
+        doc.text(left[1], leftValX, tempY, { align: 'left' });
 
-      y += 6;
-      doc.setTextColor(...primary); doc.setFontSize(11); doc.text('4. Bill of Quantities (BOQ)', margin, y); y += 6;
+        if(right){
+          doc.setTextColor(40,40,40); 
+          doc.text(right[0], rightX, tempY, { align: 'left' });
+          doc.setTextColor(...accent); 
+          doc.text(right[1], rightValX, tempY, { align: 'left' });
+        }
+        tempY += rowH;
+      }
+      y = tempY + 4; // Update Y position after printing control info
+
+      // Section 3 - Bill of Quantities (was 4)
+      doc.setTextColor(...primary); doc.setFontSize(11); doc.text('3. Bill of Quantities (BOQ)', margin, y); y += 6;
 
       // Build BOQ table rows
       const boqList = generateBOQList(data);
@@ -1025,67 +1019,80 @@
         body: body,
         margin: { left: margin, right: margin },
         theme: 'grid',
-        styles: { fontSize:8, cellPadding:2, font: 'Inter' },
+        styles: { fontSize:8.5, cellPadding:2, font: 'Inter' },
         headStyles: { fillColor: primary, textColor: 255 }
       });
+      y = doc.lastAutoTable.finalY + 8;
 
-      // Terms & Conditions (try fit into remaining page or new page)
-      let after = doc.lastAutoTable.finalY + 8;
-      if(after > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); after = margin; }
-      doc.setFontSize(11); doc.setTextColor(...primary); doc.text('5. Standard Terms & Conditions', margin, after); after += 6;
+
+      // Section 4 - Notes & Assumptions (NEW SECTION)
+      doc.setTextColor(...primary); doc.setFontSize(11); doc.text('4. Notes & Assumptions', margin, y); y += 6;
       doc.setFontSize(9); doc.setTextColor(50,50,50);
-      const terms = [
-        "1) Price Validity: This quotation is valid for 30 days from the date of issue.",
-        "2) Payment Terms: Standard terms are 50% advance, 40% upon delivery, and 10% upon successful commissioning.",
-        "3) Civil Work/Structure: All necessary civil works and primary mounting structure must be provided by the client unless included in BOQ.",
-        "4) Power & Data: Stable power sources (UPS/dedicated circuit) and LAN drops must be provided near installation area.",
-        "5) Warranty: Standard warranty is 1 year on LED panels and accessories. Excludes misuse, surges, unauthorized repairs.",
-        "6) Site Access: Unrestricted site access and lifting equipment (if required) must be available during installation & commissioning."
+      const notes = [
+        "1) Design figures include a 15% safety margin for power, weight, and ports.",
+        "2) All necessary civil works and primary mounting structure must be provided by the client.",
+        "3) Power & Data: Stable power sources (UPS/dedicated circuit) and LAN drops must be provided near installation area.",
+        "4) Site Access: Unrestricted site access and lifting equipment (if required) must be available during installation & commissioning."
       ];
-      terms.forEach(t=>{
+      notes.forEach(t=>{
         const split = doc.splitTextToSize(t, pageW - margin*2);
-        doc.text(split, margin, after);
-        after += (split.length * 4.5);
-        if(after > doc.internal.pageSize.getHeight() - 30){ doc.addPage(); after = margin; }
+        doc.text(split, margin, y);
+        y += (split.length * 4.5);
       });
-
+      
       // footer
       doc.setFontSize(8); doc.setTextColor(150,170,200);
-      doc.text('Note: Design figures include a 15% safety margin for structural and electrical planning.', margin, doc.internal.pageSize.getHeight() - 18);
       doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd.', pageW/2, doc.internal.pageSize.getHeight() - 10, { align:'center' });
 
       // save pdf
-      const filename = `PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`;
+      const filename = `PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_Quotation.pdf`;
       doc.save(filename);
     }
 
     /************************************************************************
-     * CSV download (Excel friendly)
+     * CSV download (Excel friendly - PROPER BOQ FORMAT)
      ************************************************************************/
     function downloadBOQCSV(){
       const d = finalCalculationData;
       if(!d || !d.totalPixels){ alert('Please calculate configuration first.'); return; }
       const list = generateBOQList(d);
       
-      // MODIFIED CSV header for 8 columns
-      let csv = 'S.No,Item,Partcode,Description,Qty,Unit,"Unit Price (INR)","Total Price (INR)"\n';
+      // Header Section
+      let csv = `"PeopleLink LED Video Wall Configuration Quotation"\n`;
+      csv += `"Generated On:", "${new Date().toLocaleDateString()}"\n`;
+      csv += `"Model:", "${d.productName}"\n`;
+      csv += `"Resolution:", "${formatLarge(d.finalResW)}x${formatLarge(d.finalResH)}"\n`;
+      csv += `"Final Dimensions (m):", "${(d.finalW_mm/MM_PER_METER).toFixed(2)}x${(d.finalH_mm/MM_PER_METER).toFixed(2)}"\n`;
+      csv += "\n";
+
+      // BOQ Table Header
+      csv += 'S.No,"Item","Partcode","Description","Qty","Unit","Unit Price (INR)","Total Price (INR)"\n';
       
+      // BOQ Table Body
       list.forEach((r,i)=>{
         // Added two empty fields for Unit Price and Total Price
-        csv += `${i+1},"${r.item}","${r.partcode}","${r.desc}",${r.qty},${r.unit},,\n`;
+        csv += `${i+1},"${r.item}","${r.partcode}","${r.desc}",${r.qty},"${r.unit}",,\n`;
       });
       
-      // NEW Summary Rows (using commas for placeholder columns)
+      // Summary Rows
       csv += ',,,"Sub Total Amount (INR)",,,,\n';
       csv += ',,,"GST",,,,\n';
       csv += ',,,"Grand Total (INR)",,,,\n';
+      csv += "\n";
+      
+      // Notes/Assumptions Section (matching the PDF content)
+      csv += 'Notes & Assumptions\n';
+      csv += '1) Design figures include a 15% safety margin for power, weight, and ports.\n';
+      csv += '2) All necessary civil works and primary mounting structure must be provided by the client.\n';
+      csv += '3) Power & Data: Stable power sources (UPS/dedicated circuit) and LAN drops must be provided near installation area.\n';
+      csv += '4) Site Access: Unrestricted site access and lifting equipment (if required) must be available during installation & commissioning.\n';
 
 
       const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       const url = URL.createObjectURL(blob);
       link.href = url;
-      link.download = `PeopleLink_LED_Boq_${d.finalResW}x${d.finalResH}.csv`;
+      link.download = `PeopleLink_LED_Quotation_${d.finalResW}x${d.finalResH}.csv`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
