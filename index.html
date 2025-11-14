@@ -682,6 +682,7 @@
             <span style="grid-column: 1 / -1; font-weight: 700; color: #0D47A1; border-bottom: 1px solid #0D47A1; padding-bottom: 5px; margin-bottom: 5px; margin-top: 10px;">Connection Summary</span>
             <span id="requiredRecCards"><strong>Total Receiving Cards Required :</strong><small>${data.totalRecCards}</small></span>
             <span id="controllerLongPorts"><strong>Long Ethernet Ports/Runs :</strong><small>${data.requiredLongEthRuns} (Controller to Wall runs)</small></span>
+            <span id="controllerPortRequirement"><strong>Controller Ports Required (post-buffer):</strong><small>${data.requiredPortsBuffered}</small></span>
             <span id="controllerShortPorts"><strong>Short Ethernet Cables :</strong><small>${data.requiredShortEthernet} (Between Cabinets)</small></span>
         `;
 
@@ -837,6 +838,7 @@
             ['Controller/Processor Model :', `${data.controllerName} (${data.controllerType})`],
             ['Total Receiving Cards :', `${data.totalRecCards}`],
             ['Long Ethernet Ports/Runs (controller→wall) :', `${data.requiredLongEthRuns}`],
+            ['Controller Ports Required (post-buffer) :', `${data.requiredPortsBuffered}`],
             ['Short Ethernet Cables : (Between Cabinets)', `${data.requiredShortEthernet}`],
         ];
 
@@ -875,9 +877,9 @@
             ['LED Cabinets', data.productName, data.totalCabinets, 'PCS'],
             ['Controller/Processor', data.controllerName, 1, 'PCS'],
             ['Receiving Cards (R-Card)', `Embedded in Cabinet`, data.totalRecCards, 'PCS'],
-            ['Long Ethernet Cables', `Controller to Wall runs (CAT6)`, data.requiredLongEthRuns, 'PCS'],
+            ['Long Ethernet Cables', `Controller to Wall runs (CAT6/7)`, data.requiredLongEthRuns, 'PCS'],
             ['Controller Ports (post-buffer)', `Controller/Ethernet ports required (includes buffer)`, data.requiredPortsBuffered, 'PCS'],
-            ['Short Ethernet Cables', `Cabinet interconnect (CAT6)`, data.requiredShortEthernet, 'PCS'],
+            ['Short Ethernet Cables', `Cabinet interconnect (CAT6/7)`, data.requiredShortEthernet, 'PCS'],
             ['Installation / Configuration', `Includes wall mounting/stacking structure, site setup, and system commissioning.`, 1, 'LS (Lump Sum)'],
             ['Transport / Logistics', `Shipping/freight charges to site location.`, 1, 'LS (Lump Sum)'],
         ];
@@ -953,4 +955,3 @@
 </footer>
 </body>
 </html>
-
