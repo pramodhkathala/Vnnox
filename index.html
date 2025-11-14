@@ -7,49 +7,30 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
   <style>
-    /* Base styles */
+    /* (Styles unchanged — same as previous version) */
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 40px; background: #eef1f8; color: #1c2738; font-size: 14px; }
     .main-wrapper { max-width: 1200px; margin: auto; }
-
-    /* Header & Titles */
     h2 { text-align: center; color: #0D47A1; margin-top: 0; margin-bottom: 30px; font-weight: 700; font-size: 1.8em; display: flex; align-items: center; justify-content: center; }
-
-    /* Input/Form Container */
     .input-panel { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: all 0.6s ease-out; }
     .input-panel.minimized { height: 120px; padding-top: 15px; padding-bottom: 10px; opacity: 0.9; overflow: hidden; background: #f7f9fc; }
     .input-panel.minimized > *:not(h2):not(#enteredValuesDisplay):not(.back-btn-placeholder) { opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.3s ease-out, max-height 0.3s ease-out; pointer-events: none; }
     .input-panel.minimized h2 { margin-bottom: 5px; }
-
     .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 30px; }
     .input-group { margin-top: 0; }
-
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; }
-    select, input[type="number"], input[type="text"] {
-        width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s;
-    }
+    select, input[type="number"], input[type="text"] { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
     select:focus, input[type="number"]:focus, input[type="text"]:focus { border-color: #0D47A1; box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.15); outline: none; }
-
-    /* Buttons - TIGHTENED */
     .submit-btn { margin-top: 18px; grid-column: 1 / -1; background-color: #0D47A1; color: white; padding: 10px 12px; border: none; border-radius: 8px; font-size: 14px; width: 220px; max-width: 100%; cursor: pointer; transition: background-color 0.2s, transform 0.12s; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
     .submit-btn:hover { background-color: #1565C0; transform: translateY(-1px); }
     .back-btn { background-color: #6c757d; margin-top: 30px; }
     .back-btn:hover { background-color: #5a6268; }
-
-    /* Error/Summary Display */
     .hidden { display: none !important; }
-    .error-message {
-        color: #B71C1C; font-weight: bold; text-align: center; margin-top: 15px; padding: 12px; min-height: 20px; background: #ffebee; border: 2px solid #B71C1C; border-radius: 8px; transition: all 0.3s ease;
-    }
+    .error-message { color: #B71C1C; font-weight: bold; text-align: center; margin-top: 15px; padding: 12px; min-height: 20px; background: #ffebee; border: 2px solid #B71C1C; border-radius: 8px; transition: all 0.3s ease; }
     #enteredValuesDisplay { text-align: center; font-size: 0.95em; color: #444; margin-bottom: 15px; line-height: 1.4; display: none; }
     .input-panel.minimized #enteredValuesDisplay { display: block !important; opacity: 1; transition: opacity 0.3s ease-out 0.3s; }
-
-    /* Visualization/Output Container */
     .visualization { background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); opacity: 0; max-height: 0; overflow-y: hidden; transition: opacity 0.6s ease-out, max-height 1s ease-out; margin-top: 30px; }
     .visualization.visible { opacity: 1; max-height: 2000px; }
-
     .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 20px; }
-
-    /* Visualization Area */
     .vis-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: #f7f9fc; }
     .vis-content { position: relative; width: 100%; margin-bottom: 20px; padding-top: 35px; padding-right: 45px; padding-bottom: 10px; box-sizing: border-box; }
     .grid { position: relative; width: 100%; border: 3px solid #B71C1C; min-height: 100px; overflow: hidden; background: linear-gradient(135deg, #e3f2fd, #bbdefb); }
@@ -57,22 +38,15 @@
     .dimension-label { position: absolute; color: #B71C1C; background: rgba(255, 255, 255, 0.95); padding: 3px 6px; font-size: 0.9em; border-radius: 3px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .dim-top { top: 5px; left: 50%; transform: translateX(-50%); }
     .dim-right { top: 50%; right: 10px; transform: translateY(-50%) rotate(90deg); transform-origin: center center; }
-
-    /* Details Section */
     .details-box { border: 1px solid #e0e0e0; padding: 20px; border-radius: 8px; background: #f7f9fc; }
     .details-box h4 { margin-top: 0; color: #0D47A1; border-bottom: 2px solid #e0e0e0; padding-bottom: 8px; margin-bottom: 15px; font-size: 1.1em; }
-
     .vis-details { display: grid; grid-template-columns: 1fr; gap: 10px; font-size: 0.95em; color: #333; }
     .vis-details span { display: flex; justify-content: flex-start; align-items: center; line-height: 1.4; padding-bottom: 5px; border-bottom: 1px dotted #e0e0e0; }
     .vis-details strong { color: #333; font-weight: 400; min-width: 250px; text-align: left; margin-right: 15px; }
     .vis-details small { font-size: 1.0em; color: #B71C1C; font-weight: 700; }
-
     .edit-btn { background: none; border: none; color: #0D47A1; font-size: 0.9em; cursor: pointer; text-decoration: underline; padding: 0; margin-left: 10px; }
-
     #downloadPdfLink { grid-column: 1 / -1; margin-top: 15px; text-align: center; cursor: pointer; color: #1B5E20; text-decoration: underline; padding: 8px 0; font-weight: 600; }
     #downloadPdfLink:hover { color: #2E7D32; }
-
-    /* Modal/Popup Styles */
     .modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); display: none; }
     .modal-content { background-color: #fefefe; margin: 5% auto; padding: 30px; border-radius: 10px; width: 90%; max-width: 700px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
     .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
@@ -85,7 +59,6 @@
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .modal-grid-span-2 { grid-column: 1 / -1; }
     .modal-disclaimer { margin-top: 15px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 5px; font-size: 0.85em; color: #616161; }
-
   </style>
 </head>
 <body>
@@ -284,7 +257,9 @@
     const METER_TO_FEET = 3.28084;
     const PIXELS_PER_PORT_DEFAULT = 650000; // fallback
 
-    // Buffers
+    // Buffers: set global buffer to 5% as requested
+    const GLOBAL_PORT_BUFFER_PCT = 0.05; // 5%
+
     const POWER_BUFFER = 1.15;
     const WEIGHT_BUFFER = 1.15;
     const MARGIN_PERCENT_TEXT = "15%";
@@ -303,7 +278,7 @@
         'outdoor_100': { name: "PeopleLink SMD Outdoor (10.0mm)", pitch_mm: 10.0, cabW_mm: 960, cabH_mm: 960, cabPixW: 96, cabPixH: 96, modulesPerCab: 18, weight_kg: 8.28, nits_range: "4500-5000", maxPower_W_m2: 937.5 }
     };
 
-    // --- Controller Models (unchanged) ---
+    // --- Controller Models (unchanged list — used for suggestion) ---
     const CONTROLLER_MODELS = [
         { name: "TB40", type: "Multimedia Player", ports: 2, maxPixels: 1300000, maxW: 10240, maxH: 8192, priority: 1 },
         { name: "TB60", type: "Multimedia Player", ports: 4, maxPixels: 2300000, maxW: 4096, maxH: 4096, priority: 2 },
@@ -334,12 +309,12 @@
         OUTPUT_CARD_16_MODEL: "H_16xRJ45 Sending Card",
     };
 
-    // Cabinets-per-long-LAN mapping and buffers per your rules
+    // Cabinets-per-long-LAN mapping — buffer fields replaced by global 5% buffer
     const CABINETS_PER_LONG_LAN = {
-        'cob_09': { cabinetsPerRun: 2, portBufferPct: 0 },       // COB 0.9375 mm → 2 cabinets / long LAN cable
-        'cob_125': { cabinetsPerRun: 5, portBufferPct: 0.05 },   // COB 1.25 mm → 5 cabinets / long LAN cable, +5% controller-port buffer
-        'cob_15': { cabinetsPerRun: 7, portBufferPct: 0.05 },    // COB 1.5625 mm → 7 cabinets / long LAN cable, +5% controller-port buffer
-        // SMD types handled separately (SMD uses pixels->ports fallback +5% buffer)
+        'cob_09': { cabinetsPerRun: 2 },       // COB 0.9375 mm → 2 cabinets / long LAN cable
+        'cob_125': { cabinetsPerRun: 5 },     // COB 1.25 mm → 5 cabinets / long LAN cable
+        'cob_15': { cabinetsPerRun: 7 },      // COB 1.5625 mm → 7 cabinets / long LAN cable
+        // SMD handled separately (pixel->port + 5% buffer)
     };
 
     // --- Global Store ---
@@ -357,7 +332,7 @@
         CONTROLLER_MODELS.forEach(controller => {
             const opt = document.createElement('option');
             opt.value = controller.name;
-            opt.textContent = `${controller.name} (${controller.type}, ${formatLargeNumber(controller.maxPixels)} max px)`;
+            opt.textContent = `${controller.name} (${controller.type}, ${formatLargeNumber(controller.maxPixels)} max px, ${controller.ports} ports)`;
             select.appendChild(opt);
         });
     }
@@ -429,32 +404,36 @@
         showVisualization();
     }
 
-    function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey) {
-        const details = LED_PRODUCTS[productKey];
-        const isOutdoor = productKey.startsWith('outdoor');
-        const isSmallIndoor = totalPixels < 1500000;
-        let suggestedController = null;
-        if (isOutdoor || isSmallIndoor) {
-             const suitableTB = CONTROLLER_MODELS.find(c => c.type === "Multimedia Player" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
-             if (suitableTB) suggestedController = suitableTB;
-        }
-        if (!suggestedController) {
-            const suitableAIO = CONTROLLER_MODELS.find(c => c.type === "All-in-One Processor" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
-            if (suitableAIO) suggestedController = suitableAIO;
-        }
-        if (!suggestedController) {
-            const suitable4K = CONTROLLER_MODELS.find(c => c.name.includes('4K Prime') && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
-            if (suitable4K) suggestedController = suitable4K;
-        }
-        if (!suggestedController) {
-            const suitableHSeries = CONTROLLER_MODELS.filter(c => c.type === "Modular Splicer" && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH).sort((a,b) => a.maxPixels - b.maxPixels);
-            if (suitableHSeries.length > 0) suggestedController = suitableHSeries[0];
-            else suggestedController = CONTROLLER_MODELS[CONTROLLER_MODELS.length - 1];
-        }
-        return suggestedController;
+    /**
+     * Controller suggestion now considers:
+     *  - requiredPortsBuffered (controller ports requirement after buffer)
+     *  - requiredLongEthRuns (long runs count; used as additional tie-breaker/consideration)
+     *  - totalPixels & resolution (finalResW/H)
+     *
+     * Logic:
+     * 1) Prefer smallest controller where controller.ports >= requiredPortsBuffered AND controller.maxPixels >= totalPixels AND controller maxW/H >= resolution.
+     * 2) If none found, prefer All-in-One processsors that meet pixels/resolution (even if ports < requiredPortsBuffered) only if requiredPortsBuffered is small (<= controller.ports * 1.2) — but to keep deterministic we will fall back to H-series if strict match not found.
+     * 3) Final fallback: first H-series controller with enough maxPixels.
+     */
+    function getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey, requiredPortsBuffered, requiredLongEthRuns) {
+        // 1) exact port+pixel+resolution fit
+        const exactMatch = CONTROLLER_MODELS.find(c => c.ports >= requiredPortsBuffered && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
+        if (exactMatch) return exactMatch;
+
+        // 2) try controllers that satisfy pixels & resolution, even if ports slightly lower (but not too low)
+        const nearPortThreshold = Math.ceil(requiredPortsBuffered * 0.9); // accept controllers with >= 90% of required ports
+        const pixelResMatch = CONTROLLER_MODELS.find(c => c.ports >= nearPortThreshold && c.maxPixels >= totalPixels && c.maxW >= finalResW && c.maxH >= finalResH);
+        if (pixelResMatch) return pixelResMatch;
+
+        // 3) If not found, choose smallest H-series controller that has maxPixels >= totalPixels
+        const hSeries = CONTROLLER_MODELS.filter(c => c.type.includes('Modular') && c.maxPixels >= totalPixels).sort((a,b) => a.maxPixels - b.maxPixels);
+        if (hSeries.length > 0) return hSeries[0];
+
+        // 4) final fallback: largest available controller
+        return CONTROLLER_MODELS[CONTROLLER_MODELS.length - 1];
     }
 
-    // --- Calculation with your LAN/port rules implemented ---
+    // --- Calculation with updated LAN/port rules & 5% buffer ---
     function toggleMeasurementFields(){
         const unit = document.getElementById('unit').value;
         const isDiagonal = (unit === 'inches');
@@ -561,7 +540,7 @@
         const actualCabinetWeight_unbuffered = details.weight_kg * totalCabinets;
         const totalWallWeight_buffered = actualCabinetWeight_unbuffered * WEIGHT_BUFFER;
 
-        // --- NEW: LAN / Port Rules implementation ---
+        // --- NEW: LAN / Port Rules implementation with global 5% buffer ---
 
         // 1) Calculate ports needed by pixels (fallback)
         const ports_by_pixels = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
@@ -570,24 +549,21 @@
         let cabinetsRule = CABINETS_PER_LONG_LAN[productKey];
         let requiredLongEthRuns = 0;
         let ports_by_cabinets = 0;
-        let portBufferPct = 0;
 
         if (cabinetsRule) {
             requiredLongEthRuns = Math.max(1, Math.ceil(totalCabinets / cabinetsRule.cabinetsPerRun));
             ports_by_cabinets = requiredLongEthRuns; // long runs equate to controller-to-wall ports needed
-            portBufferPct = cabinetsRule.portBufferPct || 0;
         } else {
-            // SMD (indoor/outdoor) -> compute based on pixels and apply SMD buffer
+            // SMD (indoor/outdoor) -> compute based on pixels
             requiredLongEthRuns = Math.max(1, ports_by_pixels); // controller->wall runs driven by pixels for SMD
             ports_by_cabinets = requiredLongEthRuns;
-            portBufferPct = 0.20; // SMD fallback buffer +20%
         }
 
         // 3) Use the greater of pixel-driven ports and cabinet-driven long runs
         let requiredPorts = Math.max(ports_by_pixels, ports_by_cabinets);
 
-        // 4) Apply buffer (COB 1.25/1.5625 have 15% buffer, SMD -> 20% buffer; cob_09 has 0 buffer)
-        const requiredPortsBuffered = Math.max(1, Math.ceil(requiredPorts * (1 + portBufferPct)));
+        // 4) Apply GLOBAL_PORT_BUFFER_PCT (5%) to requiredPorts
+        const requiredPortsBuffered = Math.max(1, Math.ceil(requiredPorts * (1 + GLOBAL_PORT_BUFFER_PCT)));
 
         // 5) Calculate required sending cards based on chosen output card ports
         const outputCardPorts = finalCalculationData.outputCardPorts || H_SERIES_DEFAULTS.OUTPUT_CARD_20_PORTS;
@@ -597,8 +573,8 @@
         // 6) Short ethernet between cabinets (approx)
         const requiredShortEthernet = Math.max(0, totalCabinets - requiredPortsBuffered);
 
-        // pick controller based on pixels & resolution
-        const suggestedController = getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey);
+        // pick controller based on pixels & resolution AND requiredPortsBuffered
+        const suggestedController = getSuggestedControllerModel(totalPixels, finalResW, finalResH, productKey, requiredPortsBuffered, requiredLongEthRuns);
         const isHSeries = suggestedController.type.includes("Modular");
         const inputCardModel = finalCalculationData.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
         const inputCardQty = finalCalculationData.inputCardQty || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_QTY;
@@ -979,4 +955,3 @@
 </footer>
 </body>
 </html>
-
