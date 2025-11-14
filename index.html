@@ -14,8 +14,8 @@
     h2{text-align:center;color:#0D47A1;margin:0 0 18px;font-weight:700}
     .panel{background:#fff;padding:20px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.05)}
     .input-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-    label{display:block;margin-bottom:6px;font-weight:600;color:#333}
-    select,input{padding:10px;border-radius:8px;border:1px solid #ddd;width:100%;box-sizing:border-box}
+    label{display:block;margin-bottom:6px;font-weight:700;color:#0D47A1} /* desired inputs font color & weight preserved */
+    select,input{padding:10px;border-radius:8px;border:1px solid #ddd;width:100%;box-sizing:border-box;font-family:'Inter'}
     .row{display:flex;gap:10px}
     .submit{background:#0D47A1;color:#fff;padding:10px 14px;border-radius:8px;border:0;font-weight:700;cursor:pointer}
     .btn-light{background:#1B5E20;color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
@@ -123,7 +123,7 @@
           <div id="visCanvasContainer" style="width:100%;height:220px;display:flex;align-items:center;justify-content:center"></div>
           <div style="margin-top:8px" id="visDimensions"></div>
         </div>
-        <div class="small-muted" style="margin-top:6px">Hover the visualization (in the webpage) to preview cabinet labels. Visualization is embedded into PDF & Excel downloads.</div>
+        <div class="small-muted" style="margin-top:6px">Hover the visualization (in the webpage) to preview cabinet labels. Visualization is embedded into PDF (NOT into Excel) and Excel will include the image as a preview embed only.</div>
       </div>
 
       <div style="margin-top:12px" id="boqArea"></div>
@@ -140,7 +140,7 @@
       <div style="max-width:720px;margin:6% auto;background:#fff;padding:18px;border-radius:8px;position:relative">
         <div style="display:flex;justify-content:space-between;align-items:center"><strong style="color:#0D47A1">Edit Control System Components</strong><button onclick="closeControllerModal()" style="background:none;border:0;font-size:22px;cursor:pointer">&times;</button></div>
         <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div><label>Controller Model</label><select id="modalControllerModel"></select></div>
+          <div><label>Controller Model</label><select id="modalControllerModel" onchange="onControllerChange()"></select></div>
           <div><label>Output Card (ports)</label><select id="modalOutputCardModel" onchange="updatePortsFromOutputCard()"></select></div>
           <div><label>Input Card</label><select id="modalInputCardModel"></select></div>
           <div><label>Input Card Qty</label><input id="modalInputCardQty" type="number" min="1" value="2" /></div>
@@ -188,37 +188,32 @@ const LED_PRODUCTS = {
 
 /* controllers & parts catalog (expanded) */
 const CONTROLLER_MODELS = [
-  {name:"TB40",type:"Multimedia Player",ports:2,maxPixels:1300000,maxW:10240,maxH:8192,priority:1},
-  {name:"TB60",type:"Multimedia Player",ports:4,maxPixels:2300000,maxW:4096,maxH:4096,priority:2},
+  {name:"TB40",type:"Multimedia",ports:2,maxPixels:1300000,maxW:10240,maxH:8192,priority:1},
+  {name:"TB60",type:"Multimedia",ports:4,maxPixels:2300000,maxW:4096,maxH:4096,priority:2},
   {name:"VX400 Pro",type:"All-in-One",ports:4,maxPixels:2600000,maxW:10240,maxH:8192,priority:3},
   {name:"VX600 Pro",type:"All-in-One",ports:6,maxPixels:3900000,maxW:10240,maxH:8192,priority:4},
   {name:"VX1000 Pro",type:"All-in-One",ports:10,maxPixels:6500000,maxW:10240,maxH:8192,priority:5},
   {name:"4K Prime",type:"All-in-One",ports:16,maxPixels:10400000,maxW:16384,maxH:8192,priority:6},
-  {name:"4K Prime Pro",type:"All-in-One",ports:18,maxPixels:13000000,maxW:16384,maxH:8192,priority:7},
   {name:"H2 (2U)",type:"Modular",ports:20,maxPixels:26000000,maxW:16384,maxH:8192,priority:8},
   {name:"H5 (5U)",type:"Modular",ports:20,maxPixels:39000000,maxW:16384,maxH:8192,priority:9},
   {name:"H9 (9U)",type:"Modular",ports:20,maxPixels:65000000,maxW:16384,maxH:8192,priority:10},
 ];
 
-/* mapping of known part codes */
 const PARTS_CATALOG = {
-  'TB40':'TP-VWC-NS-TB40', 'TB60':'TP-VWC-NS-TB60', 'VX400 Pro':'TP-VWC-NS-VX400', 'VX600 Pro':'TP-VWC-NS-VX600',
-  'VX1000 Pro':'TP-VWC-NS-VX1000', '4K Prime':'TP-VWC-NS-4K-PRM', '4K Prime Pro':'TP-VWC-NS-4K-PRM-PRO',
-  'H2 (2U)':'TP-XMF-H2', 'H5 (5U)':'TP-XMF-H5', 'H9 (9U)':'TP-XMF-H9',
-  'H_20_RJ45':'TP-XOC-RJ45-20', 'H_16_RJ45_2fib':'TP-XOC-RJ45-16-OF2', 'H_4_HDMI_Out':'TP-XOC-HDMI4',
-  'H_800W_PSU':'TP-XPS-H800W', 'PPL-COB-09':'PPL-COB-MDL-CU-09', 'PPL-COB-125':'PPL-COB-MDL-CU-12', 'PPL-COB-156':'PPL-COB-MDL-CU-12',
-  'PPL-SMD-18':'PPL-SMD-MDL-CU-18', 'PPL-SMD-40':'PPL-SMD-MDL-CU-40', 'ALED-INST-IN':'ALED-INST-IN', 'ALED-TRS-IN-REG':'ALED-TRS-IN-REG'
+  'TB40':'TP-VWC-NS-TB40', 'TB60':'TP-VWC-NS-TB60', 'VX400 Pro':'TP-VWC-NS-VX400', 'VX600 Pro':'TP-VWC-NS-VX600', 'VX1000 Pro':'TP-VWC-NS-VX1000',
+  '4K Prime':'TP-VWC-NS-4K-PRM', 'H2 (2U)':'TP-XMF-H2', 'H5 (5U)':'TP-XMF-H5', 'H9 (9U)':'TP-XMF-H9',
+  'H_20_RJ45':'TP-XOC-RJ45-20', 'H_16_RJ45_2fib':'TP-XOC-RJ45-16-OF2', 'H_4_HDMI_Out':'TP-XOC-HDMI4', 'H_800W_PSU':'TP-XPS-H800W',
+  'PPL-COB-09':'PPL-COB-MDL-CU-09', 'PPL-COB-125':'PPL-COB-MDL-CU-12', 'PPL-SMD-18':'PPL-SMD-MDL-CU-18', 'PPL-SMD-40':'PPL-SMD-MDL-CU-40',
+  'ALED-INST-IN':'ALED-INST-IN', 'ALED-TRS-IN-REG':'ALED-TRS-IN-REG'
 };
 
-/* cabinet run rules */
 const CABINETS_PER_LONG_LAN = {'cob_09':{cabinetsPerRun:2}, 'cob_125':{cabinetsPerRun:5}, 'cob_15':{cabinetsPerRun:7} };
 
 /* helpers */
 function gcd(a,b){return b===0?a:gcd(b,a%b)}
-function escapeXml(unsafe){ return (unsafe||'').toString().replace(/[<>&'"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]; }); }
+function escapeXml(unsafe){ return (unsafe||'').toString().replace(/[<>&'\"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','\'':"&apos;",'\"':'&quot;'}[c]; }); }
 function fmt(n,d=0){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}) }
 
-/* global store */
 let finalCalculationData = {};
 let contactInfo = {email:'', phone:''};
 
@@ -232,7 +227,6 @@ function populateModal(){
   [['H_1xHDMI2.0 input card (4K)','1x 4K HDMI'], ['H_2xHDMI2.0 input card (4K)','2x 4K HDMI'], ['H_4xHDMI input card (1080P)','4x FHD HDMI']].forEach(it=>{ const o=document.createElement('option'); o.value=it[0]+'|1'; o.textContent=it[1]; inSel.appendChild(o) });
 }
 
-/* toggle measure fields */
 function toggleMeasurementFields(){
   const unit=document.getElementById('unit').value; const diag = unit==='inches';
   document.getElementById('widthGroup').style.display = diag? 'none':'block';
@@ -242,7 +236,6 @@ function toggleMeasurementFields(){
   document.getElementById('heightLabel').textContent = `Desired Height ${unit==='feet'?'(ft)':unit==='inches'?'(in)':'(m)'}`;
 }
 
-/* calculation logic (same robust rules) */
 function calculateLEDWall(){
   const productKey = document.getElementById('productModel').value;
   const unit = document.getElementById('unit').value;
@@ -286,7 +279,6 @@ function calculateLEDWall(){
   const actualWeight = totalCabinets * details.weight_kg;
   const designWeight = actualWeight * WEIGHT_BUFFER;
 
-  // ports
   const ports_by_pixels = Math.max(1, Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT));
   const cabinetsRule = CABINETS_PER_LONG_LAN[productKey];
   const requiredLongEthRuns = cabinetsRule ? Math.max(1, Math.ceil(totalCabinets / cabinetsRule.cabinetsPerRun)) : Math.max(1, ports_by_pixels);
@@ -296,7 +288,6 @@ function calculateLEDWall(){
   const requiredSendCards = Math.max(1, Math.ceil(requiredPortsBuffered / outputCardPortsDefault));
   const requiredShortEthernet = Math.max(0, totalCabinets - requiredPortsBuffered);
 
-  // choose controller: prefer first that matches ports/pixels/resolution
   const suggested = CONTROLLER_MODELS.find(c=> c.ports >= requiredPortsBuffered && c.maxPixels >= totalPixels) || CONTROLLER_MODELS.find(c=> c.maxPixels >= totalPixels) || CONTROLLER_MODELS[CONTROLLER_MODELS.length-1];
 
   finalCalculationData = {
@@ -308,20 +299,17 @@ function calculateLEDWall(){
     requiredPortsBuffered, requiredLongEthRuns, requiredShortEthernet, requiredSendCards,
     controllerName: suggested.name, controllerType: suggested.type, totalRecCards: totalCabinets,
     outputCardModel: 'H_20_RJ45', outputCardPorts: outputCardPortsDefault, inputCardModel: 'H_1xHDMI2.0 input card (4K)', inputCardQty:2,
-    splicerSolution: (suggested.type==='Modular')? 'H-Series Modular Splicer Frame' : 'N/A',
-    includeHdmiOutput: false
+    splicerSolution: (suggested.type==='Modular')? 'H-Series Modular Splicer Frame' : 'N/A', includeHdmiOutput:false
   };
   return finalCalculationData;
 }
 
-/* render UI & BOQ preview */
 function showVisualization(){
   populateModal();
   const data = calculateLEDWall();
   if(!data) return;
   document.getElementById('visualization').classList.add('visible');
 
-  // specs (preserve color & font)
   const pixDensity = Math.round(data.totalPixels / data.finalArea_m2);
   document.getElementById('specs').innerHTML = `
     <div><strong>Model:</strong> ${data.productName}</div>
@@ -340,7 +328,6 @@ function showVisualization(){
     <div><strong>Inter-cabinet short Ethernet:</strong> ${data.requiredShortEthernet}</div>
   `;
 
-  // draw visualization canvas
   const container = document.getElementById('visCanvasContainer');
   container.innerHTML=''; const canvas = document.createElement('canvas'); canvas.width = 1000; canvas.height = 300; container.appendChild(canvas);
   drawVisualCanvas(canvas, data);
@@ -349,15 +336,12 @@ function showVisualization(){
   renderBOQPreview(data);
 }
 
-/* draw visualization canvas (reused for PDF/Excel images) */
 function drawVisualCanvas(canvas, data){
   if(!canvas) return;
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0,0,w,h);
-  // soft background
   const g = ctx.createLinearGradient(0,0,w,0); g.addColorStop(0,'#eaf6ff'); g.addColorStop(1,'#ffffff'); ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
-  // grid params
   const cols = Math.max(1, data.numCabW), rows = Math.max(1, data.numCabH);
   const pad = 36; const gridW = w - pad*2, gridH = h - pad*2;
   const cellW = Math.floor(gridW/cols), cellH = Math.floor(gridH/rows);
@@ -374,37 +358,28 @@ function drawVisualCanvas(canvas, data){
   ctx.fillStyle = '#0D47A1'; ctx.font='12px Inter,Arial'; ctx.fillText('Physical Wall Visualization', 12, 18);
 }
 
-/* BOQ list builder (with corrected partcode mapping) */
 function generateBOQList(data){
   const list = [];
-  // controller
   const ctrlName = data.controllerName || 'Controller';
   const ctrlPart = PARTS_CATALOG[ctrlName] || PARTS_CATALOG['TB40'] || 'TBD';
   list.push({item:`Controller/Processor — ${ctrlName}`, part: ctrlPart, qty:1, unit:'PCS'});
 
-  // receiving cards (assume embedded receiving cards equal cabinets)
   list.push({item:`Receiving Cards (embedded) — ${data.totalRecCards} R-cards`, part:'Embedded', qty:data.totalRecCards, unit:'PCS'});
 
-  // output/sending cards (H-series uses H_20_RJ45 default)
-  let sendingPart = PARTS_CATALOG['H_20_RJ45'] || 'TBD';
-  if(data.outputCardModel && PARTS_CATALOG[data.outputCardModel]) sendingPart = PARTS_CATALOG[data.outputCardModel];
-  list.push({item:`Output (Sending) Cards — ${data.requiredSendCards} x (${data.outputCardPorts} ports/card)`, part: sendingPart, qty:data.requiredSendCards, unit:'PCS'});
-
-  // input cards
-  list.push({item:`Input Cards (User Specified) — ${data.inputCardQty} x ${data.inputCardModel}`, part:'TP-XIC-HDMI', qty:data.inputCardQty, unit:'PCS'});
-
-  // optional HDMI output card for H-series if user selected
-  if(data.includeHdmiOutput && (data.controllerType && data.controllerType.includes('Modular'))){
-    const hhdmi = PARTS_CATALOG['H_4_HDMI_Out'] || 'TP-XOC-HDMI4';
-    list.push({item:`Optional: H_4 x HDMI Output Card (user opted)`, part:hhdmi, qty:1, unit:'PCS'});
+  // Output/Input cards & power supply ONLY for H-series (Modular)
+  if(data.controllerType && data.controllerType.includes('Modular')){
+    let sendingPart = PARTS_CATALOG['H_20_RJ45'] || 'TBD';
+    if(data.outputCardModel && PARTS_CATALOG[data.outputCardModel]) sendingPart = PARTS_CATALOG[data.outputCardModel];
+    list.push({item:`Output (Sending) Cards — ${data.requiredSendCards} x (${data.outputCardPorts} ports/card)`, part: sendingPart, qty:data.requiredSendCards, unit:'PCS'});
+    list.push({item:`Input Cards (User Specified) — ${data.inputCardQty} x ${data.inputCardModel}`, part:'TP-XIC-HDMI', qty:data.inputCardQty, unit:'PCS'});
+    if(data.includeHdmiOutput){ const hhdmi = PARTS_CATALOG['H_4_HDMI_Out'] || 'TP-XOC-HDMI4'; list.push({item:`Optional: H_4 x HDMI Output Card (user opted)`, part:hhdmi, qty:1, unit:'PCS'}); }
+    const psuQty = Math.max(1, Math.ceil(data.totalCabinets / 10));
+    list.push({item:`Power Supply - H_800W (est.)`, part: PARTS_CATALOG['H_800W_PSU'] || 'TP-XPS-H800W', qty: psuQty, unit:'PCS'});
   }
 
-  // long ethernet & short ethernet
   list.push({item:`Controller → Wall Long Ethernet Ports (post-buffer)`, part:'TBD', qty:data.requiredPortsBuffered, unit:'PCS'});
   list.push({item:`Inter-cabinet Short Ethernet (CAT6)`, part:'TBD', qty:data.requiredShortEthernet, unit:'PCS'});
 
-  // LED Cabinets
-  // choose LED partcode based on productKey/pitch
   let ledPartKey = 'PPL-ALD-CU';
   if(data.pixelPitch_mm <= 1.0) ledPartKey = 'PPL-COB-09';
   else if(data.pixelPitch_mm <= 1.3) ledPartKey = 'PPL-COB-125';
@@ -413,45 +388,50 @@ function generateBOQList(data){
   const ledPart = PARTS_CATALOG[ledPartKey] || ledPartKey;
   list.push({item:`LED Cabinets (Including Modules) — ${data.productName}`, part:ledPart, qty:data.totalCabinets, unit:'PCS'});
 
-  // spare modules (5% COB; 10% SMD)
   const sparePct = (data.pixelPitch_mm <= 1.3)?0.05:0.10;
   const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
   list.push({item:`Spare Modules (${Math.round(sparePct*100)}%) — site spares`, part:'TBD', qty:spareQty, unit:'PCS'});
 
-  // power supply estimate
-  const psuQty = Math.max(1, Math.ceil(data.totalCabinets / 10));
-  list.push({item:`Power Supply - H_800W (est.)`, part: PARTS_CATALOG['H_800W_PSU'] || 'TP-XPS-H800W', qty: psuQty, unit:'PCS'});
-
-  // installation & transport
+  const psuQtyFallback = Math.max(1, Math.ceil(data.totalCabinets / 10));
+  // if not modular we won't add H_800W here
   list.push({item:`Installation / Configuration (Indoor)`, part: PARTS_CATALOG['ALED-INST-IN'] || 'ALED-INST-IN', qty: data.totalCabinets, unit:'Per Cabinet'});
   list.push({item:`Transportation (Indoor)`, part: PARTS_CATALOG['ALED-TRS-IN-REG'] || 'ALED-TRS-IN-REG', qty: data.totalCabinets, unit:'Per Cabinet'});
 
   return list;
 }
 
-/* render BOQ preview into DOM */
 function renderBOQPreview(data){
   const area = document.getElementById('boqArea'); area.innerHTML='';
   const list = generateBOQList(data);
   let html = `<h4 class="specs-title" style="margin:0 0 8px">Bill of Quantities</h4>`;
-  html += `<table id="boqPreviewTable"><thead><tr><th style="width:40px">S.No</th><th style="width:440px">Item / Description</th><th style="width:120px">Partcode</th><th style="width:80px;text-align:right">Qty</th><th style="width:80px">Unit</th><th style="width:120px">Unit Price</th><th style="width:120px">Total Price</th></tr></thead><tbody>`;
-  list.forEach((r,i)=>{ html += `<tr><td>${i+1}</td><td>${escapeXml(r.item)}</td><td>${escapeXml(r.part)}</td><td style="text-align:right">${r.qty}</td><td>${r.unit}</td><td></td><td></td></tr>`; });
-  html += `<tr><td></td><td style="font-weight:700">Unit Price (enter in Excel)</td><td></td><td></td><td></td><td></td><td></td></tr>`;
-  html += `<tr><td></td><td style="font-weight:700">Total Price (sum)</td><td></td><td></td><td></td><td></td><td></td></tr>`;
+  html += `<table id="boqPreviewTable"><thead><tr><th style="width:40px">S.No</th><th style="width:460px">Item / Description</th><th style="width:140px">Partcode</th><th style="width:80px;text-align:right">Qty</th><th style="width:80px">Unit</th></tr></thead><tbody>`;
+  list.forEach((r,i)=>{ html += `<tr><td>${i+1}</td><td>${escapeXml(r.item)}</td><td>${escapeXml(r.part)}</td><td style="text-align:right">${r.qty}</td><td>${r.unit}</td></tr>`; });
   html += `</tbody></table>`;
   area.innerHTML = html;
 }
 
-/* modal handlers */
-function openControllerModal(){ populateModal(); // set defaults from finalCalculationData if exists
+function openControllerModal(){ populateModal();
   const sel = document.getElementById('modalControllerModel'); if(finalCalculationData.controllerName){ for(let o of sel.options){ if(o.value === finalCalculationData.controllerName){ sel.value=o.value; break; } } }
   const out = document.getElementById('modalOutputCardModel'); if(finalCalculationData.outputCardModel){ for(let o of out.options){ if(o.value.startsWith(finalCalculationData.outputCardModel)){ out.value=o.value; break; } } }
   document.getElementById('modalInputCardQty').value = finalCalculationData.inputCardQty || 2;
   document.getElementById('modalIncludeHdmiOutput').checked = !!finalCalculationData.includeHdmiOutput;
+  // enable/disable optional fields depending on controller type
+  onControllerChange();
   document.getElementById('controllerModal').style.display='block';
 }
 function closeControllerModal(){ document.getElementById('controllerModal').style.display='none'; }
-function updatePortsFromOutputCard(){ /* optional: update UI */ }
+function onControllerChange(){
+  const selected = document.getElementById('modalControllerModel').value;
+  const isH = selected && selected.toLowerCase().startsWith('h');
+  // enable or disable HDMI output and input card selection only for H-series
+  document.getElementById('modalIncludeHdmiOutput').disabled = !isH;
+  document.getElementById('modalOutputCardModel').disabled = !isH;
+  document.getElementById('modalInputCardModel').disabled = !isH;
+  document.getElementById('modalInputCardQty').disabled = !isH;
+  // visual cue
+  document.getElementById('modalIncludeHdmiOutput').parentElement.style.opacity = isH? '1':'0.5';
+}
+function updatePortsFromOutputCard(){ /* optional handler */ }
 function applyModalChanges(){
   finalCalculationData.controllerName = document.getElementById('modalControllerModel').value;
   const outVal = document.getElementById('modalOutputCardModel').value.split('|');
@@ -459,18 +439,17 @@ function applyModalChanges(){
   finalCalculationData.outputCardPorts = Number(outVal[1]||20);
   finalCalculationData.inputCardQty = Number(document.getElementById('modalInputCardQty').value || 2);
   finalCalculationData.includeHdmiOutput = document.getElementById('modalIncludeHdmiOutput').checked;
-  closeControllerModal(); // recalc UI display using current data
-  // re-render: recalc some derived fields but keep prior geometry
-  // simplest: call calculate again with same inputs to refresh suggestions - but keep modal overrides where appropriate
-  const recalculated = calculateLEDWall(); // this resets controllerName if not persisted; so override below:
+  closeControllerModal();
+  const recalculated = calculateLEDWall();
   if(finalCalculationData.controllerName) recalculated.controllerName = finalCalculationData.controllerName;
   recalculated.outputCardModel = finalCalculationData.outputCardModel;
   recalculated.outputCardPorts = finalCalculationData.outputCardPorts;
+  recalculated.includeHdmiOutput = finalCalculationData.includeHdmiOutput;
+  recalculated.inputCardQty = finalCalculationData.inputCardQty;
   finalCalculationData = recalculated;
   showVisualization();
 }
 
-/* contact modal */
 function openContactModal(){
   if(!finalCalculationData || !finalCalculationData.totalPixels){ alert('Please calculate first'); return; }
   document.getElementById('downloadEmail').value = contactInfo.email || '';
@@ -480,7 +459,7 @@ function openContactModal(){
 function closeContactModal(){ document.getElementById('contactModal').style.display='none'; }
 function handleDownloadRequest(){ contactInfo.email = document.getElementById('downloadEmail').value.trim(); contactInfo.phone = document.getElementById('downloadPhone').value.trim(); closeContactModal(); proceedToDownloadPdf(); }
 
-/* --- PDF generation (quotation format enhanced) --- */
+/* --- PDF generation (connectivity diagram included in PDF only) --- */
 function proceedToDownloadPdf(){
   if(!finalCalculationData || !finalCalculationData.totalPixels){ alert('Calculate first'); return; }
   const data = finalCalculationData;
@@ -489,7 +468,6 @@ function proceedToDownloadPdf(){
   const pageW = doc.internal.pageSize.getWidth(), pageH = doc.internal.pageSize.getHeight();
   const margin = 12; let y = 12;
 
-  // Header
   doc.setFontSize(14); doc.setTextColor(13,71,161);
   doc.text('PeopleLink LED Video Wall — Quotation / Technical Summary', margin, y);
   y += 6;
@@ -498,7 +476,6 @@ function proceedToDownloadPdf(){
   doc.text(`Contact: ${contactInfo.email || 'N/A'} ${contactInfo.phone?(' | '+contactInfo.phone):''}`, pageW - margin, y, {align:'right'});
   y += 8;
 
-  // Short performance & dims block (two columns)
   const leftX = margin, rightX = pageW/2 + 6;
   doc.setFontSize(9); doc.setTextColor(30,30,30);
   doc.text('Final Dimensions (mm):', leftX, y); doc.text(`${Math.round(data.finalW_mm).toLocaleString()} x ${Math.round(data.finalH_mm).toLocaleString()} mm`, leftX+50, y);
@@ -518,8 +495,6 @@ function proceedToDownloadPdf(){
   doc.text('Required Sending Ports:', rightX, y); doc.text(`${data.requiredPortsBuffered}`, rightX+54, y);
   y += 8;
 
-  // Visualization (canvas to image)
-  // create an in-memory canvas and draw same visual used in UI
   const tmpCanvas = document.createElement('canvas'); tmpCanvas.width = 1200; tmpCanvas.height = 320;
   drawVisualCanvas(tmpCanvas, data);
   const imgData = tmpCanvas.toDataURL('image/png');
@@ -528,16 +503,16 @@ function proceedToDownloadPdf(){
   doc.addImage(imgData, 'PNG', margin, y, imgW, imgH);
   y += imgH + 6;
 
-  // Connectivity diagram (draw simple diagram to canvas)
-  const connCanvas = document.createElement('canvas'); connCanvas.width = 1000; connCanvas.height = 220;
+  // Connectivity diagram inserted here (controller -> PoE switch -> LED wall)
+  const connCanvas = document.createElement('canvas'); connCanvas.width = 1000; connCanvas.height = 240;
   drawConnectivityDiagram(connCanvas, data);
   const connImg = connCanvas.toDataURL('image/png');
   const cimgW = (pageW/2) - margin - 4; const cimgH = (connCanvas.height/connCanvas.width)*cimgW;
-  if(y + cimgH > pageH - 80){ doc.addPage(); y = margin; }
+  if(y + cimgH > pageH - 90){ doc.addPage(); y = margin; }
   doc.addImage(connImg, 'PNG', margin, y, cimgW, cimgH);
 
-  // BOQ table heading & data via autoTable
   y += cimgH + 6;
+
   if(y > pageH - 90){ doc.addPage(); y = margin; }
   doc.setFontSize(10); doc.setTextColor(13,71,161); doc.text('Bill of Quantities', margin, y);
   y += 4;
@@ -556,7 +531,6 @@ function proceedToDownloadPdf(){
     margin:{left:margin,right:margin}
   });
 
-  // T&C
   let nextY = doc.lastAutoTable.finalY + 6;
   const terms = [
     "1) Price validity: 30 days.",
@@ -567,128 +541,84 @@ function proceedToDownloadPdf(){
     "6) Design figures include 15% safety margin for power & weight."
   ];
   doc.setFontSize(8); doc.setTextColor(50,50,50);
-  terms.forEach(t=>{
-    if(nextY > pageH - 30){ doc.addPage(); nextY = margin; }
-    doc.text(t, margin, nextY);
-    nextY += 4.2;
-  });
+  terms.forEach(t=>{ if(nextY > pageH - 30){ doc.addPage(); nextY = margin; } doc.text(t, margin, nextY); nextY += 4.2; });
 
-  // footer & save
   doc.setFontSize(7); doc.setTextColor(130,130,180);
   doc.text('Quotation prepared by PeopleLink Unified Communications Pvt. Ltd. © 2025', pageW/2, pageH - 8, {align:'center'});
   const filename = `PeopleLink_LED_Quotation_${data.finalResW}x${data.finalResH}.pdf`;
   doc.save(filename);
 }
 
-/* draw connectivity diagram (simple boxes & arrows) */
 function drawConnectivityDiagram(canvas, data){
   const ctx = canvas.getContext('2d');
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0,0,w,h);
   ctx.fillStyle = '#fff'; ctx.fillRect(0,0,w,h);
   ctx.font = '12px Inter, Arial';
-  // draw controller box left
-  const leftX = 60, midY = h/2;
+  const leftX = 40, midY = h/2;
   ctx.fillStyle = '#e8f5ff'; ctx.strokeStyle = '#0D47A1'; ctx.lineWidth = 2;
   ctx.fillRect(leftX-8, midY-36, 160, 72); ctx.strokeRect(leftX-8, midY-36, 160, 72);
   ctx.fillStyle='#0D47A1'; ctx.fillText('Controller / Processor', leftX+6, midY-8);
   ctx.fillStyle='#0D47A1'; ctx.fillText(`${data.controllerName} (${data.controllerType})`, leftX+6, midY+10);
 
-  // draw switch box center
-  const centerX = 360;
+  const switchX = 320;
   ctx.fillStyle = '#fff7e6'; ctx.strokeStyle = '#B37D00'; ctx.lineWidth = 2;
-  ctx.fillRect(centerX-8, midY-36, 160, 72); ctx.strokeRect(centerX-8, midY-36, 160, 72);
-  ctx.fillStyle='#B37D00'; ctx.fillText('Network / PoE Switch (Dante/Control)', centerX+6, midY-2);
-  ctx.fillStyle='#666'; ctx.font='11px Inter, Arial'; ctx.fillText(`${data.requiredPortsBuffered} Controller ports`, centerX+6, midY+18);
+  ctx.fillRect(switchX-8, midY-36, 200, 72); ctx.strokeRect(switchX-8, midY-36, 200, 72);
+  ctx.fillStyle='#B37D00'; ctx.fillText('PoE / Network Switch (Control + PoE)', switchX+6, midY-8);
+  ctx.fillStyle='#666'; ctx.font='11px Inter, Arial'; ctx.fillText(`${data.requiredPortsBuffered} ports (controller → wall)`, switchX+6, midY+12);
 
-  // draw LED wall at right
-  const rightX = 660;
+  const rightX = 700;
   ctx.fillStyle = '#eef7ff'; ctx.strokeStyle = '#0D47A1'; ctx.lineWidth = 2;
-  ctx.fillRect(rightX-8, midY-60, 220, 120); ctx.strokeRect(rightX-8, midY-60, 220, 120);
-  ctx.fillStyle='#0D47A1'; ctx.font='12px Inter, Arial'; ctx.fillText('LED Video Wall (Cabinet Matrix)', rightX+6, midY-28);
-  ctx.fillStyle='#0D47A1'; ctx.font='11px Inter, Arial'; ctx.fillText(`${data.numCabW} x ${data.numCabH} = ${data.totalCabinets} cabinets`, rightX+6, midY);
+  ctx.fillRect(rightX-8, midY-56, 240, 112); ctx.strokeRect(rightX-8, midY-56, 240, 112);
+  ctx.fillStyle='#0D47A1'; ctx.font='12px Inter, Arial'; ctx.fillText('LED Video Wall', rightX+6, midY-10);
+  ctx.fillStyle='#0D47A1'; ctx.font='11px Inter, Arial'; ctx.fillText(`${data.numCabW} x ${data.numCabH} = ${data.totalCabinets} cabinets`, rightX+6, midY+8);
 
-  // arrows
   ctx.strokeStyle = '#0D47A1'; ctx.fillStyle='#0D47A1'; ctx.lineWidth=2;
-  // controller -> switch
-  drawArrow(ctx, leftX+152, midY, centerX-8, midY);
-  // switch -> wall (multiple long runs)
-  drawArrow(ctx, centerX+152, midY, rightX-8, midY);
-  // annotate
-  ctx.fillStyle='#0D47A1'; ctx.font='11px Inter, Arial';
-  ctx.fillText('Long Ethernet Runs (Controller → Wall)', centerX-40, midY+34);
-  ctx.fillText(`Short inter-cabinet CAT6 runs: ${data.requiredShortEthernet}`, rightX-10, midY+52);
+  drawArrow(ctx, leftX+152, midY, switchX-8, midY);
+  drawArrow(ctx, switchX+192, midY, rightX-8, midY);
+  ctx.fillStyle='#0D47A1'; ctx.font='11px Inter, Arial'; ctx.fillText('Controller → PoE Switch → LED Wall', switchX-40, midY+46);
 }
 
-/* helper arrow function */
 function drawArrow(ctx,x1,y1,x2,y2){
-  const headlen = 8;
-  const dx = x2 - x1, dy = y2 - y1;
-  const angle = Math.atan2(dy, dx);
+  const headlen = 8; const dx = x2 - x1, dy = y2 - y1; const angle = Math.atan2(dy, dx);
   ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI/6), y2 - headlen * Math.sin(angle - Math.PI/6));
-  ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI/6), y2 - headlen * Math.sin(angle + Math.PI/6));
-  ctx.lineTo(x2, y2);
-  ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x2, y2); ctx.lineTo(x2 - headlen * Math.cos(angle - Math.PI/6), y2 - headlen * Math.sin(angle - Math.PI/6)); ctx.lineTo(x2 - headlen * Math.cos(angle + Math.PI/6), y2 - headlen * Math.sin(angle + Math.PI/6)); ctx.lineTo(x2, y2); ctx.fill();
 }
 
-/* --- Excel generation (HTML-based .xls) with summary, BOQ, visualization & connectivity diagram embedded --- */
+/* Excel generation (.xls HTML) - visualization image will be embedded but connectivity diagram excluded (per request)
+   Excel will include visualization image but NOT the connectivity diagram. */
 function downloadExcel(){
   if(!finalCalculationData || !finalCalculationData.totalPixels){ alert('Calculate first'); return; }
   const data = finalCalculationData;
-  // generate BOQ rows
   const boq = generateBOQList(data);
-
-  // generate images: visualization + connectivity as data URLs
   const visCanvas = document.createElement('canvas'); visCanvas.width = 1000; visCanvas.height = 300; drawVisualCanvas(visCanvas, data);
   const visDataUrl = visCanvas.toDataURL('image/png');
-  const connCanvas = document.createElement('canvas'); connCanvas.width = 900; connCanvas.height = 240; drawConnectivityDiagram(connCanvas, data);
-  const connDataUrl = connCanvas.toDataURL('image/png');
 
-  // Build HTML workbook structure that Excel will open as .xls
   let html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>td{font-family:Arial,Helvetica,sans-serif;font-size:11px} th{background:#f0f7ff;color:#0D47A1;padding:6px;border:1px solid #e6eef8}</style></head><body>`;
-  // Summary sheet area
   html += `<table><tr><td colspan="4"><h3 style="color:#0D47A1">PeopleLink LED Video Wall — Technical Summary</h3></td></tr>`;
   html += `<tr><td><strong>Model</strong></td><td>${escapeXml(data.productName)}</td><td><strong>Contact</strong></td><td>${escapeXml(contactInfo.email || '')} ${escapeXml(contactInfo.phone || '')}</td></tr>`;
   html += `<tr><td><strong>Final Dimensions (WxH)</strong></td><td>${(data.finalW_mm/1000).toFixed(2)} m x ${(data.finalH_mm/1000).toFixed(2)} m</td><td><strong>Resolution</strong></td><td>${data.finalResW} x ${data.finalResH}</td></tr>`;
   html += `<tr><td><strong>Diagonal</strong></td><td>${Math.round(data.finalDiagonal_in)} in</td><td><strong>Pixel Density</strong></td><td>${Math.round(data.totalPixels / data.finalArea_m2)} px/m2</td></tr>`;
   html += `<tr><td><strong>Controller</strong></td><td>${escapeXml(data.controllerName)} (${escapeXml(data.controllerType)})</td><td><strong>Ports (post buffer)</strong></td><td>${data.requiredPortsBuffered}</td></tr>`;
   html += `</table><br/>`;
+  html += `<table><tr><td><strong>Physical Wall Visualization (embedded)</strong></td></tr><tr><td><img src="${visDataUrl}" style="max-width:800px"/></td></tr></table><br/>`;
 
-  // Insert visualization image
-  html += `<table><tr><td><strong>Physical Wall Visualization</strong></td></tr><tr><td><img src="${visDataUrl}" style="max-width:800px"/></td></tr></table><br/>`;
-  // Insert connectivity diagram
-  html += `<table><tr><td><strong>Connectivity Diagram</strong></td></tr><tr><td><img src="${connDataUrl}" style="max-width:800px"/></td></tr></table><br/>`;
-
-  // BOQ table with formulas: Excel will evaluate formulas written as =D#*F#
   html += `<table border="1" cellpadding="4" cellspacing="0"><thead><tr><th>S.No</th><th>Item / Description</th><th>Partcode</th><th>Qty</th><th>Unit</th><th>Unit Price (INR)</th><th>Total Price (INR)</th></tr></thead><tbody>`;
-  boq.forEach((r,i)=>{
-    const rowIndex = i+2;
-    html += `<tr><td>${i+1}</td><td>${escapeXml(r.item)}</td><td>${escapeXml(r.part)}</td><td style="text-align:right">${r.qty}</td><td>${escapeXml(r.unit)}</td><td></td><td>=D${rowIndex}*F${rowIndex}</td></tr>`;
-  });
-  // Grand total row
-  const totalRowIndex = boq.length + 2;
+  boq.forEach((r,i)=>{ const rowIndex = i+2; html += `<tr><td>${i+1}</td><td>${escapeXml(r.item)}</td><td>${escapeXml(r.part)}</td><td style="text-align:right">${r.qty}</td><td>${escapeXml(r.unit)}</td><td></td><td>=D${rowIndex}*F${rowIndex}</td></tr>`; });
   html += `<tr><td></td><td style="font-weight:700">Grand Total</td><td></td><td></td><td></td><td></td><td>=SUM(G2:G${boq.length+1})</td></tr>`;
   html += `</tbody></table>`;
-
-  html += `<p style="font-size:10px;color:#666">Note: Enter Unit Price values in column 'Unit Price' (F). Total Price column will calculate automatically. Save the file as .xlsx in Excel after editing if needed.</p>`;
+  html += `<p style="font-size:10px;color:#666">Note: Enter Unit Price values in column 'Unit Price' (F). Total Price column will calculate automatically.</p>`;
   html += `</body></html>`;
 
-  // Create blob and trigger download with application/vnd.ms-excel
   const blob = new Blob([html], {type:'application/vnd.ms-excel'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = `PeopleLink_LED_BOQ_${data.finalResW}x${data.finalResH}.xls`; document.body.appendChild(a); a.click();
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },1500);
 }
 
-/* hide visualization */
 function hideVisualization(){ document.getElementById('visualization').classList.remove('visible'); document.getElementById('boqArea').innerHTML=''; }
 
-/* init */
 document.addEventListener('DOMContentLoaded', ()=>{ toggleMeasurementFields(); populateModal(); });
-
 </script>
 </body>
 </html>
