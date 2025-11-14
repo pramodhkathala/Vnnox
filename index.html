@@ -18,8 +18,8 @@
     .input-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 30px; }
     .input-group { margin-top: 0; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #444; }
-    select, input[type="number"], input[type="text"] { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
-    select:focus, input[type="number"]:focus, input[type="text"]:focus { border-color: #0D47A1; box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.15); outline: none; }
+    select, input[type="number"], input[type="text"], input[type="email"], input[type="tel"] { width: 100%; padding: 10px 12px; font-size: 15px; border: 1px solid #dcdcdc; border-radius: 6px; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
+    select:focus, input[type="number"]:focus, input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus { border-color: #0D47A1; box-shadow: 0 0 0 2px rgba(13, 71, 161, 0.15); outline: none; }
     .submit-btn { margin-top: 18px; grid-column: 1 / -1; background-color: #0D47A1; color: white; padding: 10px 12px; border: none; border-radius: 8px; font-size: 14px; width: 220px; max-width: 100%; cursor: pointer; transition: background-color 0.2s, transform 0.12s; font-weight: 600; display: block; margin-left: auto; margin-right: auto; }
     .submit-btn:hover { background-color: #1565C0; transform: translateY(-1px); }
     .back-btn { background-color: #6c757d; margin-top: 30px; }
@@ -36,6 +36,44 @@
     .grid { position: relative; width: 100%; border: 3px solid #B71C1C; min-height: 100px; overflow: hidden; background: linear-gradient(135deg, #e3f2fd, #bbdefb); display: flex; align-items: center; justify-content: center; }
     /* cabinetOverlay will use CSS grid to draw cabinets; ensure it fills the .grid box */
     #cabinetOverlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; box-sizing: border-box; pointer-events: none; z-index: 5; display: grid; gap: 0; }
+    /* cabinet cell styles (will be overridden inline for pointer-events when adding tooltips) */
+    #cabinetOverlay > div {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: default;
+      transition: background 0.15s ease, transform 0.08s ease;
+      pointer-events: auto;
+    }
+    #cabinetOverlay > div .cab-label {
+      font-size: 12px;
+      color: rgba(13,71,161,0.95);
+      font-weight: 700;
+      background: rgba(255,255,255,0.9);
+      padding: 2px 6px;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      pointer-events: none;
+    }
+    #cabinetOverlay > div:hover {
+      background: rgba(13,71,161,0.04);
+      transform: translateY(-2px);
+    }
+    .tooltip-cab {
+      position: absolute;
+      z-index: 50;
+      background: white;
+      color: #213444;
+      border: 1px solid rgba(13,71,161,0.12);
+      padding: 6px 8px;
+      font-size: 11px;
+      border-radius: 5px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+      pointer-events: none;
+      display: none;
+      white-space: nowrap;
+    }
     .dimension-label { position: absolute; color: #B71C1C; background: rgba(255, 255, 255, 0.95); padding: 3px 6px; font-size: 0.9em; border-radius: 3px; font-weight: 700; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
     .dim-top { top: 5px; left: 50%; transform: translateX(-50%); }
     .dim-right { top: 50%; right: 10px; transform: translateY(-50%) rotate(90deg); transform-origin: center center; }
@@ -61,6 +99,26 @@
     .modal-grid-span-2 { grid-column: 1 / -1; }
     .modal-disclaimer { margin-top: 15px; padding: 10px; background: #fffde7; border: 1px solid #ffeb3b; border-radius: 5px; font-size: 0.85em; color: #616161; }
     footer.page-footer { text-align: center; margin-top: 30px; color: #b0c4de; }
+
+    /* BOQ preview table styles */
+    #boqPreviewTable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+      font-size: 13px;
+    }
+    #boqPreviewTable th, #boqPreviewTable td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    #boqPreviewTable th {
+      background: linear-gradient(90deg, rgba(13,71,161,0.06), rgba(27,94,32,0.02));
+      color: #0D47A1;
+      font-weight: 700;
+    }
+    #boqPreviewTable td.small { font-size: 12px; color: #334155; }
+    .boq-section { margin-top: 20px; }
   </style>
 </head>
 <body>
@@ -319,6 +377,59 @@
         // SMD handled separately (pixel->port + 5% buffer)
     };
 
+    // --- Parts Catalog (from provided spreadsheet image) ---
+    const PARTS_CATALOG = {
+      // Controllers
+      'TB40': { part: 'TP-VWC-NS-TB40', desc: 'LED Video Wall Controller: TB40' },
+      'TB60': { part: 'TP-VWC-NS-TB60', desc: 'LED Video Wall Controller: TB60' },
+      'VX400': { part: 'TP-VWC-NS-VX400', desc: 'LED Video Wall Controller (VX400 Pro)' },
+      'VX600': { part: 'TP-VWC-NS-VX600', desc: 'LED Video Wall Controller (VX600 Pro)' },
+      'VX1000': { part: 'TP-VWC-NS-VX1000', desc: 'LED Video Wall Controller (VX1000 Pro)' },
+      '4K Prime': { part: 'TP-VWC-NS-4K-PRM', desc: 'LED Video Wall Controller (4K Prime)' },
+      'H2': { part: 'TP-XMF-H2', desc: 'LED Video Wall Controller (H2)' },
+      'H5': { part: 'TP-XMF-H5', desc: 'LED Video Wall Controller (H5)' },
+      'H9': { part: 'TP-XMF-H9', desc: 'LED Video Wall Controller (H9)' },
+      'H15': { part: 'TP-XMF-H15', desc: 'LED Video Wall Controller (H15)' },
+      'H15E': { part: 'TP-XMF-H15E', desc: 'LED Video Wall Controller (H15 Enhanced)' },
+      'H20': { part: 'TBD', desc: 'LED Video Wall Controller (H20)' },
+
+      // Input cards
+      'H_4xHDMI': { part: 'TP-XIC-HDMI4', desc: 'H_4 x HDMI Input Card' },
+      'H_1xHDMI': { part: 'TP-XIC-HDMI', desc: 'H_1 x HDMI 2.0 Input Card' },
+      'H_2xHDMI': { part: 'TP-XIC-HDMI2', desc: 'H_2 x HDMI 2.0 Input Card' },
+
+      // Sending / Output cards
+      'H_16_RJ45_2fib': { part: 'TP-XOC-RJ45-16-OF2', desc: 'H_16 x RJ45 + 2x Fiber Sending Card' },
+      'H_20_RJ45': { part: 'TP-XOC-RJ45-20', desc: 'H_20 x RJ45 Sending Card' },
+      'H_4_HDMI_Out': { part: 'TP-XOC-HDMI4', desc: 'H_4 x HDMI Output Card' },
+
+      // Power / accessories
+      'H_800W_PSU': { part: 'TP-XPS-H800W', desc: 'H_800W Power Supply' },
+      'H_preview_card': { part: 'TP-XOC-RJ45-2-HDMI1', desc: 'H_2 x RJ45 + 1 x HDMI preview card' },
+      'VNNOX_Cloud': { part: 'TBD', desc: 'One-Stop Cloud Platform VNNOX Standard' },
+      'H_audio_card': { part: 'TBD', desc: 'H_2xAudio input+2xAudio output card' },
+
+      // Active LED Products / Modules (COB)
+      'PPL-COB-09': { part: 'PPL-COB-MDL-CU-09', desc: 'PeopleLink Active LED | 0.9PP COB (Including Modules)' },
+      'PPL-COB-125': { part: 'PPL-COB-MDL-CU-12', desc: 'PeopleLink Active LED | 1.25PP COB (Including Modules)' },
+      'PPL-COB-156': { part: 'PPL-COB-MDL-CU-12', desc: 'PeopleLink Active LED | 1.56PP COB (Including Modules)' },
+      
+      // SMB Indoor
+      'PPL-SMD-18': { part: 'PPL-SMD-MDL-CU-18', desc: 'PeopleLink ActiveLED | 1.8PP Video LED Cabinets (Including Modules)' },
+      'PPL-ALD-CU': { part: 'PPL-ALD-CU', desc: 'PeopleLink ActiveLED | Video Wall Cabinet Unit (640x480mm)' },
+      'PDS-TP-15-T': { part: 'PDS-TP-15-T', desc: 'PeopleLink ActiveLED | 2.0PP Video LED Modules' },
+
+      // SMB Outdoor
+      'PPL-SMD-40': { part: 'PPL-SMD-MDL-CU-40', desc: 'PeopleLink ActiveLED | 4PP Video LED Cabinets' },
+      'PPL-SMD-60': { part: 'PPL-SMD-MDL-CU-60', desc: 'PeopleLink ActiveLED | 6PP Video LED Cabinets' },
+
+      // Installation & transport
+      'ALED-INST-IN': { part: 'ALED-INST-IN', desc: 'Installation & Configuration - Indoor' },
+      'ALED-TRS-IN-REG': { part: 'ALED-TRS-IN-REG', desc: 'Transportation (No of Cabinets) - Indoor' },
+      'ALED-INST-OU': { part: 'ALED-INST-OU', desc: 'Installation & Configuration - Outdoor' },
+      'ALED-TRS-OU': { part: 'TBD', desc: 'Transportation (No of Cabinets) - Outdoor' }
+    };
+
     // --- Global Store ---
     let finalCalculationData = {};
     let contactInfo = { email: '', phone: '' };
@@ -435,7 +546,139 @@
         return CONTROLLER_MODELS[CONTROLLER_MODELS.length - 1];
     }
 
-    // --- Calculation with updated LAN/port rules & 5% buffer ---
+    // small HTML-escape util
+    function escapeHtml(text) {
+      if (!text && text !== 0) return '';
+      return String(text).replace(/[&<>"'`=\/]/g, function (s) {
+          return ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+          })[s];
+      });
+    }
+
+    // Helper: build BOQ items using calculated data + parts catalog
+    function generateBOQList(data) {
+      // returns array of { item, partcode, desc, qty, unit }
+      const list = [];
+
+      // Controller
+      let ctrlKey = null;
+      // try to match a key from controller name (TB40, TB60, H5 etc.)
+      if (data.controllerName) {
+        // pick first token like TB40 or H5 from controllerName string
+        const m = data.controllerName.match(/(TB40|TB60|VX400|VX600|VX1000|4K Prime|4K Prime Pro|H2|H5|H9|H15|H15E|H20|H2 \(2U\)|H5 \(5U\))/i);
+        if (m) ctrlKey = m[0];
+        else {
+          // fallback common tokens
+          if (data.controllerName.includes('TB40')) ctrlKey = 'TB40';
+          if (data.controllerName.includes('TB60')) ctrlKey = 'TB60';
+          if (data.controllerName.includes('H5')) ctrlKey = 'H5';
+          if (data.controllerName.includes('H2')) ctrlKey = 'H2';
+        }
+      }
+      const ctrlPart = (ctrlKey && PARTS_CATALOG[ctrlKey]) ? PARTS_CATALOG[ctrlKey].part : (PARTS_CATALOG[data.controllerName] ? PARTS_CATALOG[data.controllerName].part : 'TBD');
+      const ctrlDesc = (ctrlKey && PARTS_CATALOG[ctrlKey]) ? PARTS_CATALOG[ctrlKey].desc : (data.controllerName || 'Controller/Processor');
+      list.push({ item: 'Controller/Processor', partcode: ctrlPart || 'TBD', desc: ctrlDesc || data.controllerName, qty: 1, unit: 'PCS' });
+
+      // Receiving Cards (embedded)
+      list.push({ item: 'Receiving Cards (R-Card)', partcode: 'Embedded', desc: 'Receiving cards embedded in cabinets', qty: data.totalRecCards, unit: 'PCS' });
+
+      // Sending / Output cards (modular)
+      if (data.controllerType && data.controllerType.includes('Modular')) {
+        const outCardModel = data.outputCardModel || H_SERIES_DEFAULTS.OUTPUT_CARD_20_MODEL;
+        const outCardKey = outCardModel || 'H_20_RJ45';
+        // try to find partcode in PARTS_CATALOG by model substring
+        let outPart = 'TBD';
+        // check known keys
+        if (outCardModel.includes('20xRJ45')) outPart = PARTS_CATALOG['H_20_RJ45'] ? PARTS_CATALOG['H_20_RJ45'].part : 'TBD';
+        // fallback: direct mapping if present
+        if (PARTS_CATALOG[outCardModel]) outPart = PARTS_CATALOG[outCardModel].part;
+        // fallback to catalog known key for H_20_RJ45
+        if (outPart === 'TBD' && PARTS_CATALOG['H_20_RJ45']) outPart = PARTS_CATALOG['H_20_RJ45'].part;
+        list.push({ item: 'Output (Sending) Card', partcode: outPart || 'TBD', desc: outCardModel, qty: data.requiredSendCards, unit: 'PCS' });
+
+        // Input cards
+        const inCardModel = data.inputCardModel || H_SERIES_DEFAULTS.DEFAULT_INPUT_CARD_MODEL;
+        let inPart = PARTS_CATALOG[inCardModel] ? PARTS_CATALOG[inCardModel].part : (PARTS_CATALOG['H_1xHDMI'] ? PARTS_CATALOG['H_1xHDMI'].part : 'TBD');
+        list.push({ item: 'Input Card(s)', partcode: inPart || 'TBD', desc: inCardModel, qty: data.inputCardQty || 2, unit: 'PCS' });
+
+        // Splicer frame
+        list.push({ item: 'Modular Splicer Frame', partcode: PARTS_CATALOG['H5'] ? PARTS_CATALOG['H5'].part : 'TBD', desc: data.splicerSolution || H_SERIES_DEFAULTS.SPLICER_NAME, qty: 1, unit: 'PCS' });
+      } else {
+        // All-in-one controllers probably don't need sending cards separately — still add power/preview if available
+        list.push({ item: 'Output Card (All-in-One)', partcode: PARTS_CATALOG['H_4_HDMI_Out'] ? PARTS_CATALOG['H_4_HDMI_Out'].part : 'TBD', desc: 'H_4 x HDMI Output Card or integrated', qty: 1, unit: 'PCS' });
+      }
+
+      // Long ethernet ports / controller ports
+      list.push({ item: 'Long Ethernet Ports (Controller → Wall)', partcode: 'TBD', desc: 'Controller to wall long ethernet runs (ports)', qty: data.requiredPortsBuffered, unit: 'PCS' });
+      list.push({ item: 'Short Ethernet (Between Cabinets)', partcode: 'TBD', desc: 'Inter-cabinet CAT6 runs', qty: data.requiredShortEthernet, unit: 'PCS' });
+
+      // LED Cabinets & Modules
+      const ledPartKey = (() => {
+        // pick part based on pixel pitch or productName
+        if (data.pixelPitch_mm <= 1.0) return 'PPL-COB-09';
+        if (data.pixelPitch_mm <= 1.3) return 'PPL-COB-125';
+        if (data.pixelPitch_mm <= 1.7) return 'PPL-COB-156';
+        if (data.cabinetW_mm === 640) return 'PPL-SMD-18';
+        if (data.cabinetW_mm === 960) return 'PPL-SMD-40';
+        return 'PPL-ALD-CU';
+      })();
+      const ledPart = PARTS_CATALOG[ledPartKey] ? PARTS_CATALOG[ledPartKey].part : 'TBD';
+      list.push({ item: 'LED Cabinets (Including Modules)', partcode: ledPart || 'TBD', desc: data.productName, qty: data.totalCabinets, unit: 'PCS' });
+
+      // Spare modules: use 5% for COB, 10% for SMD (as per your sheet)
+      const sparePct = (data.productName && data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
+      const spareModulesQty = Math.max(1, Math.round(data.totalModules * sparePct));
+      list.push({ item: `Spare Modules (${Math.round(sparePct*100)}%)`, partcode: 'TBD', desc: 'Spare modules (site spares)', qty: spareModulesQty, unit: 'PCS' });
+
+      // Power / weight items
+      list.push({ item: 'Estimated Max Power (Design)', partcode: 'TBD', desc: 'Design power capacity (W)', qty: Math.round(data.maxPower_W), unit: 'W' });
+
+      // Installation & transport
+      list.push({ item: 'Installation / Configuration', partcode: 'ALED-INST-IN', desc: 'Installation & configuration (indoor)', qty: data.totalCabinets, unit: 'Per Cabinet' });
+      list.push({ item: 'Transportation (Indoor)', partcode: 'ALED-TRS-IN-REG', desc: 'Transport (indoor) per cabinet', qty: data.totalCabinets, unit: 'Per Cabinet' });
+
+      // Fallback: Controller accessories (PSU, preview)
+      list.push({ item: 'Power Supply (Example)', partcode: PARTS_CATALOG['H_800W_PSU'] ? PARTS_CATALOG['H_800W_PSU'].part : 'TBD', desc: 'Example power supply', qty: Math.max(1, Math.ceil(data.totalCabinets / 10)), unit: 'PCS' });
+
+      return list;
+    }
+
+    // Render BOQ preview under visualization (call after showVisualization completes)
+    function renderBOQPreview(data) {
+      const list = generateBOQList(data);
+      let html = `<div class="boq-section"><h4>Bill of Quantities (Preview)</h4><table id="boqPreviewTable"><thead><tr><th>#</th><th>Item</th><th>Partcode</th><th>Description</th><th style="text-align:right">Qty</th><th>Unit</th></tr></thead><tbody>`;
+      list.forEach((row, idx) => {
+        html += `<tr>
+          <td>${idx+1}</td>
+          <td>${escapeHtml(row.item)}</td>
+          <td>${escapeHtml(row.partcode)}</td>
+          <td class="small">${escapeHtml(row.desc)}</td>
+          <td style="text-align:right">${row.qty}</td>
+          <td>${row.unit}</td>
+        </tr>`;
+      });
+      html += `</tbody></table></div>`;
+
+      // Insert or replace preview area
+      let previewContainer = document.getElementById('boqPreviewContainer');
+      if (!previewContainer) {
+        previewContainer = document.createElement('div');
+        previewContainer.id = 'boqPreviewContainer';
+        document.querySelector('.visualization').appendChild(previewContainer);
+      }
+      previewContainer.innerHTML = html;
+    }
+
+    // --- Remaining functions unchanged (calculation + UI) ---
+
     function toggleMeasurementFields(){
         const unit = document.getElementById('unit').value;
         const isDiagonal = (unit === 'inches');
@@ -714,21 +957,60 @@
         document.getElementById('visWidthLabel').textContent = `${finalW_M.toFixed(2)} m (W)`;
         document.getElementById('visHeightLabel').textContent = `${finalH_M.toFixed(2)} m (H)`;
 
+        // Cabinet overlay with labels and tooltip
         const cabinetOverlay = document.getElementById('cabinetOverlay');
         cabinetOverlay.innerHTML = '';
         cabinetOverlay.style.gridTemplateColumns = `repeat(${data.numCabW}, 1fr)`;
         cabinetOverlay.style.gridTemplateRows = `repeat(${data.numCabH}, 1fr)`;
         cabinetOverlay.style.display = 'grid';
 
+        // create a tooltip element once
+        let tooltip = document.getElementById('cabTooltip');
+        if (!tooltip) {
+          tooltip = document.createElement('div');
+          tooltip.id = 'cabTooltip';
+          tooltip.className = 'tooltip-cab';
+          document.body.appendChild(tooltip);
+        }
+
         for (let r = 0; r < data.numCabH; r++) {
             for (let c = 0; c < data.numCabW; c++) {
                 const cabDiv = document.createElement('div');
-                cabDiv.style.border = '1px dashed rgba(13, 71, 161, 0.35)';
+
+                // thicker separator
+                cabDiv.style.border = '2px solid rgba(13, 71, 161, 0.25)';
                 cabDiv.style.boxSizing = 'border-box';
                 cabDiv.style.background = 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.02))';
+                cabDiv.style.position = 'relative';
+                cabDiv.style.overflow = 'hidden';
+                
+                // label inside cabinet (row,col)
+                const label = document.createElement('span');
+                label.className = 'cab-label';
+                label.textContent = `${r+1},${c+1}`;
+                cabDiv.appendChild(label);
+                
+                // hover tooltip content with cabinet pixel resolution (approx)
+                cabDiv.addEventListener('mouseenter', (ev) => {
+                  const cabPixW = data.cabPixW, cabPixH = data.cabPixH;
+                  const txt = `Cabinet: ${r+1} x ${c+1} — Pixels: ${cabPixW} x ${cabPixH}`;
+                  tooltip.style.display = 'block';
+                  tooltip.textContent = txt;
+                });
+                cabDiv.addEventListener('mousemove', (ev) => {
+                  tooltip.style.left = (ev.pageX + 12) + 'px';
+                  tooltip.style.top = (ev.pageY + 12) + 'px';
+                });
+                cabDiv.addEventListener('mouseleave', () => {
+                  tooltip.style.display = 'none';
+                });
+
                 cabinetOverlay.appendChild(cabDiv);
             }
         }
+
+        // render BOQ preview under visualization
+        try { renderBOQPreview(data); } catch(e){ /* ignore */ }
 
         document.getElementById('downloadPdfLink').classList.remove('hidden');
     }
@@ -739,6 +1021,10 @@
         document.getElementById('submitButton').classList.remove('hidden');
         document.querySelector('.back-btn-placeholder').classList.add('hidden');
         document.getElementById('downloadPdfLink').classList.add('hidden');
+
+        // remove BOQ preview to keep things tidy next time
+        const preview = document.getElementById('boqPreviewContainer');
+        if (preview) preview.remove();
     }
 
     // --- PDF Generation (uses buffered ports & long runs values) ---
@@ -791,6 +1077,17 @@
         const pageW = doc.internal.pageSize.getWidth();
         const primaryColor = [13, 71, 161];
         const secondaryColor = [183, 28, 28];
+
+        // Set PDF metadata (includes optional contact info)
+        try {
+          doc.setProperties({
+            title: `PeopleLink LED Config - ${data.finalResW}x${data.finalResH}`,
+            subject: `Contact: ${contactInfo.phone || 'N/A'}`,
+            author: contactInfo.email || 'PeopleLink Unified Communications',
+            keywords: `LED,VideoWall,PeopleLink,${data.productName}`,
+            creator: 'PeopleLink LED Configurator'
+          });
+        } catch(e){ /* ignore if not supported */ }
 
         doc.setFontSize(18);
         doc.setTextColor(...primaryColor);
@@ -880,24 +1177,32 @@
         doc.text('5. Bill of Quantities (BOQ)', margin, y);
         y += lineHeight;
 
-        let boqData = [
-            ['LED Cabinets', data.productName, data.totalCabinets, 'PCS'],
-            ['Controller/Processor', data.controllerName, 1, 'PCS'],
-            ['Receiving Cards (R-Card)', `Embedded in Cabinet`, data.totalRecCards, 'PCS'],
-            ['Long Ethernet Cables/Ports', `Controller/Ethernet ports required`, data.requiredPortsBuffered, 'PCS'],
-            ['Short Ethernet Cables', `Cabinet interconnect (CAT6)`, data.requiredShortEthernet, 'PCS'],
-            ['Installation / Configuration', `Includes wall mounting/stacking structure, site setup, and system commissioning.`, 1, 'LS (Lump Sum)'],
-            ['Transport / Logistics', `Shipping/freight charges to site location.`, 1, 'LS (Lump Sum)'],
-        ];
+        // --- Build BOQ from parts/catalog and include in PDF ---
+        const boqList = generateBOQList(data);
 
-        if (data.controllerType.includes("Modular")) {
-            boqData.push(['Modular Splicer Frame', data.splicerSolution || 'Not Specified', 1, 'PCS']);
-            boqData.push(['Output Card (Sending)', data.outputCardModel, data.requiredSendCards, 'PCS']);
-            boqData.push(['Input Card (User Config)', data.inputCardModel, data.inputCardQty, 'PCS']);
-        }
+        // Convert to rows suitable for autoTable: [Item, Partcode, Description, Qty, Unit]
+        const boqRows = boqList.map(row => [row.item, row.partcode, row.desc, String(row.qty), row.unit]);
 
-        doc.autoTable({ startY: y + 2, head: [['Item', 'Description / Model', 'Quantity', 'Unit']], body: boqData, margin: { left: margin, right: margin, bottom: 0 }, theme: 'grid', headStyles: { fillColor: primaryColor, halign: 'center' }, styles: { fontSize: 8, cellPadding: 1.5 }, columnStyles: { 0: { fontStyle: 'bold' }, 2: { halign: 'right' }, 3: { halign: 'center' } } });
+        doc.autoTable({
+          startY: y + 2,
+          head: [['Item', 'Partcode', 'Description', 'Quantity', 'Unit']],
+          body: boqRows,
+          margin: { left: margin, right: margin, bottom: 0 },
+          theme: 'grid',
+          headStyles: { fillColor: primaryColor, halign: 'center' },
+          styles: { fontSize: 8, cellPadding: 1.8 },
+          columnStyles: {
+            0: { cellWidth: 40 },
+            1: { cellWidth: 34 },
+            2: { cellWidth: 60 },
+            3: { cellWidth: 18, halign: 'right' },
+            4: { cellWidth: 18, halign: 'center' }
+          }
+        });
         y = doc.lastAutoTable.finalY + lineHeight * 2;
+
+        // Also render BOQ preview on page (so user sees it before downloading) - already done in UI via renderBOQPreview()
+        try { renderBOQPreview(data); } catch(e) { /* ignore preview errors */ }
 
         doc.setFontSize(12);
         doc.setTextColor(...secondaryColor);
@@ -935,7 +1240,7 @@
 
         doc.setFontSize(8);
         doc.setTextColor(176, 196, 222);
-        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd.';
+        const footerText = '© 2025 PeopleLink Unified Communications Pvt. Ltd. | Built for you — compatible with smaller displays';
         doc.text(footerText, pageW / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
 
         doc.save(`PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_BOQ.pdf`);
@@ -956,7 +1261,7 @@
     });
   </script>
 <footer class="page-footer">
-    © 2025 PeopleLink Unified Communications Pvt. Ltd.
+    © 2025 PeopleLink Unified Communications Pvt. Ltd. | Built for you — compatible with smaller displays
 </footer>
 </body>
 </html>
