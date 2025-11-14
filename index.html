@@ -302,22 +302,22 @@
     const MM_PER_METER = 1000;
     const MM_PER_INCH = 25.4;
     const MM_PER_FOOT = MM_PER_INCH * 12;
-    const PIXELS_PER_PORT_DEFAULT = 650000; // Standard for MCTRL R series
+    const PIXELS_PER_PORT_DEFAULT = 650000; // Standard for MCTRL R series (1.3Mk/port is 650k x 2)
     const GLOBAL_PORT_BUFFER_PCT = 0.05;
     const POWER_BUFFER = 1.15; // 15% safety margin
     const WEIGHT_BUFFER = 1.15;
-    const MAX_POWER_PER_RUN_W = 2000; // Max power per power cable run (e.g., 10A @ 230V, buffered)
+    const MAX_POWER_PER_RUN_W = 1000; // Corrected to 1000W per run as requested
 
     const LED_PRODUCTS = {
-      'cob_09': { name:"PeopleLink COB (0.9375mm)", pitch_mm:0.9375, cabW_mm:600, cabH_mm:337.5, cabPixW:640, cabPixH:360, modulesPerCab:8, weight_kg:4.6, nits_range:"600-1000", maxPower_W_m2:300 },
-      'cob_125': { name:"PeopleLink COB (1.25mm)", pitch_mm:1.25, cabW_mm:600, cabH_mm:337.5, cabPixW:480, cabPixH:270, modulesPerCab:8, weight_kg:4.6, nits_range:"600-800", maxPower_W_m2:300 },
-      'cob_15': { name:"PeopleLink COB (1.5625mm)", pitch_mm:1.5625, cabW_mm:600, cabH_mm:337.5, cabPixW:384, cabPixH:216, modulesPerCab:8, weight_kg:4.6, nits_range:"600-800", maxPower_W_m2:300 },
-      'indoor_186': { name:"PeopleLink SMD Indoor (1.86mm)", pitch_mm:1.86, cabW_mm:640, cabH_mm:480, cabPixW:344, cabPixH:258, modulesPerCab:6, weight_kg:6.24, nits_range:"450-600", maxPower_W_m2:560 },
-      'indoor_20': { name:"PeopleLink SMD Indoor (2.0mm)", pitch_mm:2.0, cabW_mm:640, cabH_mm:480, cabPixW:320, cabPixH:240, modulesPerCab:6, weight_kg:6.24, nits_range:"450-600", maxPower_W_m2:560 },
-      'indoor_25': { name:"PeopleLink SMD Indoor (2.5mm)", pitch_mm:2.5, cabW_mm:640, cabH_mm:480, cabPixW:256, cabPixH:192, modulesPerCab:6, weight_kg:6.24, nits_range:"450-600", maxPower_W_m2:560 },
-      'outdoor_40': { name:"PeopleLink SMD Outdoor (4.0mm)", pitch_mm:4.0, cabW_mm:960, cabH_mm:960, cabPixW:240, cabPixH:240, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 },
-      'outdoor_667': { name:"PeopleLink SMD Outdoor (6.67mm)", pitch_mm:6.67, cabW_mm:960, cabH_mm:960, cabPixW:144, cabPixH:144, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 },
-      'outdoor_80': { name:"PeopleLink SMD Outdoor (8.0mm)", pitch_mm:8.0, cabW_mm:960, cabH_mm:960, cabPixW:120, cabPixH:120, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 }
+      'cob_09': { name:"PeopleLink COB (0.9375mm)", pitch_mm:0.9375, cabW_mm:600, cabH_mm:337.5, cabPixW:640, cabPixH:360, modulesPerCab:8, weight_kg:4.6, nits_range:"600-1000", maxPower_W_m2:300, cabsPerRun:2 },
+      'cob_125': { name:"PeopleLink COB (1.25mm)", pitch_mm:1.25, cabW_mm:600, cabH_mm:337.5, cabPixW:480, cabPixH:270, modulesPerCab:8, weight_kg:4.6, nits_range:"600-800", maxPower_W_m2:300, cabsPerRun:5 },
+      'cob_15': { name:"PeopleLink COB (1.5625mm)", pitch_mm:1.5625, cabW_mm:600, cabH_mm:337.5, cabPixW:384, cabPixH:216, modulesPerCab:8, weight_kg:4.6, nits_range:"600-800", maxPower_W_m2:300, cabsPerRun:5 }, // Corrected cabsPerRun from 7 to 5 (for practical 5 runs on 25 cabs)
+      'indoor_186': { name:"PeopleLink SMD Indoor (1.86mm)", pitch_mm:1.86, cabW_mm:640, cabH_mm:480, cabPixW:344, cabPixH:258, modulesPerCab:6, weight_kg:6.24, nits_range:"450-600", maxPower_W_m2:560, cabsPerRun:0 },
+      'indoor_20': { name:"PeopleLink SMD Indoor (2.0mm)", pitch_mm:2.0, cabW_mm:640, cabH_mm:480, cabPixW:320, cabPixH:240, modulesPerCab:6, weight_kg:6.24, nits_range:"450-600", maxPower_W_m2:560, cabsPerRun:0 },
+      'indoor_25': { name:"PeopleLink SMD Indoor (2.5mm)", pitch_mm:2.5, cabW_mm:640, cabH_mm:480, cabPixW:256, cabPixH:192, modulesPerCab:6, weight_kg:6.24, nits_range:"450-600", maxPower_W_m2:560, cabsPerRun:0 },
+      'outdoor_40': { name:"PeopleLink SMD Outdoor (4.0mm)", pitch_mm:4.0, cabW_mm:960, cabH_mm:960, cabPixW:240, cabPixH:240, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5, cabsPerRun:0 },
+      'outdoor_667': { name:"PeopleLink SMD Outdoor (6.67mm)", pitch_mm:6.67, cabW_mm:960, cabH_mm:960, cabPixW:144, cabPixH:144, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5, cabsPerRun:0 },
+      'outdoor_80': { name:"PeopleLink SMD Outdoor (8.0mm)", pitch_mm:8.0, cabW_mm:960, cabH_mm:960, cabPixW:120, cabPixH:120, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5, cabsPerRun:0 }
     };
     const CONTROLLER_MODELS = [
       { name:"TB40", type:"Multimedia", ports:2, maxPixels:1300000, priority:1, maxPortsPerOutputCard: 650000 },
@@ -447,62 +447,40 @@
       const actualWeight = totalCabinets * details.weight_kg;
       const designWeight = actualWeight * WEIGHT_BUFFER;
       
-      // NEW Power Cable Calculation (CORRECTED)
-      // Total Power Runs from Controller to Wall (Max 2000W per run)
+      // Power Cable Calculation (UPDATED to 1000W/run)
       const totalPowerRuns = Math.max(1, Math.ceil(designPowerW / MAX_POWER_PER_RUN_W)); 
-      // Total Power Cables = Daisy-chain cables (1/cabinet) + Long Input Power Cables (1/run)
-      const requiredPowerCables = totalCabinets + totalPowerRuns;
+      const requiredPowerCables = totalCabinets + totalPowerRuns; // Daisy-chain cables (1/cabinet) + Long Input Power Cables (1/run)
 
       // --- UPDATED Controller Port & Cable Logic ---
 
-      // 1. Ports required by Pixel Capacity (Standard Constraint)
-      const requiredPortsByPixels = Math.ceil(totalPixels / PIXELS_PER_PORT_DEFAULT);
+      // 1. Ports required by Pixel Capacity (Standard Constraint 1.3Mk/port = 650k x 2)
+      const requiredPortsByPixels = Math.ceil(totalPixels / (PIXELS_PER_PORT_DEFAULT * 2)); // Calculate based on 1.3Mk/port (1,300,000)
       const requiredPortsByPixelsBuffered = Math.ceil(requiredPortsByPixels * (1 + GLOBAL_PORT_BUFFER_PCT));
 
       // 2. Long Ethernet Runs required by Cabinet Grouping (Cabling Constraint)
+      let cabsPerRun = details.cabsPerRun; // Max cabs per run (2, 5, or 0)
+
       let requiredLongEthRuns = 0;
-      let shortCableBuffer = 0;
-      let cabsPerRun = 0;
-
-      if (details.name.includes('COB')) {
-          if (productKey === 'cob_09') {
-              cabsPerRun = 2; // 1 long cable supports 2 cabinets
-              shortCableBuffer = 0; // No buffer for 0.9
-          } else if (productKey === 'cob_125') {
-              cabsPerRun = 5; // 1 long cable supports 5 cabinets
-              shortCableBuffer = 0.05; // 5% buffer
-          } else if (productKey === 'cob_15') {
-              cabsPerRun = 7; // 1 long cable supports 7 cabinets
-              shortCableBuffer = 0.05; // 5% buffer
-          }
+      if (details.name.includes('COB') && cabsPerRun > 0) {
+          // COB uses the max cabs per run logic
           requiredLongEthRuns = Math.max(1, Math.ceil(totalCabinets / cabsPerRun));
-
       } else {
-          // SMD Indoor/Outdoor: Use the buffered pixel port requirement as the number of long runs.
+          // SMD/Other uses the buffered pixel port requirement for runs
           requiredLongEthRuns = requiredPortsByPixelsBuffered;
-          shortCableBuffer = 0.05; // 5% buffer for SMD
       }
 
-      // Final Required Controller Ports (The MAX of the two constraints)
-      // The controller must have enough physical ports to accommodate the pixel density OR the cabling runs, whichever is higher.
+      // Final Required Controller Ports (MAX of the two constraints)
+      // This ensures the controller meets both the pixel load AND the physical cable run count.
       const requiredPorts = Math.max(requiredPortsByPixelsBuffered, requiredLongEthRuns); 
 
-      // 3. Short Ethernet Cables (Inter-cabinet) (CORRECTED)
-      // Base: Total Cabinets - Long Runs (Interconnects needed are for cabinets *not* being fed by a long run)
-      let baseShortEthRuns = Math.max(0, totalCabinets - requiredLongEthRuns); 
+      // 3. Short Ethernet Cables (Inter-cabinet) (NO BUFFER)
+      const baseShortEthRuns = Math.max(0, totalCabinets - requiredLongEthRuns); 
+      const requiredShortEthernet = baseShortEthRuns; // Removed the ceiling and the buffer
 
-      // Apply buffer
-      let requiredShortEthernet = Math.ceil(baseShortEthRuns * (1 + shortCableBuffer));
-      
-      // Edge Case: If a 2x1 wall has 1 long run (1/2 cabs/run), baseShortEthRuns = 1. Buffer 0%. Result is 1. Correct.
-      // For 5x5 cob_15: totalCabs=25, runs=4. baseShort=21. Buffer 5%. ceil(21 * 1.05) = 23. Correct.
-      requiredShortEthernet = Math.max(requiredShortEthernet, 0);
-
-
-      // Find suggested controller (MUST use the new `requiredPorts` which is the Max)
+      // Find suggested controller
       let suggested = CONTROLLER_MODELS.slice().sort((a,b) => a.priority - b.priority).find(c => {
         if(c.type === 'Modular') {
-          return c.maxPixels >= totalPixels; // Modular only cares about total pixels/cards
+          return c.maxPixels >= totalPixels; 
         } else {
           // All-in-One must meet both the required port count AND pixel capacity
           return c.maxPixels >= totalPixels && c.ports >= requiredPorts; 
@@ -520,9 +498,7 @@
 
       let requiredSendCards = 0;
       if (currentControllerObj.type === 'Modular') {
-          requiredSendCards = Math.max(1, Math.ceil(totalPixels / outputCardPixels)); // Use total pixels for modular cards
-      } else {
-          requiredSendCards = 0;
+          requiredSendCards = Math.max(1, Math.ceil(totalPixels / outputCardPixels)); 
       }
       
       // If modular candidate cannot support requiredSendCards, find next best
@@ -540,14 +516,13 @@
         requiredSendCards, 
         controllerName: currentControllerObj.name, 
         controllerType: currentControllerObj.type, 
-        outputCardPixels: outputCardPixels, 
+        outputCardPixels: outputCardPixels * 2, // Display as 1.3Mk (650k * 2)
         outputCardModel: outputCardModel, 
         inputCardModel: controllerModalData.inputCardModel || 'H_1xHDMI', 
         inputCardQty: controllerModalData.inputCardQty || 2, 
         splicerSolution: controllerModalData.splicerSolution || (currentControllerObj.type.includes('Modular') ? `${currentControllerObj.name} Splicer` : 'N/A'),
         requiredPowerCables: requiredPowerCables,
         totalPowerRuns: totalPowerRuns,
-        shortCableBuffer: shortCableBuffer,
         cabsPerRun: cabsPerRun,
       };
       
@@ -600,24 +575,35 @@
       // 5. Cables and accessories
       
       // Long Ethernet
-      let longEthDesc = `Controller to Wall long ethernet cables (15m). Logic: ${data.totalCabinets} Cabs / ${data.cabsPerRun || data.requiredPortsBuffered} cabs/run`;
-      if(data.cabsPerRun===0) longEthDesc = `Controller to Wall long ethernet cables (15m). Logic: ${data.requiredPortsBuffered} Controller Ports`;
+      let longEthDesc = `Controller to Wall long ethernet cables (15m). Runs are based on the required controller ports (Max ${data.cabsPerRun} cabs/run).`;
+      if(data.cabsPerRun===0) longEthDesc = `Controller to Wall long ethernet cables (15m). Runs match the required controller ports.`;
 
       list.push({ item:'Long Ethernet Cables', partcode:'TP-ACC-ETH-15', desc:longEthDesc, qty:data.requiredLongEthRuns, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
 
 
       // Short Ethernet (Inter-cabinet)
-      const bufferText = data.shortCableBuffer > 0 ? ` (+${data.shortCableBuffer*100}% buffer)` : '';
-      const shortEthDesc = `Inter-cabinet short ethernet cables (0.5m). Logic: (Total Cabs - Long Runs)${bufferText}`;
+      const shortEthDesc = `Inter-cabinet short ethernet cables (0.5m). Total needed: ${data.totalCabinets} - ${data.requiredLongEthRuns} Long Runs.`;
       list.push({ item:'Short Ethernet Cables', partcode:'TP-ACC-ETH-05', desc:shortEthDesc, qty:data.requiredShortEthernet, unit:'PCS', unitPrice:0.00, totalPrice:0.00 });
 
-      // Power Cables (CORRECTED DESCRIPTION)
-      const pwrCableDesc = `Total Daisy-chain Cables (${data.totalCabinets}) + Long Input Cables (${data.totalPowerRuns}). (Est. Cap: ${MAX_POWER_PER_RUN_W}W/run)`;
+      // Power Cables (Long Input ONLY, as requested)
+      const pwrCableDesc = `Long Input Power Cables (15m). Required runs based on Max ${MAX_POWER_PER_RUN_W}W/run.`;
       list.push({ 
-        item:'Power Cables', 
+        item:'Power Cables (Input)', 
         partcode:'TP-ACC-PWR-15', 
         desc:pwrCableDesc, 
-        qty:data.requiredPowerCables, 
+        qty:data.totalPowerRuns, 
+        unit:'PCS', 
+        unitPrice:0.00, 
+        totalPrice:0.00 
+      });
+
+      // Power Cables (Daisy Chain)
+      const pwrDaisyDesc = `Daisy-chain power cables (0.5m). Required for interconnecting cabinets.`;
+      list.push({ 
+        item:'Power Cables (Daisy Chain)', 
+        partcode:'TP-ACC-PWR-05', 
+        desc:pwrDaisyDesc, 
+        qty:data.totalCabinets, 
         unit:'PCS', 
         unitPrice:0.00, 
         totalPrice:0.00 
@@ -790,11 +776,11 @@
           ['Controller/Processor:', `${data.controllerName} (${data.controllerType})`],
           ['Splicer/Solution:', data.splicerSolution],
           ['Total Receiving Cards:', `${data.totalCabinets}`],
-          ['Controller Ports (post-buffer):', `${data.requiredPortsBuffered} (Max ${formatLarge(data.outputCardPixels)} pixels/port)`],
+          ['Controller Ports (post-buffer):', `${data.requiredPortsBuffered} (Max ${formatLarge(data.outputCardPixels)}k/port)`],
           ['Sending Cards needed:', data.controllerType.includes('Modular') ? `${data.requiredSendCards} x ${data.outputCardModel}` : 'Integrated'],
-          ['Long Ethernet Cables (Input):', `${data.requiredLongEthRuns} (Cabling Run Constraint)`],
-          ['Inter-cabinet Short Ethernet:', `${data.requiredShortEthernet} (Base: ${data.totalCabinets - data.requiredLongEthRuns} + ${data.shortCableBuffer*100}% buffer)`],
-          ['Total Power Cables:', `${data.requiredPowerCables} (${data.totalCabinets} Daisy-chain + ${data.totalPowerRuns} Long Input)`],
+          ['Long Ethernet Cables (Input):', `${data.requiredLongEthRuns} (Cabling Constraint: Max ${data.cabsPerRun} Cabs/Run)`],
+          ['Inter-cabinet Short Ethernet:', `${data.requiredShortEthernet} (Base: ${data.totalCabinets - data.requiredLongEthRuns} - No buffer)`],
+          ['Total Power Cables (Combined):', `${data.requiredPowerCables} (${data.totalCabinets} Daisy-chain + ${data.totalPowerRuns} Long Input)`],
           ['Input Card(s):', data.controllerType.includes('Modular') ? `${data.inputCardQty} x ${PARTS_CATALOG[data.inputCardModel].desc}` : 'N/A (Integrated)']
       ];
       
@@ -911,7 +897,7 @@
     function updatePortsFromOutputCard(){
         const modelKey = document.getElementById('modalOutputCardModel').value;
         const pixels = PARTS_CATALOG[modelKey] ? PARTS_CATALOG[modelKey].pixels : 0;
-        document.getElementById('modalMaxPortsPerCard').value = formatLarge(pixels) + ' Pixels';
+        document.getElementById('modalMaxPortsPerCard').value = formatLarge(pixels * 2) + ' Pixels'; // Display as 1.3Mk/port (650k x 2)
     }
 
     function onModalControllerChange(){
@@ -963,7 +949,7 @@
           outputCardModel: document.getElementById('modalOutputCardModel').value,
           inputCardModel: document.getElementById('modalInputCardModel').value,
           inputCardQty: parseInt(document.getElementById('modalInputCardQty').value) || 1,
-          outputCardPixels: PARTS_CATALOG[document.getElementById('modalOutputCardModel').value] ? PARTS_CATALOG[document.getElementById('modalOutputCardModel').value].pixels : PIXELS_PER_PORT_DEFAULT
+          outputCardPixels: PARTS_CATALOG[document.getElementById('modalOutputCardModel').value] ? PARTS_CATALOG[document.getElementById('modalOutputCardModel').value].pixels * 2 : PIXELS_PER_PORT_DEFAULT * 2 // save as 1.3Mk
       };
       closeControllerModal();
       // Re-run calculation with overrides and update UI
@@ -989,13 +975,13 @@
 
       // control panel
       document.getElementById('ctrl_name').textContent = d.controllerName + (d.controllerType.includes('Modular') ? ' (Modular)' : '');
-      document.getElementById('ctrl_ports').textContent = `${d.requiredPortsBuffered} (Max ${formatLarge(d.outputCardPixels)}k/port)`;
+      document.getElementById('ctrl_ports').textContent = `${d.requiredPortsBuffered} (Max ${formatLarge(d.outputCardPixels)}/port)`;
       
       const shortEthBase = d.totalCabinets - d.requiredLongEthRuns;
-      document.getElementById('ctrl_shorteth').textContent = `${d.requiredShortEthernet} (Base: ${shortEthBase}${d.shortCableBuffer > 0 ? ` + ${d.shortCableBuffer*100}% buffer` : ''})`;
-      document.getElementById('ctrl_longeth').textContent = `${d.requiredLongEthRuns} (Cabling Constraint: ${d.cabsPerRun} Cabs/Run)`;
+      document.getElementById('ctrl_shorteth').textContent = `${d.requiredShortEthernet} (Base: ${shortEthBase} - No buffer)`;
+      document.getElementById('ctrl_longeth').textContent = `${d.requiredLongEthRuns} (Cabling Constraint: Max ${d.cabsPerRun} Cabs/Run)`;
 
-      document.getElementById('ctrl_pwr_cables').textContent = `${d.requiredPowerCables} (${d.totalCabinets} Daisy + ${d.totalPowerRuns} Input)`;
+      document.getElementById('ctrl_pwr_cables').textContent = `${d.requiredPowerCables} (${d.totalCabinets} Daisy-chain + ${d.totalPowerRuns} Input Runs @ ${MAX_POWER_PER_RUN_W}W/run)`;
       document.getElementById('spec_power').textContent = `${fmt(d.designPowerW,0)} W`;
       document.getElementById('spec_weight').textContent = `${fmt(d.designWeight,1)} kg`;
       
