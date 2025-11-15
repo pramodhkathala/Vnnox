@@ -10,7 +10,7 @@
 
   <style>
     /* PAGE */
-    :root{--brand:#0B6623;--accent:#B71C1C;--muted:#6b7280} /* brand changed to green (#0B6623) */
+    :root{--brand:#1F2937;--accent:#B71C1C;--muted:#6b7280} /* brand set to Dark Grey (#1F2937) */
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 28px; background: #eef6fb; color: #1c2738; font-size: 14px; -webkit-font-smoothing:antialiased; }
     .main-wrapper { max-width: 1200px; margin: auto; }
 
@@ -40,7 +40,7 @@
     .vis-container { margin-top: 15px; text-align: center; }
     .led-wall { border: 2px solid #ccc; display: inline-grid; width: 90%; max-width: 90%; aspect-ratio: 16/9; max-height: 360px; overflow: hidden; position: relative; margin: 0 auto; }
     #cabinetOverlay { width: 100%; height: 100%; display: grid; }
-    #cabinetOverlay > div { border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(11,102,35,0.55); display: flex; align-items: center; justify-content: center; position: relative; }
+    #cabinetOverlay > div { border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(31,41,55,0.55); display: flex; align-items: center; justify-content: center; position: relative; }
     .cab-label { background: rgba(0, 0, 0, 0.7); color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 8px; pointer-events: none; }
     #visDimensions { font-size: 0.95rem; font-weight: 600; margin-top: 8px; }
 
@@ -489,7 +489,6 @@
       const pixelDensity = Math.round((totalPixels) / (finalArea_m2 || 1));
 
       // MIN VIEWING DISTANCE rule: use pitch_mm (in mm) as meters (rounded to 2 decimals).
-      // e.g., pitch 1.5625 -> 1.56 m (as requested).
       const minViewing_m = Number(details.pitch_mm.toFixed(2));
       const minViewing_ft = Number((minViewing_m * 3.28084).toFixed(2));
 
@@ -516,7 +515,7 @@
       const requiredPortsBuffered = Math.max(1, Math.ceil(requiredPorts * (1 + GLOBAL_PORT_BUFFER_PCT)));
       const requiredShortEthernet = Math.max(0, totalCabinets - requiredPortsBuffered);
 
-      // pick suggested controller: smallest that satisfies ports & pixels
+      // pick suggested controller
       let suggested = CONTROLLER_MODELS.find(c => {
         if(c.type === 'Modular') {
           return c.maxPixels >= totalPixels;
@@ -602,7 +601,6 @@
 
       // control visualization size: smaller height when wall is tall (keeps max-height constraint)
       const ledWallEl = document.getElementById('ledWallElement');
-      // set a dynamic max-height based on cabinet rows but cap it to 420 and min 220
       const dynamicMaxH = Math.min(420, Math.max(220, d.numCabH * 40));
       ledWallEl.style.maxHeight = dynamicMaxH + 'px';
 
@@ -624,7 +622,7 @@
         tooltip.style.zIndex = 9999;
         tooltip.style.padding = '6px 8px';
         tooltip.style.background = '#fff';
-        tooltip.style.border = '1px solid rgba(11,102,35,0.12)';
+        tooltip.style.border = '1px solid rgba(31,41,55,0.12)';
         tooltip.style.borderRadius = '5px';
         tooltip.style.boxShadow = '0 8px 24px rgba(6,25,57,0.08)';
         tooltip.style.display = 'none';
@@ -831,7 +829,7 @@
       proceedToDownloadPdf();
     }
 
-    // PDF: Helvetica font (closer to HTML), adjusted spacing & green headings
+    // PDF: Helvetica font, adjusted spacing & dark-grey headings (#1F2937)
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
       const { jsPDF } = window.jspdf;
@@ -839,7 +837,7 @@
       const pageW = doc.internal.pageSize.getWidth();
       let y = 18;
       const margin = 14;
-      const primary = [11,102,35]; // green to match HTML (#0B6623)
+      const primary = [31,41,55]; // dark grey RGB for #1F2937
       const finalAreaSqFt = m2ToSqFt(data.finalArea_m2);
 
       const bodyFontSize = 8;
@@ -885,7 +883,6 @@
       const topDims = `${w_m} × ${h_m} m / ${w_ft} × ${h_ft} ft`;
       const topRes = `${formatLarge(data.finalResW)} × ${formatLarge(data.finalResH)}`;
 
-      // make spacing slightly tighter now
       doc.setFont('Helvetica','bold'); doc.text('Actual Dimensions (WxH):', margin, y);
       doc.setFont('Helvetica','normal'); doc.text(topDims, margin + 45, y);
       doc.setFont('Helvetica','bold'); doc.text('Actual Resolution (WxH):', pageW / 2 + 5, y);
