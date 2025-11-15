@@ -80,15 +80,22 @@
           <label for="productModel">LED Product Model</label>
           <select id="productModel" onchange="resetForm()">
             <option value="">-- Select Model --</option>
-            <option value="cob_09">PeopleLink COB (0.9375mm)</option>
-            <option value="cob_125">PeopleLink COB (1.25mm)</option>
-            <option value="cob_15">PeopleLink COB (1.5625mm)</option>
-            <option value="indoor_186">PeopleLink SMD Indoor (1.86mm)</option>
-            <option value="indoor_20">PeopleLink SMD Indoor (2.0mm)</option>
-            <option value="indoor_25">PeopleLink SMD Indoor (2.5mm)</option>
-            <option value="outdoor_40">PeopleLink SMD Outdoor (4.0mm)</option>
-            <option value="outdoor_667">PeopleLink SMD Outdoor (6.67mm)</option>
-            <option value="outdoor_80">PeopleLink SMD Outdoor (8.0mm)</option>
+            <optgroup label="COB LED Products">
+              <option value="cob_09">PeopleLink COB (0.9375mm)</option>
+              <option value="cob_125">PeopleLink COB (1.25mm)</option>
+              <option value="cob_15">PeopleLink COB (1.5625mm)</option>
+            </optgroup>
+            <optgroup label="SMD Indoor LED Products">
+              <option value="indoor_186">PeopleLink SMD Indoor (1.86mm)</option>
+              <option value="indoor_20">PeopleLink SMD Indoor (2.0mm)</option>
+              <option value="indoor_25">PeopleLink SMD Indoor (2.5mm)</option>
+            </optgroup>
+            <optgroup label="SMD Outdoor LED Products">
+              <option value="outdoor_40">PeopleLink SMD Outdoor (4.0mm)</option>
+              <option value="outdoor_667">PeopleLink SMD Outdoor (6.67mm)</option>
+              <option value="outdoor_80">PeopleLink SMD Outdoor (8.0mm)</option>
+              <option value="outdoor_100">PeopleLink SMD Outdoor (10.0mm)</option>
+            </optgroup>
           </select>
         </div>
 
@@ -129,7 +136,7 @@
         </div>
         
         <button class="btn-primary" onclick="showVisualization()">Calculate Configuration</button>
-        <button class="btn-secondary" onclick="resetForm()">Reset</button>
+        <button class="btn-secondary" onclick="fullReset()">Reset</button> 
         
         <div id="errorMessage"></div>
         
@@ -180,6 +187,20 @@
       </div>
     </div>
     
+    <div class="card vis-panel" style="margin-top: 20px;">
+        <div style="font-weight:700; color:var(--brand); margin-bottom:12px;">Wall Visualization</div>
+        <div class="vis-container">
+            <div class="led-wall">
+                <div id="cabinetOverlay">
+                    <div style="grid-column: 1 / -1; grid-row: 1 / -1; background: #f0f0f0; color: #333; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600;">
+                        Calculate to see visualization
+                    </div>
+                </div>
+            </div>
+            <div id="visDimensions">-- m × -- m</div>
+        </div>
+    </div>
+
     <div id="boqPreviewContainer" style="margin-top: 20px;">
       </div>
     
@@ -282,7 +303,8 @@
       'indoor_25': { name:"PeopleLink SMD Indoor (2.5mm)", pitch_mm:2.5, cabW_mm:640, cabH_mm:480, cabPixW:256, cabPixH:192, modulesPerCab:6, weight_kg:6.24, nits_range:"450-600", maxPower_W_m2:560 },
       'outdoor_40': { name:"PeopleLink SMD Outdoor (4.0mm)", pitch_mm:4.0, cabW_mm:960, cabH_mm:960, cabPixW:240, cabPixH:240, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 },
       'outdoor_667': { name:"PeopleLink SMD Outdoor (6.67mm)", pitch_mm:6.67, cabW_mm:960, cabH_mm:960, cabPixW:144, cabPixH:144, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 },
-      'outdoor_80': { name:"PeopleLink SMD Outdoor (8.0mm)", pitch_mm:8.0, cabW_mm:960, cabH_mm:960, cabPixW:120, cabPixH:120, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 }
+      'outdoor_80': { name:"PeopleLink SMD Outdoor (8.0mm)", pitch_mm:8.0, cabW_mm:960, cabH_mm:960, cabPixW:120, cabPixH:120, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 },
+      'outdoor_100': { name:"PeopleLink SMD Outdoor (10.0mm)", pitch_mm:10.0, cabW_mm:960, cabH_mm:960, cabPixW:96, cabPixH:96, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 } // Added P10.0
     };
 
     const CONTROLLER_MODELS = [
@@ -869,9 +891,8 @@
       doc.setTextColor(grey[0], grey[1], grey[2]);
       doc.text(`Contact: ${contactInfo.email || 'N/A'} | ${contactInfo.phone || 'N/A'}`, pageW - margin, 16, { align: 'right' }); 
       doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 16); 
-      y = 20; 
-      doc.line(margin, y, pageW - margin, y); 
-      y += 4; 
+      doc.line(margin, 20, pageW - margin, 20); 
+      y = 24; 
 
       // Section 1: Detailed Wall Specification
       doc.setTextColor(...primary);
@@ -886,12 +907,16 @@
       doc.setFont('Helvetica', 'bold');
       doc.text('Model:', margin, y);
       doc.setFont('Helvetica', 'normal');
-      doc.text(`PeopleLink ${data.productName.replace(/PeopleLink\s*/, '').replace(/\s*\([\d.]+mm\)/g, '')}`, margin + 45, y); 
+      // Logic for formatting the model name (e.g., PeopleLink COB P0.9)
+      const pitchString = data.pixelPitch_mm.toFixed(data.pixelPitch_mm >= 10 ? 0 : 2).replace(/\.00$/, '');
+      const modelType = data.productName.includes('COB') ? 'COB' : 'SMD';
+      const formattedModelName = `PeopleLink ${modelType} P${pitchString}`;
+      doc.text(formattedModelName, margin + 45, y); 
       y += 4; 
 
       // TOP SECTION: Final Dimensions & Resolution (2-column header)
-      const topDims = `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m * ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft * ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`;
-      const topRes = `${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`;
+      const topDims = `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m × ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft × ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`;
+      const topRes = `${formatLarge(data.finalResW)} × ${formatLarge(data.finalResH)}`;
 
       // Column 1: Dimensions
       doc.setFont('Helvetica', 'bold');
@@ -915,10 +940,10 @@
         ['Final Area:', `${data.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`],
         // Column 2 content starts here logic-wise
         ['Total Pixels:', `${formatLarge(data.totalPixels)}`],
-        ['Total Cabinets:', `${data.numCabW} x ${data.numCabH} (${data.totalCabinets})`],
+        ['Total Cabinets:', `${data.numCabW} × ${data.numCabH} (${data.totalCabinets})`],
         ['Total Modules Required:', `${data.totalModules} (${data.modulesPerCab} per cabinet)`],
-        ['Cabinet Size (WxH):', `${data.cabinetW_mm} mm x ${data.cabinetH_mm} mm`],
-        ['Cabinet Pixels (WxH):', `${formatLarge(data.cabPixW)} x ${formatLarge(data.cabPixH)}`],
+        ['Cabinet Size (WxH):', `${data.cabinetW_mm} mm × ${data.cabinetH_mm} mm`],
+        ['Cabinet Pixels (WxH):', `${formatLarge(data.cabPixW)} × ${formatLarge(data.cabPixH)}`],
         ['Design Power (Est.):', `${fmt(data.designPowerW,0)} W (15% buffer)`],
         ['Design Weight (Est.):', `${fmt(data.designWeight,1)} kg (15% buffer)`]
       ];
@@ -1068,17 +1093,34 @@
 
 
     /************************************************************************
-     * UI helpers (UNCHANGED)
+     * UI helpers (MODIFIED)
      ************************************************************************/
-    function resetForm(){
+    
+    // Function to clear ALL inputs and outputs (called only by the Reset button)
+    function fullReset(){
+      // Clear the product model itself
       document.getElementById('productModel').value='';
+      // Call the main reset function
+      resetForm();
+    }
+    
+    // Function to clear *dependent* inputs and outputs (called when model changes)
+    function resetForm(){
+      // document.getElementById('productModel').value is intentionally NOT cleared here.
       document.getElementById('unit').value='';
       document.getElementById('width').value='';
       document.getElementById('height').value='';
       document.getElementById('diagonal').value='';
       document.getElementById('aspectRatio').value='16:9';
       document.getElementById('errorMessage').style.display='none';
-      document.getElementById('cabinetOverlay').innerHTML='';
+      
+      // Reset Visualization
+      const overlay = document.getElementById('cabinetOverlay');
+      if(overlay){
+          overlay.innerHTML = '<div style="grid-column: 1 / -1; grid-row: 1 / -1; background: #f0f0f0; color: #333; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600;">Calculate to see visualization</div>';
+          document.getElementById('visDimensions').textContent = '-- m × -- m';
+      }
+      
       document.getElementById('boqPreviewContainer').innerHTML='';
       // clear specs
       ['spec_model','spec_pitch','spec_dims','spec_res','spec_diag','spec_density','spec_area','spec_total_pixels','spec_cabs','spec_modules','spec_cabsize','spec_cabpix','ctrl_name','ctrl_longeth_combined','ctrl_sending','ctrl_shorteth','spec_power','spec_weight','aspectRatioText'].forEach(id=>{
