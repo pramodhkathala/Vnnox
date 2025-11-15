@@ -834,7 +834,7 @@
       }
 
       // Ethernet Ports & Short Ethernet
-      list.push({ item:'Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required (Long-distance cable Partner Scope)`, qty:data.requiredPortsBuffered, unit:'Ports' });
+      list.push({ item:'Ethernet Ports (Controller to Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required (Long-distance cable Partner Scope)`, qty:data.requiredPortsBuffered, unit:'Ports' });
       list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs (Included with Cabinet)', qty:data.requiredShortEthernet, unit:'PCS' });
 
       // Installation / Configuration (qty = number of cabinets)
@@ -847,7 +847,7 @@
       list.push({
         item:'Total Power Cables (Input Runs)',
         partcode:'TBD',
-        desc:`Power cables @ 1000W/run. Required runs based on ${fmt(data.designPowerW,0)} W Design Power. (Long-distance cable Partner Scope)`,
+        desc:`Power cables @ 1000W/run. (Long-distance cable Partner Scope)`,
         qty: data.requiredPowerRuns,
         unit:'Runs'
       });
@@ -1193,3 +1193,4 @@
   </script>
 </body>
 </html>
+
