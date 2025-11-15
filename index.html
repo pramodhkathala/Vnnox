@@ -684,7 +684,7 @@
         list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
 
         const inModel = data.inputCardModel || 'H_1xHDMI';
-        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
+        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inPart].part : 'TBD';
         list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
 
         list.push({ item:'Modular Splicer Frame', partcode: PARTS_CATALOG[data.suggestedControllerObj?.name]?.part || 'TBD', desc: data.splicerSolution, qty:1, unit:'PCS' });
@@ -865,42 +865,60 @@
       
       // --- Font Settings ---
       doc.setFont('Helvetica'); 
-      const bodyFontSize = 9; // Reduced Font Size
+      const bodyFontSize = 7; // Further Reduced Font Size
       doc.setFontSize(bodyFontSize); 
       
       // PDF Title & Header
       doc.setTextColor(...primary);
-      doc.setFontSize(16); // Reduced Title Size
+      doc.setFontSize(14); // Reduced Title Size
       doc.setFont('Helvetica','bold');
       doc.text('PeopleLink LED Video Wall - Project Proposal', pageW/2, 12, { align:'center' });
       
       doc.setFontSize(bodyFontSize);
       doc.setFont('Helvetica','normal');
       doc.setTextColor(grey[0], grey[1], grey[2]);
-      doc.text(`Contact: ${contactInfo.email || 'N/A'} | ${contactInfo.phone || 'N/A'}`, pageW - margin, 18, { align: 'right' });
-      doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 18);
-      y = 24; 
+      doc.text(`Contact: ${contactInfo.email || 'N/A'} | ${contactInfo.phone || 'N/A'}`, pageW - margin, 16, { align: 'right' }); // Adjusted Y position
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 16); // Adjusted Y position
+      y = 20; 
       doc.line(margin, y, pageW - margin, y); // Separator line
-      y += 6;
+      y += 4; // Reduced vertical spacing
 
       // Section 1: Detailed Wall Specification
       doc.setTextColor(...primary);
-      doc.setFontSize(12); // Reduced Section Heading Size
+      doc.setFontSize(10); // Reduced Section Heading Size
       doc.setFont('Helvetica','bold');
       doc.text('1. Detailed Wall Specification', margin, y);
-      y += 8;
+      y += 6; // Reduced vertical spacing
 
-      // Two-column setup
+      // TOP SECTION: Final Dimensions & Resolution (2-column header)
+      doc.setFontSize(bodyFontSize);
+      doc.setTextColor(40,40,40);
+
+      const topDims = `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m * ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft * ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`;
+      const topRes = `${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`;
+
+      // Column 1: Dimensions
+      doc.setFont('Helvetica', 'bold');
+      doc.text('Actual Final Dimensions (WxH):', margin, y);
+      doc.setFont('Helvetica', 'normal');
+      doc.text(topDims, margin + 45, y); 
+
+      // Column 2: Resolution
+      doc.setFont('Helvetica', 'bold');
+      doc.text('Actual Final Resolution (WxH):', pageW / 2 + 5, y);
+      doc.setFont('Helvetica', 'normal');
+      doc.text(topRes, pageW / 2 + 5 + 45, y);
+      y += 5; // Space after top dims/res
+
+      // REMAINING SPECS (2-column body)
       const specs = [
         ['Model:', `PeopleLink ${data.productName.replace(/PeopleLink\s*/, '').replace(/\s*\([\d.]+mm\)/g, '')}`],
         ['Pixel Pitch:', `${data.pixelPitch_mm} mm`],
-        ['Actual Final Dimensions (WxH):', `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m * ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft * ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`], // Corrected format
-        ['Actual Final Resolution (WxH):', `${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`],
-        ['Aspect Ratio:', `${data.aspectRatioText}`], // Added Aspect Ratio
-        ['Final Diagonal:', `${data.finalDiagonal_in.toFixed(0)} in`], // Rounded
+        ['Aspect Ratio:', `${data.aspectRatioText}`], 
+        ['Final Diagonal:', `${data.finalDiagonal_in.toFixed(0)} in`], 
         ['Pixel Density:', `${formatLarge(data.pixelDensity)} px/m²`],
         ['Final Area:', `${data.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`],
-        // Column 2 starts here - need to split logic
+        // Column 2 content starts here logic-wise
         ['Total Pixels:', `${formatLarge(data.totalPixels)}`],
         ['Total Cabinets:', `${data.numCabW} x ${data.numCabH} (${data.totalCabinets})`],
         ['Total Modules Required:', `${data.totalModules} (${data.modulesPerCab} per cabinet)`],
@@ -910,18 +928,15 @@
         ['Design Weight (Est.):', `${fmt(data.designWeight,1)} kg (15% buffer)`]
       ];
       
-      const col1Items = specs.slice(0, 8);
-      const col2Items = specs.slice(8);
+      const col1Items = specs.slice(0, 6); // 6 items for column 1
+      const col2Items = specs.slice(6); // 7 items for column 2
 
       const col1KeyX = margin;
-      const col1ValueX = col1KeyX + 50; // Adjusted for 2-col space
+      const col1ValueX = col1KeyX + 45; 
       const col2KeyX = pageW / 2 + 5;
-      const col2ValueX = col2KeyX + 50;
-      const lineHeight = 5;
+      const col2ValueX = col2KeyX + 45;
+      const lineHeight = 3.8; // Further reduced line height for 7pt font
       let colY = y;
-
-      doc.setFontSize(bodyFontSize);
-      doc.setTextColor(40,40,40);
 
       col1Items.forEach(s => {
         doc.setFont('Helvetica', 'bold');
@@ -940,10 +955,10 @@
         col2Y += lineHeight;
       });
 
-      y = Math.max(colY, col2Y) + 4; // Ensure next section starts below both columns
+      y = Math.max(colY, col2Y) + 4; 
       
       // Section 2: Bill of Quantities (BOQ)
-      doc.setTextColor(...primary); doc.setFontSize(12); doc.setFont('Helvetica','bold'); doc.text('2. Bill of Quantities (BOQ)', margin, y); y += 8; 
+      doc.setTextColor(...primary); doc.setFontSize(10); doc.setFont('Helvetica','bold'); doc.text('2. Bill of Quantities (BOQ)', margin, y); y += 6; 
 
       // Check if need to add a page
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
@@ -977,7 +992,7 @@
         body: boqBody,
         margin: { left: margin, right: margin },
         theme: 'grid',
-        styles: { fontSize:bodyFontSize, cellPadding:2, font: 'Helvetica' }, // Font size 9 applied
+        styles: { fontSize:bodyFontSize, cellPadding:1.5, font: 'Helvetica' }, // Font size 7 applied
         headStyles: { fillColor: primary, textColor: 255, fontStyle: 'bold' },
         columnStyles: {
             4: { halign: 'right' }, // Qty column
@@ -985,13 +1000,13 @@
             7: { halign: 'right' }  // Total Price
         }
       });
-      y = doc.lastAutoTable.finalY + 8;
+      y = doc.lastAutoTable.finalY + 6;
       
       // Section 3: Terms & Conditions
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
       
-      doc.setTextColor(...primary); doc.setFontSize(12); doc.setFont('Helvetica','bold'); doc.text('3. Standard Terms & Conditions', margin, y); y += 8; 
-      doc.setFontSize(bodyFontSize); doc.setTextColor(50,50,50); doc.setFont('Helvetica','normal'); // Font size 9 applied
+      doc.setTextColor(...primary); doc.setFontSize(10); doc.setFont('Helvetica','bold'); doc.text('3. Standard Terms & Conditions', margin, y); y += 6; 
+      doc.setFontSize(bodyFontSize); doc.setTextColor(50,50,50); doc.setFont('Helvetica','normal'); // Font size 7 applied
       const terms = [
         "1) Price Validity: This quotation is valid for 30 days from the date of issue.",
         "2) Payment Terms: Standard terms are 50% advance, 40% upon delivery, and 10% upon successful commissioning.",
@@ -1003,14 +1018,14 @@
       terms.forEach(t=>{
         const split = doc.splitTextToSize(t, pageW - margin*2);
         doc.text(split, margin, y);
-        y += (split.length * 4.5); // Adjusted line spacing for smaller font
+        y += (split.length * 3.5); // Adjusted line spacing for 7pt font
         if(y > doc.internal.pageSize.getHeight() - 30){ doc.addPage(); y = margin; }
       });
 
       // Footer
-      doc.setFontSize(8); doc.setTextColor(150,170,200);
-      doc.text('Note: Design figures include a 15% safety margin for structural and electrical planning.', margin, doc.internal.pageSize.getHeight() - 18);
-      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd.', pageW/2, doc.internal.pageSize.getHeight() - 10, { align:'center' });
+      doc.setFontSize(7); doc.setTextColor(150,170,200);
+      doc.text('Note: Design figures include a 15% safety margin for structural and electrical planning.', margin, doc.internal.pageSize.getHeight() - 15);
+      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd.', pageW/2, doc.internal.pageSize.getHeight() - 8, { align:'center' }); // Adjusted Y position
 
       // save pdf
       const filename = `PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_Proposal.pdf`;
@@ -1095,4 +1110,5 @@
   </script>
 </body>
 </html>
+
 
