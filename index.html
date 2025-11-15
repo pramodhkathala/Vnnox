@@ -17,271 +17,251 @@
     /* HEADER */
     h2 { text-align: center; color: var(--brand); margin-top: 0; margin-bottom: 18px; font-weight:700; font-size:1.6rem; }
 
-    /* PANELS */
-    .panel-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
-    .input-panel, .details-panel { background:#fff; padding:20px;border-radius:10px; box-shadow:0 4px 18px rgba(8,20,40,0.06); }
+    /* LAYOUT */
+    .grid-3 { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
+    .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(6,25,57,0.08); }
+    .input-group { margin-bottom: 15px; }
+    label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 0.9rem; }
+    input[type="number"], select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; }
+    button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background-color 0.2s; }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-primary:hover { background: #0b3b84; }
+    .btn-secondary { background: #e5e7eb; color: #374151; margin-left: 10px; }
+    .btn-secondary:hover { background: #d1d5db; }
 
-    /* FORM */
-    .form-grid { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }
-    label.form-label { font-weight:600; color:var(--brand); display:block; margin-bottom:6px; }
-    input[type="number"], input[type="text"], select, input[type="email"], input[type="tel"] { width:100%; padding:9px 10px; border-radius:6px; border:1px solid #e6eef6; box-sizing:border-box; font-size:14px; }
-    .controls { display:flex; gap:12px; align-items:center; margin-top:12px; }
-    button.primary { background:var(--brand); color:#fff; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:700; }
-    button.secondary { background:#f3f6fb; color:var(--brand); border:1px solid #e6eef6; padding:9px 12px; border-radius:8px; cursor:pointer; font-weight:600; }
+    /* RESULTS */
+    .specs-grid, .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; margin-top: 10px; }
+    .spec-item, .ctrl-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e5e7eb; font-size: 7pt; }
+    .spec-item span:first-child, .ctrl-item span:first-child { font-weight: 600; color: #1f2937; }
+    .spec-item span:last-child, .ctrl-item span:last-child { color: var(--brand); font-weight: 600; }
+    
+    .details-panel { padding: 15px; border: 1px solid #d1d5db; border-radius: 4px; margin-top: 15px; background: #f9fafb; font-size: 7pt;}
+    
+    /* VISUALIZATION */
+    .vis-container { margin-top: 15px; text-align: center; }
+    .led-wall { border: 2px solid #ccc; display: inline-grid; width: 100%; max-width: 600px; max-height: 400px; aspect-ratio: 16/9; overflow: hidden; position: relative; }
+    #cabinetOverlay { width: 100%; height: 100%; display: grid; }
+    #cabinetOverlay > div { border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(13, 71, 161, 0.5); display: flex; align-items: center; justify-content: center; position: relative; }
+    .cab-label { background: rgba(0, 0, 0, 0.7); color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 8px; pointer-events: none; }
+    #visDimensions { font-size: 0.9rem; font-weight: 600; margin-top: 5px; }
+    
+    /* BOQ TABLE STYLES */
+    #boqPreviewTable { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 7pt; }
+    #boqPreviewTable th, #boqPreviewTable td { border: 1px solid #e5e7eb; padding: 4px 6px; text-align: left; font-size: 7pt; }
+    #boqPreviewTable th { background-color: var(--brand); color: #fff; font-weight: 700; }
+    #boqPreviewTable td.right { text-align: right; }
+    
+    /* ERROR & UTILS */
+    .hidden { display: none !important; }
+    #errorMessage { color: var(--accent); font-weight: 600; margin-top: 10px; display: none; }
+    
+    /* MODAL */
+    .modal { position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; }
+    .modal-content { background-color: #fefefe; padding: 20px; border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+    .close { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+    .close:hover, .close:focus { color: #000; text-decoration: none; }
+    .hseries-only { display: none; }
+    
+    /* PDF DOWNLOAD BUTTON */
+    .download-buttons { margin-top: 20px; border-top: 1px solid #d1d5db; padding-top: 15px; text-align: right; }
 
-    /* SPEC & CONTROL PANELS - layout like your 2nd format */
-    .specs, .control-summary { padding:18px; border-radius:8px; background:#f6fbff; border:1px solid rgba(13,71,161,0.06); }
-    .panel-title { color:var(--brand); font-weight:700; font-size:1.05rem; margin-bottom:10px; }
-    .spec-row { display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px dotted rgba(0,0,0,0.06); }
-    .spec-row .label { color:var(--brand); font-weight:700; min-width:250px; }
-    .spec-row .value { color:var(--accent); font-weight:700; text-align:right; }
-
-    /* Visualization */
-    .viz-wrap { margin-top:16px; }
-    .viz-box { border-radius:8px; background:#fff; padding:12px; border:1px solid #e6eef6; }
-    .vis-grid { position:relative; width:100%; height:280px; border:3px solid rgba(13,71,161,0.12); background:linear-gradient(180deg,#eaf4ff,#e5f2ff); display:flex; align-items:center; justify-content:center; overflow:hidden; box-sizing:border-box; }
-    #cabinetOverlay { position:absolute; inset:0; display:grid; box-sizing:border-box; grid-gap:0; padding:4px; }
-    #cabinetOverlay > div { box-sizing:border-box; border:2px solid rgba(13,71,161,0.18); display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.02)); transition:transform .08s ease, background .12s; }
-    #cabinetOverlay > div:hover { transform:translateY(-3px); background:rgba(13,71,161,0.03); }
-    .cab-label { font-size:12px; background:rgba(255,255,255,0.92); padding:2px 6px; border-radius:4px; color:var(--brand); font-weight:700; }
-
-    /* BOQ preview */
-    #boqPreviewTable { width:100%; border-collapse:collapse; margin-top:14px; font-size:13px; }
-    #boqPreviewTable th, #boqPreviewTable td { border:1px solid #e6eef6; padding:8px 6px; text-align:left; }
-    #boqPreviewTable th { background:linear-gradient(90deg, rgba(13,71,161,0.06), rgba(27,94,32,0.02)); color:var(--brand); font-weight:700; }
-
-    /* small helpers */
-    .muted { color:#6b7280; font-size:0.92rem; }
-    .right { text-align:right; }
-    .hidden { display:none !important; }
-    footer.page-footer { text-align:center; margin-top:18px; color:#8fa6c8; font-size:13px; }
-
-    /* modal */
-    .modal { position:fixed; inset:0; display:none; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; }
-    .modal .modal-card { width:92%; max-width:720px; background:#fff; padding:18px; border-radius:10px; box-shadow:0 10px 40px rgba(6,25,57,0.12); }
-    .modal .modal-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:10px; }
-    .modal .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:10px; }
-
-    /* responsive */
-    @media (max-width:980px){ .panel-grid{grid-template-columns:1fr} .form-grid{grid-template-columns:1fr} .vis-grid{height:220px} }
   </style>
 </head>
 <body>
   <div class="main-wrapper">
-    <h2>PeopleLink LED Video Wall Configuration Calculator</h2>
-
-    <div class="panel-grid">
-      <div class="input-panel">
-        <div style="font-weight:700;color:var(--brand);margin-bottom:10px">Configure Wall</div>
-
-        <div class="form-grid">
-          <div>
-            <label class="form-label">LED Model / Pixel Pitch</label>
-            <select id="productModel">
-              <option value="">Select LED Model</option>
-              <optgroup label="COB (600x337.5mm)">
-                <option value="cob_09">0.9375 mm</option>
-                <option value="cob_125">1.25 mm</option>
-                <option value="cob_15">1.5625 mm</option>
-              </optgroup>
-              <optgroup label="SMD Indoor (640x480mm)">
-                <option value="indoor_186">1.86 mm</option>
-                <option value="indoor_20">2.0 mm</option>
-                <option value="indoor_25">2.5 mm</option>
-              </optgroup>
-              <optgroup label="SMD Outdoor (960x960mm)">
-                <option value="outdoor_40">4.0 mm</option>
-                <option value="outdoor_667">6.67 mm</option>
-                <option value="outdoor_80">8.0 mm</option>
-              </optgroup>
-            </select>
-          </div>
-
-          <div>
-            <label class="form-label">Unit</label>
-            <select id="unit" onchange="toggleMeasurementFields()">
-              <option value="">Select unit</option>
-              <option value="meters">Meters (m)</option>
-              <option value="feet">Feet (ft)</option>
-              <option value="inches">Inches - Diagonal</option>
-            </select>
-          </div>
-
-          <div id="widthGroup">
-            <label class="form-label" id="widthLabel">Desired Width (m)</label>
-            <input type="number" id="width" placeholder="Enter width" min="0.1" step="0.01" />
-          </div>
-
-          <div id="heightGroup">
-            <label class="form-label" id="heightLabel">Desired Height (m)</label>
-            <input type="number" id="height" placeholder="Enter height" min="0.1" step="0.01" />
-          </div>
-
-          <div id="diagonalGroup" class="hidden">
-            <label class="form-label" id="diagonalLabel">Diagonal (inches)</label>
-            <input type="number" id="diagonal" placeholder="Diagonal inches" min="10" step="1" />
-          </div>
-
-          <div>
-            <label class="form-label">Target Aspect Ratio (optional)</label>
-            <select id="aspectRatio">
-              <option value="">Auto</option>
-              <option value="16:9">16:9</option>
-              <option value="16:10">16:10</option>
-              <option value="4:3">4:3</option>
-              <option value="21:9">21:9</option>
-              <option value="1:1">1:1</option>
-            </select>
-          </div>
-
-          <div style="align-self:end;">
-            <div class="controls">
-              <button class="primary" id="calcBtn" onclick="showVisualization()">Calculate & Visualize</button>
-              <button class="secondary" id="resetBtn" onclick="resetForm()">Reset</button>
-            </div>
-          </div>
+    <h2>PeopleLink LED Video Wall Configuration</h2>
+    
+    <div class="grid-3">
+      <div class="card config-panel">
+        <div style="font-weight:700; color:var(--brand); margin-bottom:12px;">Input Parameters</div>
+        
+        <div class="input-group">
+          <label for="productModel">LED Product Model</label>
+          <select id="productModel" onchange="resetForm()">
+            <option value="">-- Select Model --</option>
+            <option value="cob_09">PeopleLink COB (0.9375mm)</option>
+            <option value="cob_125">PeopleLink COB (1.25mm)</option>
+            <option value="cob_15">PeopleLink COB (1.5625mm)</option>
+            <option value="indoor_186">PeopleLink SMD Indoor (1.86mm)</option>
+            <option value="indoor_20">PeopleLink SMD Indoor (2.0mm)</option>
+            <option value="indoor_25">PeopleLink SMD Indoor (2.5mm)</option>
+            <option value="outdoor_40">PeopleLink SMD Outdoor (4.0mm)</option>
+            <option value="outdoor_667">PeopleLink SMD Outdoor (6.67mm)</option>
+            <option value="outdoor_80">PeopleLink SMD Outdoor (8.0mm)</option>
+          </select>
         </div>
 
-        <div id="errorMessage" class="muted" style="margin-top:10px; color: #b71c1c; display:none;"></div>
-
-        <div class="viz-wrap">
-          <div class="viz-box">
-            <div style="font-weight:700;color:var(--brand);margin-bottom:8px">Physical Wall Visualization</div>
-            <div class="vis-grid" id="visGrid">
-              <div id="cabinetOverlay" aria-hidden="true"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-top:10px">
-              <div class="muted">Hover a cabinet to view its label</div>
-              <div class="muted" id="visDimensions"></div>
-            </div>
-          </div>
+        <div class="input-group">
+          <label for="unit">Measurement Unit</label>
+          <select id="unit" onchange="toggleMeasurementFields()">
+            <option value="">-- Select Unit --</option>
+            <option value="meters">Meters (m)</option>
+            <option value="feet">Feet (ft)</option>
+            <option value="inches">Diagonal Inches (in)</option>
+          </select>
         </div>
 
+        <div id="widthGroup" class="input-group">
+          <label id="widthLabel" for="width">Desired Width (m)</label>
+          <input type="number" id="width" min="0" step="0.01">
+        </div>
+        
+        <div id="heightGroup" class="input-group">
+          <label id="heightLabel" for="height">Desired Height (m)</label>
+          <input type="number" id="height" min="0" step="0.01">
+        </div>
+
+        <div id="diagonalGroup" class="input-group hidden">
+          <label for="diagonal">Desired Diagonal (inches)</label>
+          <input type="number" id="diagonal" min="0" step="1">
+        </div>
+        
+        <div class="input-group">
+          <label for="aspectRatio">Aspect Ratio (Optional)</label>
+          <select id="aspectRatio">
+            <option value="">-- No Ratio Constraint --</option>
+            <option value="16:9" selected>16:9 (Default)</option>
+            <option value="4:3">4:3</option>
+            <option value="1:1">1:1</option>
+            <option value="21:9">21:9</option>
+          </select>
+        </div>
+        
+        <button class="btn-primary" onclick="showVisualization()">Calculate Configuration</button>
+        <button class="btn-secondary" onclick="resetForm()">Reset</button>
+        
+        <div id="errorMessage"></div>
+        
       </div>
-
-      <div style="display:flex;flex-direction:column;gap:18px">
-        <div class="details-panel specs">
-          <div class="panel-title">LED Wall Specifications</div>
-
-          <div id="specRows">
-            <div class="spec-row"><div class="label">Model:</div><div class="value" id="spec_model">--</div></div>
-            <div class="spec-row"><div class="label">Pixel Pitch:</div><div class="value" id="spec_pitch">--</div></div>
-            <div class="spec-row"><div class="label">Actual Final Dimensions (WxH):</div><div class="value" id="spec_dims">--</div></div>
-            <div class="spec-row"><div class="label">Actual Final Resolution (WxH):</div><div class="value" id="spec_res">--</div></div>
-            <div class="spec-row"><div class="label">Final Diagonal:</div><div class="value" id="spec_diag">--</div></div>
-            <div class="spec-row"><div class="label">Pixel Density:</div><div class="value" id="spec_density">--</div></div>
-            <div class="spec-row"><div class="label">Final Area:</div><div class="value" id="spec_area">--</div></div>
-            <div class="spec-row"><div class="label">Total Pixels:</div><div class="value" id="spec_total_pixels">--</div></div>
-            <div class="spec-row"><div class="label">Total Cabinets:</div><div class="value" id="spec_cabs">--</div></div>
-            <div class="spec-row"><div class="label">Total Modules Required:</div><div class="value" id="spec_modules">--</div></div>
-            <div class="spec-row"><div class="label">Cabinet Size (WxH):</div><div class="value" id="spec_cabsize">--</div></div>
-            <div class="spec-row"><div class="label">Cabinet Pixels (WxH):</div><div class="value" id="spec_cabpix">--</div></div>
+      
+      <div class="card results-panel">
+        <div style="font-weight:700; color:var(--brand); margin-bottom:12px;">Calculated Results</div>
+        
+        <div class="details-panel">
+          <div style="font-weight:700;color:var(--brand);margin-bottom:8px">Detailed Wall Specification</div>
+          <div class="specs-grid">
+            <div class="spec-item"><span>Model:</span><span id="spec_model">--</span></div>
+            <div class="spec-item"><span>Pixel Pitch:</span><span id="spec_pitch">--</span></div>
+            <div class="spec-item"><span>Actual Dimensions (WxH):</span><span id="spec_dims">--</span></div>
+            <div class="spec-item"><span>Actual Resolution (WxH):</span><span id="spec_res">--</span></div>
+            <div class="spec-item"><span>Final Diagonal:</span><span id="spec_diag">--</span></div>
+            <div class="spec-item"><span>Aspect Ratio:</span><span id="aspectRatioText">--</span></div>
+            <div class="spec-item"><span>Pixel Density:</span><span id="spec_density">--</span></div>
+            <div class="spec-item"><span>Final Area (m²/sq.ft):</span><span id="spec_area">--</span></div>
+            <div class="spec-item"><span>Total Pixels:</span><span id="spec_total_pixels">--</span></div>
+            <div class="spec-item"><span>Cabinets (WxH):</span><span id="spec_cabs">--</span></div>
+            <div class="spec-item"><span>Total Modules:</span><span id="spec_modules">--</span></div>
+            <div class="spec-item"><span>Cabinet Size (mm):</span><span id="spec_cabsize">--</span></div>
+            <div class="spec-item"><span>Cabinet Pixels (WxH):</span><span id="spec_cabpix">--</span></div>
+            <div class="spec-item"><span>Design Power (Est.):</span><span id="spec_power">--</span></div>
+            <div class="spec-item"><span>Design Weight (Est.):</span><span id="spec_weight">--</span></div>
+          </div>
+        </div>
+        
+        <div class="details-panel" style="margin-top:12px">
+          <div style="font-weight:700;color:var(--brand);margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>Controller & Connectivity</span>
+            <button class="btn-secondary" style="font-size:7pt; padding:4px 8px;" onclick="openControllerModal()">Edit Controller</button>
+          </div>
+          <div class="ctrl-grid">
+            <div class="ctrl-item"><span>Controller Model:</span><span id="ctrl_name">--</span></div>
+            <div class="ctrl-item"><span>Ports Required (Long Ethernet):</span><span id="ctrl_longeth_combined">--</span></div>
+            <div class="ctrl-item hseries-only"><span>Modular Sending Cards:</span><span id="ctrl_sending">--</span></div>
+            <div class="ctrl-item"><span>Short Ethernet (Between Cabinets):</span><span id="ctrl_shorteth">--</span></div>
           </div>
         </div>
 
-        <div class="details-panel control-summary">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div class="panel-title">Control & Connection Summary</div>
-            <button class="secondary" style="font-size:13px" onclick="openControllerModal()">Edit</button>
-          </div>
-
-          <div style="margin-top:10px" id="controlRows">
-            <div class="spec-row"><div class="label">Suggested Controller:</div><div class="value" id="ctrl_name">--</div></div>
-            <div class="spec-row hseries-only"><div class="label">Sending Cards needed:</div><div class="value" id="ctrl_sending">--</div></div>
-            <div class="spec-row"><div class="label">Long Ethernet Cables (Input) / Ports:</div><div class="value" id="ctrl_longeth_combined">--</div></div>
-            <div class="spec-row"><div class="label">Inter-cabinet Short Ethernet:</div><div class="value" id="ctrl_shorteth">--</div></div>
-            <div class="spec-row"><div class="label">Max Power (Est.):</div><div class="value" id="spec_power">--</div></div>
-            <div class="spec-row"><div class="label">Total Weight (Est.):</div><div class="value" id="spec_weight">--</div></div>
-          </div>
-
-          <div style="margin-top:12px; display:flex; gap:8px; align-items:center;">
-            <button class="primary" id="downloadPdfBtn" onclick="openContactModal()">Download PDF</button>
-            <button class="secondary" onclick="downloadBOQCSV()">Download Excel (CSV)</button>
-          </div>
+        <div class="download-buttons">
+          <button class="btn-primary" onclick="openContactModal()">Download PDF Proposal</button>
+          <button class="btn-secondary" onclick="downloadBOQCSV()">Download BOQ (CSV)</button>
         </div>
+        
       </div>
     </div>
-
-    <div id="boqPreviewContainer" style="margin-top:18px"></div>
-
-    <footer class="page-footer">© 2025 PeopleLink Unified Communications Pvt. Ltd.</footer>
+    
+    <div id="boqPreviewContainer" style="margin-top: 20px;">
+      </div>
+    
   </div>
 
-  <div class="modal" id="controllerModal">
-    <div class="modal-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-weight:700;color:var(--brand)">Edit Control System Components</div>
-        <button onclick="closeControllerModal()" class="secondary">Close</button>
+  <div id="controllerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin:0; font-size:1.2rem;">Override Controller Configuration</h3>
+        <span class="close" onclick="closeControllerModal()">&times;</span>
+      </div>
+      <p style="font-size:12px; margin-top:-10px;">Select a controller and configure modular cards (for H-Series).</p>
+      
+      <div class="input-group">
+        <label for="modalControllerModel">Controller Model (Override)</label>
+        <select id="modalControllerModel" onchange="onModalControllerChange()">
+          </select>
       </div>
 
-      <div class="modal-row">
-        <div>
-          <label class="form-label">Controller/Processor Model</label>
-          <select id="modalControllerModel" onchange="onModalControllerChange()"></select>
+      <div class="hseries-fields">
+        <div class="input-group">
+          <label for="modalOutputCardModel">Output/Sending Card Type</label>
+          <select id="modalOutputCardModel" onchange="updatePortsFromOutputCard()">
+            </select>
+          <input type="hidden" id="modalMaxPortsPerCard">
         </div>
-        <div>
-          <label class="form-label">Splicer Frame / Solution</label>
-          <input type="text" id="modalSplicerSolution" />
+        
+        <div class="input-group">
+          <label for="modalInputCardModel">Input Card Type</label>
+          <select id="modalInputCardModel">
+            </select>
         </div>
-      </div>
-
-      <div class="modal-row">
-        <div>
-          <label class="form-label">Output (Sending) Card Model</label>
-          <select id="modalOutputCardModel" onchange="updatePortsFromOutputCard()"></select>
-        </div>
-        <div>
-          <label class="form-label">Max Ports per Output Card</label>
-          <input id="modalMaxPortsPerCard" readonly />
-        </div>
-      </div>
-
-      <div class="modal-row">
-        <div>
-          <label class="form-label">Input Card Model</label>
-          <select id="modalInputCardModel"></select>
-        </div>
-        <div>
-          <label class="form-label">Input Card Quantity</label>
-          <input type="number" id="modalInputCardQty" min="1" value="2" />
+        
+        <div class="input-group" style="display:flex; gap:20px;">
+          <div style="flex:1;">
+            <label for="modalInputCardQty">Input Card Quantity</label>
+            <input type="number" id="modalInputCardQty" min="1" value="2">
+          </div>
+          <div style="flex:1;">
+            <label for="modalSplicerSolution">Splicer/Frame Solution</label>
+            <input type="text" id="modalSplicerSolution">
+          </div>
         </div>
       </div>
-
-      <div style="display:flex;justify-content:flex-end;margin-top:10px;">
-        <button class="secondary" onclick="closeControllerModal()">Cancel</button>
-        <button class="primary" style="margin-left:8px" onclick="applyModalChanges()">Apply</button>
+      
+      <div style="text-align:right; margin-top:20px;">
+        <button class="btn-secondary" onclick="closeControllerModal()">Cancel</button>
+        <button class="btn-primary" onclick="applyModalChanges()">Apply Changes</button>
       </div>
     </div>
   </div>
 
-  <div class="modal" id="contactModal">
-    <div class="modal-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-weight:700;color:var(--brand)">Contact (optional) — added to PDF metadata</div>
-        <button onclick="closeContactModal()" class="secondary">Close</button>
+  <div id="contactModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="margin:0; font-size:1.2rem;">Download Proposal</h3>
+        <span class="close" onclick="closeContactModal()">&times;</span>
+      </div>
+      <p style="font-size:12px; margin-top:-10px;">Enter your contact details (optional) to include in the proposal document.</p>
+      
+      <div class="input-group">
+        <label for="downloadEmail">Email Address</label>
+        <input type="text" id="downloadEmail" placeholder="email@example.com">
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div>
-          <label class="form-label">Email</label>
-          <input type="email" id="downloadEmail" placeholder="you@company.com" />
-        </div>
-        <div>
-          <label class="form-label">Phone</label>
-          <input type="tel" id="downloadPhone" placeholder="+91..." />
-        </div>
+      <div class="input-group">
+        <label for="downloadPhone">Phone Number</label>
+        <input type="text" id="downloadPhone" placeholder="+91-XXXXXXXXXX">
       </div>
-
-      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
-        <button class="secondary" onclick="closeContactModal()">Cancel</button>
-        <button class="primary" onclick="handleDownloadRequest()">Download PDF</button>
+      
+      <div id="contactError" style="color:var(--accent); margin-bottom:10px;"></div>
+      
+      <div style="text-align:right; margin-top:20px;">
+        <button class="btn-secondary" onclick="closeContactModal()">Cancel</button>
+        <button class="btn-primary" onclick="handleDownloadRequest()">Generate & Download PDF</button>
       </div>
-      <div id="contactError" style="color:#b71c1c;margin-top:8px;display:none"></div>
     </div>
   </div>
+
 
   <script>
-/************************************************************************
+    /************************************************************************
      * Data: LED products, controllers, parts catalog (MODIFIED)
      ************************************************************************/
     const MM_PER_METER = 1000;
@@ -355,7 +335,7 @@
       'ALED-TRS-IN-REG': { part:'ALED-TRS-IN-REG', desc:'Transportation (No. of Cabinets) - Indoor' }
     };
 
-    // Cabinets-per-long-LAN mapping
+    // Cabinets-per-long-LAN mapping (cob_15 is 7 as requested)
     const CABINETS_PER_LONG_LAN = {
       'cob_09': 2,
       'cob_125': 5,
@@ -383,13 +363,64 @@
     function m2ToSqFt(m2) {
       return m2 * 10.7639;
     }
+    
+    function escapeHtml(s){
+      if(s===null||s===undefined) return '';
+      return s.toString().replace(/[&<>"'`=\/]/g, function (c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;","/":"&#x2F;","`":"&#x60;","=":"&#x3D;"}[c];
+      });
+    }
 
     /************************************************************************
-     * Core Logic (UNCHANGED)
+     * Populate modal selects + initialization (UNCHANGED)
      ************************************************************************/
+    function populateModalControllers(){
+      const sel = document.getElementById('modalControllerModel');
+      sel.innerHTML = '';
+      CONTROLLER_MODELS.forEach(c=>{
+        const opt = document.createElement('option');
+        opt.value = c.name;
+        opt.textContent = `${c.name} (${c.type})`;
+        sel.appendChild(opt);
+      });
+    }
+    function populateModalOutputCards(){
+      const sel = document.getElementById('modalOutputCardModel');
+      sel.innerHTML = '';
+      const cards = [
+        { model:'H_20_RJ45', ports:20 },
+        { model:'H_16_RJ45', ports:16 },
+        { model:'H_4_HDMI_Out', ports:4 }
+      ];
+      cards.forEach(c=>{
+        const o = document.createElement('option');
+        o.value = `${c.model}|${c.ports}`;
+        o.textContent = `${c.model} (${c.ports} ports)`;
+        sel.appendChild(o);
+      });
+    }
+    function populateModalInputCards(){
+      const sel = document.getElementById('modalInputCardModel');
+      sel.innerHTML = '';
+      const items = ['H_1xHDMI','H_2xHDMI','H_4xHDMI'];
+      items.forEach(m=>{
+        const o = document.createElement('option');
+        o.value = m;
+        o.textContent = PARTS_CATALOG[m] ? PARTS_CATALOG[m].desc : m;
+        sel.appendChild(o);
+      });
+    }
 
-    // ... (omitted form setup functions for brevity, assumed unchanged) ...
+    function updatePortsFromOutputCard(){
+      const val = document.getElementById('modalOutputCardModel').value;
+      if(!val) return;
+      const parts = val.split('|');
+      document.getElementById('modalMaxPortsPerCard').value = parts[1] || '';
+    }
 
+    /************************************************************************
+     * Calculation (UNCHANGED - Core Logic)
+     ************************************************************************/
     function toggleMeasurementFields(){
       const unit = document.getElementById('unit').value;
       const diag = unit === 'inches';
@@ -524,7 +555,101 @@
     }
 
     /************************************************************************
-     * BOQ generation (MODIFIED - Ordering/Parts)
+     * Visualization & UI update (UNCHANGED)
+     ************************************************************************/
+    function showVisualization(){
+      const d = calculateLEDWall();
+      if(!d) return;
+      
+      const finalAreaSqFt = m2ToSqFt(d.finalArea_m2);
+
+      // specs panel
+      document.getElementById('spec_model').textContent = d.productName;
+      document.getElementById('spec_pitch').textContent = d.pixelPitch_mm + ' mm';
+      document.getElementById('spec_dims').textContent = `${(d.finalW_mm/MM_PER_METER).toFixed(2)} m x ${(d.finalH_mm/MM_PER_METER).toFixed(2)} m`;
+      document.getElementById('spec_res').textContent = `${formatLarge(d.finalResW)} × ${formatLarge(d.finalResH)}`;
+      document.getElementById('spec_diag').textContent = `${d.finalDiagonal_in.toFixed(1)} in`;
+      document.getElementById('aspectRatioText').textContent = d.aspectRatioText;
+      document.getElementById('spec_density').textContent = `${formatLarge(d.pixelDensity)} px/m²`;
+      document.getElementById('spec_area').textContent = `${d.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`;
+      document.getElementById('spec_total_pixels').textContent = `${formatLarge(d.totalPixels)}`;
+      document.getElementById('spec_cabs').textContent = `${d.numCabW} × ${d.numCabH} (${d.totalCabinets})`;
+      document.getElementById('spec_modules').textContent = `${d.totalModules} (${d.modulesPerCab} per cabinet)`;
+      document.getElementById('spec_cabsize').textContent = `${d.cabinetW_mm}mm x ${d.cabinetH_mm}mm`;
+      document.getElementById('spec_cabpix').textContent = `${formatLarge(d.cabPixW)} × ${formatLarge(d.cabPixH)}`;
+
+      // control panel
+      document.getElementById('ctrl_name').textContent = d.controllerName + (d.controllerType ? ` (${d.controllerType})` : '');
+      document.getElementById('ctrl_longeth_combined').textContent = `${d.requiredPortsBuffered} Ports`;
+      document.getElementById('ctrl_shorteth').textContent = `${d.requiredShortEthernet} (Between Cabinets)`;
+      document.getElementById('spec_power').textContent = `${fmt(d.designPowerW,0)} W`;
+      document.getElementById('spec_weight').textContent = `${fmt(d.designWeight,1)} kg`;
+
+      // Sending cards only for modular
+      if(d.controllerType && d.controllerType.includes('Modular')){
+        document.querySelectorAll('.hseries-only').forEach(el=>el.style.display='flex');
+        document.getElementById('ctrl_sending').textContent = `${d.requiredSendCards} x ${d.outputCardModel}`;
+      } else {
+        document.querySelectorAll('.hseries-only').forEach(el=>el.style.display='none');
+      }
+
+      // visualization grid
+      renderCabinetOverlay(d);
+      renderBOQPreview(d);
+    }
+
+    function renderCabinetOverlay(data){
+      const overlay = document.getElementById('cabinetOverlay');
+      overlay.innerHTML = '';
+      overlay.style.gridTemplateColumns = `repeat(${data.numCabW}, 1fr)`;
+      overlay.style.gridTemplateRows = `repeat(${data.numCabH}, 1fr)`;
+
+      // create a tooltip element
+      let tooltip = document.getElementById('cabTooltip');
+      if(!tooltip){
+        tooltip = document.createElement('div');
+        tooltip.id = 'cabTooltip';
+        tooltip.style.position = 'absolute';
+        tooltip.style.zIndex = 9999;
+        tooltip.style.padding = '6px 8px';
+        tooltip.style.background = '#fff';
+        tooltip.style.border = '1px solid rgba(13,71,161,0.12)';
+        tooltip.style.borderRadius = '5px';
+        tooltip.style.boxShadow = '0 8px 24px rgba(6,25,57,0.08)';
+        tooltip.style.display = 'none';
+        tooltip.style.fontSize = '12px';
+        document.body.appendChild(tooltip);
+      }
+
+      for(let r=0;r<data.numCabH;r++){
+        for(let c=0;c<data.numCabW;c++){
+          const cell = document.createElement('div');
+          const label = document.createElement('div');
+          label.className = 'cab-label';
+          label.textContent = `${r+1}×${c+1}`;
+          cell.appendChild(label);
+
+          // tooltip handlers
+          cell.addEventListener('mouseenter', e=>{
+            tooltip.textContent = `Cabinet: ${r+1} x ${c+1} — Pixels: ${formatLarge(data.cabPixW)}×${formatLarge(data.cabPixH)}`;
+            tooltip.style.display='block';
+          });
+          cell.addEventListener('mousemove', e=>{
+            tooltip.style.left = (e.pageX + 12) + 'px';
+            tooltip.style.top = (e.pageY + 12) + 'px';
+          });
+          cell.addEventListener('mouseleave', ()=> tooltip.style.display='none');
+
+          overlay.appendChild(cell);
+        }
+      }
+
+      // update dimensions text
+      document.getElementById('visDimensions').textContent = `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m × ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m`;
+    }
+
+    /************************************************************************
+     * BOQ generation & preview (MODIFIED - Ordering/Parts/Table Styling)
      ************************************************************************/
     function generateBOQList(data){
       const list = [];
@@ -544,8 +669,8 @@
       let ctrlKey = data.controllerName.split(' ')[0];
       if(data.controllerName.includes('VX600')) ctrlKey='VX600';
       if(data.controllerName.includes('VX400')) ctrlKey='VX400';
-      if(data.controllerName.includes('VX1000')) ctrlKey='VX1000'; // Added
-      if(data.controllerName.includes('4K Prime')) ctrlKey='4K'; // Added
+      if(data.controllerName.includes('VX1000')) ctrlKey='VX1000'; 
+      if(data.controllerName.includes('4K Prime')) ctrlKey='4K'; 
       
       if(PARTS_CATALOG[ctrlKey]) list.push({ item:'Controller/Processor', partcode:PARTS_CATALOG[ctrlKey].part, desc:PARTS_CATALOG[ctrlKey].desc, qty:1, unit:'PCS' });
       else list.push({ item:'Controller/Processor', partcode:'TBD', desc:data.controllerName, qty:1, unit:'PCS' });
@@ -554,7 +679,6 @@
       if(isModular){
         const outModel = data.outputCardModel || 'H_20_RJ45';
         const outPart = PARTS_CATALOG[outModel] ? PARTS_CATALOG[outModel].part : 'TBD';
-        
         list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
 
         const inModel = data.inputCardModel || 'H_1xHDMI';
@@ -565,7 +689,7 @@
       }
       
       // --- 4. Ethernet Ports (Controller→Wall) ---
-      list.push({ item:'Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required`, qty:data.requiredPortsBuffered, unit:'Ports' });
+      list.push({ item:'Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required (Long-distance cable Partner Scope)`, qty:data.requiredPortsBuffered, unit:'Ports' });
       
       // --- 5. Short Ethernet (Between Cabinets) ---
       list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs (Included with Cabinet)', qty:data.requiredShortEthernet, unit:'PCS' });
@@ -580,7 +704,7 @@
       list.push({ 
         item:'Total Power Cables (Input Runs)', 
         partcode:'TBD', 
-        desc:`Power cables @ 1000W/run. Required runs based on ${fmt(data.designPowerW,0)} W Design Power.`, 
+        desc:`Power cables @ 1000W/run. Required runs based on ${fmt(data.designPowerW,0)} W Design Power. (Long-distance cable Partner Scope)`, 
         qty: data.requiredPowerRuns, 
         unit:'Runs' 
       });
@@ -588,10 +712,6 @@
       return list;
     }
 
-
-    /************************************************************************
-     * HTML Preview (MODIFIED - Auto fit table)
-     ************************************************************************/
     function renderBOQPreview(data){
       const list = generateBOQList(data);
       let html = `<div class="details-panel" style="margin-top:12px"><div style="font-weight:700;color:var(--brand);margin-bottom:8px">Bill of Quantities (Compact View)</div>`;
@@ -623,11 +743,105 @@
       document.getElementById('boqPreviewContainer').innerHTML = html;
     }
 
-    // ... (omitted modal and contact functions for brevity, assumed unchanged) ...
+    /************************************************************************
+     * Modal handlers (controller edit) (UNCHANGED)
+     ************************************************************************/
+    function openControllerModal(){
+      if(!finalCalculationData || !finalCalculationData.totalPixels){ document.getElementById('errorMessage').textContent='Please calculate first.'; document.getElementById('errorMessage').style.display='block'; return; }
+      
+      populateModalControllers();
+      populateModalOutputCards();
+      populateModalInputCards();
+
+      // set defaults to current selection
+      const ctrlName = finalCalculationData.controllerName; // Use final calculated name, which might be override or suggested
+      const sel = document.getElementById('modalControllerModel');
+      if(Array.from(sel.options).some(o=>o.value === ctrlName)) sel.value = ctrlName;
+
+      const outModel = finalCalculationData.outputCardModel || 'H_20_RJ45';
+      const outSel = document.getElementById('modalOutputCardModel');
+      Array.from(outSel.options).forEach(o=>{ if(o.value.startsWith(outModel)) outSel.value=o.value; });
+
+      document.getElementById('modalMaxPortsPerCard').value = outSel.value.split('|')[1] || '';
+      document.getElementById('modalInputCardModel').value = finalCalculationData.inputCardModel || 'H_1xHDMI';
+      document.getElementById('modalInputCardQty').value = finalCalculationData.inputCardQty || 2;
+      document.getElementById('modalSplicerSolution').value = finalCalculationData.splicerSolution || '';
+
+      // toggle H-series-only fields depending on controller selection
+      onModalControllerChange();
+
+      document.getElementById('controllerModal').style.display='flex';
+    }
+
+    function closeControllerModal(){ document.getElementById('controllerModal').style.display='none'; }
+
+    function onModalControllerChange(){
+      const sel = document.getElementById('modalControllerModel').value;
+      const ctrl = CONTROLLER_MODELS.find(c=>c.name === sel);
+      const isH = ctrl && ctrl.type === 'Modular';
+      
+      // Toggle H-series-only fields
+      document.querySelectorAll('.hseries-fields input, .hseries-fields select').forEach(el=>{
+        el.disabled = !isH;
+        el.parentNode.parentNode.classList.toggle('hseries-only', !isH);
+      });
+
+      // Show/hide H-series specific input groups
+      document.querySelectorAll('.hseries-fields > .input-group').forEach(el => {
+          el.style.display = isH ? 'block' : 'none';
+      });
+      // Handle the combined input group specifically
+      document.querySelector('.hseries-fields > .input-group:last-child').style.display = isH ? 'flex' : 'none';
+
+      // set max ports per card to selected output card value
+      updatePortsFromOutputCard();
+    }
+
+    function applyModalChanges(){
+      const selectedController = document.getElementById('modalControllerModel').value;
+      const outputCardVal = document.getElementById('modalOutputCardModel').value.split('|')[0];
+      const outputCardPorts = parseInt(document.getElementById('modalOutputCardModel').value.split('|')[1] || '20', 10);
+      const inputCardModel = document.getElementById('modalInputCardModel').value;
+      const inputCardQty = parseInt(document.getElementById('modalInputCardQty').value || '2', 10);
+      const splicer = document.getElementById('modalSplicerSolution').value;
+
+      finalCalculationData.controllerOverrideName = selectedController;
+      finalCalculationData.outputCardModel = outputCardVal;
+      finalCalculationData.outputCardPorts = outputCardPorts;
+      finalCalculationData.inputCardModel = inputCardModel;
+      finalCalculationData.inputCardQty = inputCardQty;
+      finalCalculationData.splicerSolution = splicer;
+
+      closeControllerModal();
+      showVisualization();
+    }
 
     /************************************************************************
-     * PDF generation (MODIFIED - Layout, T&C, BOQ)
+     * Contact modal & PDF / CSV export (MODIFIED)
      ************************************************************************/
+    function openContactModal(){
+      if(!finalCalculationData || !finalCalculationData.totalPixels){ document.getElementById('errorMessage').textContent='Please calculate configuration first.'; document.getElementById('errorMessage').style.display='block'; return; }
+      
+      document.getElementById('downloadEmail').value = contactInfo.email || '';
+      document.getElementById('downloadPhone').value = contactInfo.phone || '';
+      document.getElementById('contactError').style.display='none';
+      document.getElementById('contactModal').style.display='flex';
+    }
+    function closeContactModal(){ document.getElementById('contactModal').style.display='none'; }
+
+    function handleDownloadRequest(){
+      const e = document.getElementById('downloadEmail').value.trim();
+      const p = document.getElementById('downloadPhone').value.trim();
+      if(e){
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!re.test(e)){ document.getElementById('contactError').textContent='Invalid email'; document.getElementById('contactError').style.display='block'; return; }
+      }
+      contactInfo.email = e; contactInfo.phone = p;
+      closeContactModal();
+      proceedToDownloadPdf(); 
+    }
+    
+    // REWRITTEN: PDF generation with new structure, ordering, T&C, and formatting.
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
       const { jsPDF } = window.jspdf;
@@ -636,7 +850,6 @@
       let y = 18;
       const margin = 14;
       const primary = [13,71,161]; // Blue
-      const accent = [183,28,28];  // Red
       const grey = [60, 60, 60];
       const finalAreaSqFt = m2ToSqFt(data.finalArea_m2);
       
@@ -674,7 +887,7 @@
       doc.text('Model:', margin, y);
       doc.setFont('Helvetica', 'normal');
       doc.text(`PeopleLink ${data.productName.replace(/PeopleLink\s*/, '').replace(/\s*\([\d.]+mm\)/g, '')}`, margin + 45, y); 
-      y += 4; // Small spacing after model name
+      y += 4; 
 
       // TOP SECTION: Final Dimensions & Resolution (2-column header)
       const topDims = `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m * ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft * ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`;
@@ -710,8 +923,8 @@
         ['Design Weight (Est.):', `${fmt(data.designWeight,1)} kg (15% buffer)`]
       ];
       
-      const col1Items = specs.slice(0, 5); // 5 items for column 1
-      const col2Items = specs.slice(5); // 7 items for column 2
+      const col1Items = specs.slice(0, 5); 
+      const col2Items = specs.slice(5); 
 
       const col1KeyX = margin;
       const col1ValueX = col1KeyX + 45; 
@@ -815,10 +1028,84 @@
       doc.save(filename);
     }
     
+    // MODIFIED: CSV generation to include Summary and BOQ table in proper CSV format.
+    function downloadBOQCSV(){
+      const d = finalCalculationData;
+      if(!d || !d.totalPixels){ alert('Please calculate configuration first.'); return; }
+      const list = generateBOQList(d);
+      
+      // --- Technical Summary Section ---
+      let csv = 'LED Video Wall Technical & BOQ Summary\n';
+      csv += 'Key: Actual Size (m), Diagonal (in), Resolution (WxH)\n';
+      csv += `Summary Data,"${(d.finalW_mm/MM_PER_METER).toFixed(2)}x${(d.finalH_mm/MM_PER_METER).toFixed(2)}",${d.finalDiagonal_in.toFixed(0)},"${formatLarge(d.finalResW)}x${formatLarge(d.finalResH)}"\n\n`;
+      
+      // --- BOQ Section ---
+      csv += 'Bill of Quantities\n';
+      // CSV header for 8 columns - Partcode after Description
+      csv += 'S.No,Item,Description,Partcode,Qty,Unit,"Unit Price (INR)","Total Price (INR)"\n';
+      
+      list.forEach((r,i)=>{
+        // Partcode after Description
+        csv += `${i+1},"${r.item}","${r.desc}","${r.partcode}",${r.qty},"${r.unit}",,\n`;
+      });
+      
+      // Summary Rows (for Excel formatting)
+      csv += ',,,"Sub Total Amount (INR)",,,,\n';
+      csv += ',,,"GST",,,,\n';
+      csv += ',,,"Grand Total (INR)",,,,\n';
+
+
+      const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `PeopleLink_LED_Boq_${d.finalResW}x${d.finalResH}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+
+    /************************************************************************
+     * UI helpers (UNCHANGED)
+     ************************************************************************/
+    function resetForm(){
+      document.getElementById('productModel').value='';
+      document.getElementById('unit').value='';
+      document.getElementById('width').value='';
+      document.getElementById('height').value='';
+      document.getElementById('diagonal').value='';
+      document.getElementById('aspectRatio').value='16:9';
+      document.getElementById('errorMessage').style.display='none';
+      document.getElementById('cabinetOverlay').innerHTML='';
+      document.getElementById('boqPreviewContainer').innerHTML='';
+      // clear specs
+      ['spec_model','spec_pitch','spec_dims','spec_res','spec_diag','spec_density','spec_area','spec_total_pixels','spec_cabs','spec_modules','spec_cabsize','spec_cabpix','ctrl_name','ctrl_longeth_combined','ctrl_sending','ctrl_shorteth','spec_power','spec_weight','aspectRatioText'].forEach(id=>{
+        const el = document.getElementById(id); if(el) el.textContent = '--';
+      });
+      // Ensure H-series fields are hidden/reset visually if not calculating
+      document.querySelectorAll('.hseries-only').forEach(el=>el.style.display='none');
+
+      finalCalculationData = {};
+      toggleMeasurementFields(); // Re-toggle to ensure correct input fields are visible
+    }
+
+    /************************************************************************
+     * Init (UNCHANGED)
+     ************************************************************************/
+    document.addEventListener('DOMContentLoaded', ()=>{
+      toggleMeasurementFields();
+      populateModalControllers();
+      populateModalOutputCards();
+      populateModalInputCards();
+
+      // close modals on background click
+      window.addEventListener('click', (e)=>{
+        if(e.target === document.getElementById('controllerModal')) closeControllerModal();
+        if(e.target === document.getElementById('contactModal')) closeContactModal();
+      });
+    });
   </script>
 </body>
 </html>
-
-
-
-
