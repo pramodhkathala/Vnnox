@@ -12,7 +12,7 @@
     /* PAGE */
     :root{--brand:#0D47A1;--accent:#B71C1C;--muted:#6b7280}
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 28px; background: #eef6fb; color: #1c2738; font-size: 14px; -webkit-font-smoothing:antialiased; }
-    .main-wrapper { max-width: 1200px; margin: auto; position: relative; } /* MODIFIED: Added position: relative for logo */
+    .main-wrapper { max-width: 1200px; margin: auto; position: relative; } 
 
     /* HEADER */
     h2 { text-align: center; color: var(--brand); margin-top: 0; margin-bottom: 18px; font-weight:700; font-size:1.6rem; }
@@ -52,7 +52,7 @@
     .vis-grid { 
       position:relative; 
       width:100%; 
-      max-width: 70%; /* MODIFIED: Max 70% width */
+      max-width: 70%; /* Constraint: Max 70% width */
       height:280px; 
       border:3px solid rgba(13,71,161,0.12); 
       background:linear-gradient(180deg,#eaf4ff,#e5f2ff); 
@@ -61,7 +61,7 @@
       justify-content:center; 
       overflow:hidden; 
       box-sizing:border-box; 
-      margin: 0 auto; /* MODIFIED: Center the grid */
+      margin: 0 auto; /* Center the grid */
     }
     #cabinetOverlay { position:absolute; inset:0; display:grid; box-sizing:border-box; grid-gap:0; padding:4px; }
     #cabinetOverlay > div { box-sizing:border-box; border:2px solid rgba(13,71,161,0.18); display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.02)); transition:transform .08s ease, background .12s; }
@@ -153,7 +153,9 @@
               <option value="">Auto with major</option> <option value="16:9">16:9</option>
               <option value="16:10">16:10</option>
               <option value="4:3">4:3</option>
-              <option value="2:1">2:1</option>   <option value="3:2">3:2</option>   <option value="21:9">21:9</option>
+              <option value="2:1">2:1</option> 
+              <option value="3:2">3:2</option> 
+              <option value="21:9">21:9</option>
               <option value="1:1">1:1</option>
             </select>
           </div>
@@ -331,6 +333,7 @@
       'outdoor_40': { name:"PeopleLink SMD Outdoor (4.0mm)", pitch_mm:4.0, cabW_mm:960, cabH_mm:960, cabPixW:240, cabPixH:240, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 },
       'outdoor_667': { name:"PeopleLink SMD Outdoor (6.67mm)", pitch_mm:6.67, cabW_mm:960, cabH_mm:960, cabPixW:144, cabPixH:144, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 },
       'outdoor_80': { name:"PeopleLink SMD Outdoor (8.0mm)", pitch_mm:8.0, cabW_mm:960, cabH_mm:960, cabPixW:120, cabPixH:120, modulesPerCab:18, weight_kg:8.28, nits_range:"4500-5000", maxPower_W_m2:937.5 }
+      // Confirmed: No 10.0mm or P10 model present.
     };
 
     const CONTROLLER_MODELS = [
@@ -347,12 +350,13 @@
       { name:"H20", type:"Modular", ports:20, maxPixels:260000000, maxSendCards:20, priority:11 }
     ];
 
-    // basic parts catalogue from spreadsheet image
     const PARTS_CATALOG = {
       'TB40': { part:'TP-VWC-NS-TB40', desc:'LED Video Wall Controller: TB40' },
       'TB60': { part:'TP-VWC-NS-TB60', desc:'LED Video Wall Controller: TB60' },
       'VX400': { part:'TP-VWC-NS-VX400', desc:'LED Video Wall Controller: VX400 Pro' },
       'VX600': { part:'TP-VWC-NS-VX600', desc:'LED Video Wall Controller: VX600 Pro' },
+      'VX1000': { part:'TP-VWC-NS-VX1000', desc:'LED Video Wall Controller: VX1000 Pro' }, // MODIFIED: Added VX1000 part code
+      '4K': { part:'TP-VWC-NS-4K-P', desc:'LED Video Wall Controller: 4K Prime' },       // MODIFIED: Added 4K Prime part code (using 4K key for simplicity)
       'H2': { part:'TP-XMF-H2', desc:'LED Video Wall Controller (H2)' },
       'H5': { part:'TP-XMF-H5', desc:'LED Video Wall Controller (H5)' },
       'H9': { part:'TP-XMF-H9', desc:'LED Video Wall Controller (H9)' },
@@ -372,8 +376,7 @@
 
       'PPL-COB-09': { part:'PPL-COB-MDL-CU-09', desc:'PeopleLink Active LED | 0.9PP COB (Including Modules)' },
       'PPL-COB-125': { part:'PPL-COB-MDL-CU-12', desc:'PeopleLink Active LED | 1.25PP COB (Including Modules)' },
-      'PPL-COB-156': { part:'PPL-COB-MDL-CU-15', desc:'PeopleLink Active LED | 1.56PP COB (Including Modules)' }, // MODIFIED: Corrected part from CU-12 to CU-15
-
+      'PPL-COB-156': { part:'PPL-COB-MDL-CU-15', desc:'PeopleLink Active LED | 1.56PP COB (Including Modules)' }, // CORRECTED: Part code for 1.56mm
       'PPL-SMD-18': { part:'PPL-SMD-MDL-CU-18', desc:'PeopleLink ActiveLED | 1.8PP Video LED Cabinets (Including Modules)' },
       'PPL-ALD-CU': { part:'PPL-ALD-CU', desc:'PeopleLink ActiveLED | Video Wall Cabinet Unit (640x480mm)' },
 
@@ -381,7 +384,7 @@
       'ALED-TRS-IN-REG': { part:'ALED-TRS-IN-REG', desc:'Transportation (No. of Cabinets) - Indoor' }
     };
 
-    // Cabinets-per-long-LAN mapping (cob_15 is 7 as requested)
+    // Cabinets-per-long-LAN mapping 
     const CABINETS_PER_LONG_LAN = {
       'cob_09': 2,
       'cob_125': 5,
@@ -411,7 +414,7 @@
     }
 
     /************************************************************************
-     * Populate modal selects + initialization
+     * Populate modal selects + initialization (Functionality not fully built out)
      ************************************************************************/
     function populateModalControllers(){
       const sel = document.getElementById('modalControllerModel');
@@ -434,7 +437,7 @@
       cards.forEach(c=>{
         const o = document.createElement('option');
         o.value = `${c.model}|${c.ports}`;
-        o.textContent = `${c.model} (${c.ports} ports)`;
+        o.textContent = `${PARTS_CATALOG[c.model].part} (${c.ports} ports)`;
         sel.appendChild(o);
       });
     }
@@ -732,6 +735,11 @@
       // 2. Controller
       const ctrl = data.suggestedController;
       let ctrlKey = ctrl.name.split(' ')[0]; // E.g., 'VX600' or 'H5'
+      if (ctrlKey.startsWith('VX')) {
+          ctrlKey = ctrlKey.replace('Pro', ''); // Standardize to VX400/VX600/VX1000
+      } else if (ctrlKey === '4K') {
+          ctrlKey = '4K'; // Use '4K' key
+      }
       boqItems.push({
           part: PARTS_CATALOG[ctrlKey] ? PARTS_CATALOG[ctrlKey].part : ctrl.name,
           desc: PARTS_CATALOG[ctrlKey] ? PARTS_CATALOG[ctrlKey].desc : ctrl.name,
@@ -764,7 +772,7 @@
       boqItems.push({
           part: PARTS_CATALOG['ALED-INST-IN'].part,
           desc: PARTS_CATALOG['ALED-INST-IN'].desc,
-          qty: data.totalCabinets, // MODIFIED: Quantity is now total Cabinets
+          qty: data.totalCabinets, // CORRECTED: Quantity is now total Cabinets
           unitPrice: '-', total: '-'
       });
 
@@ -845,7 +853,7 @@
       // Header
       doc.setFontSize(16);
       doc.setTextColor(13, 71, 161); // brand color
-      doc.text("PeopleLink LED Video Wall Configuration Calculator", 105, 22, { align: "center" }); // MODIFIED: Moved title down to 22
+      doc.text("PeopleLink LED Video Wall Configuration Calculator", 105, 22, { align: "center" }); // Moved title down to 22
       doc.setFontSize(10);
       doc.text(`Generated: ${new Date().toLocaleDateString()} | Email: ${contactInfo.email || '-'} | Phone: ${contactInfo.phone || '-'}`, 105, 27, { align: "center" });
 
@@ -970,6 +978,11 @@
       // 2. Controller
       const ctrl = data.suggestedController;
       let ctrlKey = ctrl.name.split(' ')[0]; 
+      if (ctrlKey.startsWith('VX')) {
+          ctrlKey = ctrlKey.replace('Pro', '');
+      } else if (ctrlKey === '4K') {
+          ctrlKey = '4K';
+      }
       boqItems.push({
           part: PARTS_CATALOG[ctrlKey] ? PARTS_CATALOG[ctrlKey].part : ctrl.name,
           desc: PARTS_CATALOG[ctrlKey] ? PARTS_CATALOG[ctrlKey].desc : ctrl.name,
@@ -998,7 +1011,7 @@
       boqItems.push({
           part: PARTS_CATALOG['ALED-INST-IN'].part,
           desc: PARTS_CATALOG['ALED-INST-IN'].desc,
-          qty: data.totalCabinets, // **MODIFIED: Qty set to totalCabinets**
+          qty: data.totalCabinets, // Qty set to totalCabinets
           unitPrice: '-', total: '-'
       });
 
@@ -1081,14 +1094,15 @@
     // Modal control functions
     function openControllerModal(){
       document.getElementById('controllerModal').style.display = 'flex';
-      // Populate modal with current/default values if needed
+      populateModalControllers();
+      populateModalOutputCards();
+      populateModalInputCards();
     }
     function closeControllerModal(){
       document.getElementById('controllerModal').style.display = 'none';
     }
     function applyModalChanges(){
-      // In a real application, logic to override suggested controller goes here.
-      // For this script, we just close the modal.
+      // Placeholder for actual logic to override suggested controller
       closeControllerModal();
     }
     function openContactModal(){
