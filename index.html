@@ -11,12 +11,26 @@
   <style>
     /* BRAND + ACCENTS */
     :root{
-      --brand:#1F2937;   /* primary UI (kept dark grey) */
-      --accent:#B71C1C;
-      --muted:#6b7280;
-      --wood:#A67C52;    /* wood color for BOQ headers */
-      --viz:#00C2A8;     /* bright visualization accent color */
-    }
+  --brand:#1F2937;   /* primary UI (dark grey) */
+  --accent:#B71C1C;
+  --muted:#6b7280;
+  --wood:#A67C52;    /* wood color for BOQ headers */
+  --viz:#007BFF;     /* bright blue visualization accent (changed) */
+}
+
+/* ... */
+
+#cabinetOverlay > div::after {
+  content:'';
+  position:absolute;
+  bottom:4px;
+  left:6px;
+  right:6px;
+  height:6px;
+  background: var(--viz); /* bright blue */
+  border-radius:3px;
+  opacity:0.95;
+}
 
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 28px; background: #eef6fb; color: #1c2738; font-size: 14px; -webkit-font-smoothing:antialiased; }
     .main-wrapper { max-width: 1200px; margin: auto; }
@@ -325,54 +339,66 @@
       { name:"H20", type:"Modular", ports:20, maxPixels:260000000, maxSendCards:20, priority:11 }
     ];
 
-    const PARTS_CATALOG = {
-      'TB40': { part:'TP-VWC-NS-TB40', desc:'LED Video Wall Controller: TB40' },
-      'TB60': { part:'TP-VWC-NS-TB60', desc:'LED Video Wall Controller: TB60' },
-      'VX400': { part:'TP-VWC-NS-VX400', desc:'LED Video Wall Controller: VX400 Pro' },
-      'VX600': { part:'TP-VWC-NS-VX600', desc:'LED Video Wall Controller: VX600 Pro' },
-      'VX1000': { part:'TP-VWC-NS-VX1000', desc:'LED Video Wall Controller: VX1000 Pro' },
-      '4K': { part:'TP-VWC-NS-4K', desc:'LED Video Wall Controller: 4K Prime' },
-      'H2': { part:'TP-XMF-H2', desc:'LED Video Wall Controller (H2)' },
-      'H5': { part:'TP-XMF-H5', desc:'LED Video Wall Controller (H5)' },
-      'H9': { part:'TP-XMF-H9', desc:'LED Video Wall Controller (H9)' },
-      'H15': { part:'TP-XMF-H15', desc:'LED Video Wall Controller (H15)' },
-      'H15E': { part:'TP-XMF-H15E', desc:'LED Video Wall Controller (H15 Enhanced)' },
-      'H20': { part:'TBD', desc:'LED Video Wall Controller (H20)' },
+const PARTS_CATALOG = {
+  'TB40': { part:'TP-VWC-NS-TB40', desc:'LED Video Wall Controller: TB40' },
+  'TB60': { part:'TP-VWC-NS-TB60', desc:'LED Video Wall Controller: TB60' },
+  'VX400': { part:'TP-VWC-NS-VX400', desc:'LED Video Wall Controller: VX400 Pro' },
+  'VX600': { part:'TP-VWC-NS-VX600', desc:'LED Video Wall Controller: VX600 Pro' },
+  'VX1000': { part:'TP-VWC-NS-VX1000', desc:'LED Video Wall Controller: VX1000 Pro' },
+  '4K': { part:'TP-VWC-NS-4K-PRM', desc:'LED Video Wall Controller: 4K Prime (PRM)' }, // updated partcode
+  'H2': { part:'TP-XMF-H2', desc:'LED Video Wall Controller (H2)' },
+  'H5': { part:'TP-XMF-H5', desc:'LED Video Wall Controller (H5)' },
+  'H9': { part:'TP-XMF-H9', desc:'LED Video Wall Controller (H9)' },
+  'H15': { part:'TP-XMF-H15', desc:'LED Video Wall Controller (H15)' },
+  'H15E': { part:'TP-XMF-H15E', desc:'LED Video Wall Controller (H15 Enhanced)' },
+  'H20': { part:'TBD', desc:'LED Video Wall Controller (H20)' },
 
-      'H_20_RJ45': { part:'TP-XOC-RJ45-20', desc:'H_20 x RJ45 Sending Card' },
-      'H_16_RJ45': { part:'TP-XOC-RJ45-16-OF2', desc:'H_16 x RJ45 + 2x Fiber Sending Card' },
-      'H_4_HDMI_Out': { part:'TP-XOC-HDMI4', desc:'H_4 x HDMI Output Card' },
+  'H_20_RJ45': { part:'TP-XOC-RJ45-20', desc:'H_20 x RJ45 Sending Card' },
+  'H_16_RJ45': { part:'TP-XOC-RJ45-16-OF2', desc:'H_16 x RJ45 + 2x Fiber Sending Card' },
+  'H_4_HDMI_Out': { part:'TP-XOC-HDMI4', desc:'H_4 x HDMI Output Card' },
 
-      'H_1xHDMI': { part:'TP-XIC-HDMI', desc:'H_1 x HDMI 2.0 Input Card' },
-      'H_2xHDMI': { part:'TP-XIC-HDMI2', desc:'H_2 x HDMI 2.0 Input Card' },
-      'H_4xHDMI': { part:'TP-XIC-HDMI4', desc:'H_4 x HDMI Input Card' },
+  'H_1xHDMI': { part:'TP-XIC-HDMI', desc:'H_1 x HDMI 2.0 Input Card' },
+  'H_2xHDMI': { part:'TP-XIC-HDMI2', desc:'H_2 x HDMI 2.0 Input Card' },
+  'H_4xHDMI': { part:'TP-XIC-HDMI4', desc:'H_4 x HDMI Input Card' },
 
-      'H_800W_PSU': { part:'TP-XPS-H800W', desc:'H_800W Power Supply' },
+  'H_800W_PSU': { part:'TP-XPS-H800W', desc:'H_800W Power Supply' },
 
-      'PPL-COB-09': { part:'PPL-COB-MDL-CU-09', desc:'PeopleLink Active LED | 0.9PP COB (Including Modules)' },
-      'PPL-COB-125': { part:'PPL-COB-MDL-CU-12', desc:'PeopleLink Active LED | 1.25PP COB (Including Modules)' },
-      'PPL-COB-156': { part:'PPL-COB-MDL-CU-15', desc:'PeopleLink Active LED | 1.56PP COB (Including Modules)' },
+  /* COB partcodes */
+  'PPL-COB-09': { part:'PPL-COB-MDL-CU-09', desc:'PeopleLink Active LED | 0.9PP COB (Including Modules)' },
+  'PPL-COB-125': { part:'PPL-COB-MDL-CU-12', desc:'PeopleLink Active LED | 1.25PP COB (Including Modules)' },
+  'PPL-COB-156': { part:'PPL-COB-MDL-CU-15', desc:'PeopleLink Active LED | 1.56PP COB (Including Modules)' },
 
-      'PPL-SMD-18': { part:'PPL-SMD-MDL-CU-18', desc:'PeopleLink ActiveLED | 1.8/2.0/1.86PP Video LED Cabinets (Including Modules)' },
-      'PPL-ALD-CU': { part:'PPL-ALD-CU', desc:'PeopleLink ActiveLED | Video Wall Cabinet Unit (960x960mm or 640x480mm)' },
+  /* Indoor SMD: separate cabinet + module mapping (cabinet = PPL-ALD-CU) */
+  'PPL-ALD-CU': { part:'PPL-ALD-CU', desc:'PeopleLink Video Wall Cabinet Unit (Indoor) 640x480mm' },
+  'PPL-SMD-MDL-20': { part:'NA', desc:'SMD 2.0 mm Module (TBD)' },           // module part for 2.0 -> NA/TBD
+  'PDS-TP-15-T':  { part:'PDS-TP-15-T', desc:'SMD 2.5 mm Module (PDS-TP-15-T)' }, // module part for 2.5
 
-      'ALED-INST-IN': { part:'ALED-INST-IN', desc:'Installation & Configuration - Indoor' },
-      'ALED-TRS-IN-REG': { part:'ALED-TRS-IN-REG', desc:'Transportation (No. of Cabinets) - Indoor' }
-    };
+  /* SMD Indoor Cabinet (for 1.8/2.0/2.5 listing) */
+  'PPL-SMD-MDL-CU-18': { part:'PPL-SMD-MDL-CU-18', desc:'PeopleLink ActiveLED | 1.8/1.86 Cabinet (Including Modules)' },
+
+  /* Outdoor SMD: cabinet+module included for p4 & p6, p8/p10 NA */
+  'PPL-SMD-MDL-CU-40': { part:'PPL-SMD-MDL-CU-40', desc:'PeopleLink Outdoor P4 Cabinet & Module (Integrated)' },
+  'PPL-SMD-MDL-CU-60': { part:'PPL-SMD-MDL-CU-60', desc:'PeopleLink Outdoor P6 Cabinet & Module (Integrated)' },
+  'PPL-SMD-MDL-CU-80': { part:'NA', desc:'PeopleLink Outdoor P8 Cabinet & Module (Integrated) - TBD' },
+  'PPL-SMD-MDL-CU-100':{ part:'NA', desc:'PeopleLink Outdoor P10 Cabinet & Module (Integrated) - TBD' },
+
+  'ALED-INST-IN': { part:'ALED-INST-IN', desc:'Installation & Configuration - Indoor' },
+  'ALED-TRS-IN-REG': { part:'ALED-TRS-IN-REG', desc:'Transportation (No. of Cabinets) - Indoor' }
+};
 
     // direct mapping productKey -> parts key (fixes previous mismatches)
-    const LED_PART_KEY_BY_PRODUCT = {
-      'cob_09': 'PPL-COB-09',
-      'cob_125': 'PPL-COB-125',
-      'cob_15': 'PPL-COB-156',
-      'indoor_186': 'PPL-SMD-18',
-      'indoor_20': 'PPL-SMD-18',
-      'indoor_25': 'PPL-SMD-18',
-      'outdoor_40': 'PPL-ALD-CU',
-      'outdoor_667': 'PPL-ALD-CU',
-      'outdoor_80': 'PPL-ALD-CU',
-      'outdoor_100': 'PPL-ALD-CU'
-    };
+const LED_PART_KEY_BY_PRODUCT = {
+  'cob_09': 'PPL-COB-09',
+  'cob_125': 'PPL-COB-125',
+  'cob_15': 'PPL-COB-156',
+  'indoor_186': 'PPL-SMD-MDL-CU-18', // 1.86/1.8 cabinet integrated entry
+  'indoor_20': 'PPL-ALD-CU',         // indoor cabinet separate (module separate)
+  'indoor_25': 'PPL-ALD-CU',         // indoor cabinet separate (module separate)
+  'outdoor_40': 'PPL-SMD-MDL-CU-40',
+  'outdoor_667': 'PPL-SMD-MDL-CU-60',
+  'outdoor_80': 'PPL-SMD-MDL-CU-80',
+  'outdoor_100': 'PPL-SMD-MDL-CU-100'
+};
 
     const CABINETS_PER_LONG_LAN = {
       'cob_09': 2,
@@ -680,66 +706,80 @@
     /************************************************************************
      * BOQ generation & preview (FIXED part codes, removed splicer)
      ************************************************************************/
-    function generateBOQList(data){
-      const list = [];
-      const isModular = data.controllerType && data.controllerType.includes('Modular');
+function generateBOQList(data){
+  const list = [];
+  const isModular = data.controllerType && data.controllerType.includes('Modular');
 
-      // Use mapping by selected productKey to pick correct partcode
-      const ledPartKey = LED_PART_KEY_BY_PRODUCT[data.productKey] || 'PPL-ALD-CU';
-      const ledPart = PARTS_CATALOG[ledPartKey] ? PARTS_CATALOG[ledPartKey].part : 'TBD';
-      list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
+  // Determine mappings
+  const productKey = data.productKey;
+  // For indoor 2.0 & 2.5 we add Cabinet (PPL-ALD-CU) + Module separately
+  if(productKey === 'indoor_20' || productKey === 'indoor_25'){
+    // Cabinet
+    const cabPart = PARTS_CATALOG['PPL-ALD-CU'] ? PARTS_CATALOG['PPL-ALD-CU'].part : 'PPL-ALD-CU';
+    list.push({ item:'Indoor Video Wall Cabinet Unit', partcode:cabPart, desc:'Indoor Cabinet (PPL-ALD-CU)', qty:data.totalCabinets, unit:'PCS' });
 
-      // Spare Modules
-      const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
-      const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
-      list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
+    // Module (module per cabinet = modulesPerCab)
+    let moduleKey = (productKey === 'indoor_20') ? 'PPL-SMD-MDL-20' : 'PDS-TP-15-T';
+    const modulePart = PARTS_CATALOG[moduleKey] ? PARTS_CATALOG[moduleKey].part : 'TBD';
+    const moduleQty = data.totalModules; // total modules across all cabinets
+    list.push({ item:`Modules (${productKey === 'indoor_20' ? '2.0 mm' : '2.5 mm'})`, partcode:modulePart, desc: `${productKey === 'indoor_20' ? 'SMD 2.0 mm Module' : 'SMD 2.5 mm Module'}`, qty:moduleQty, unit:'PCS' });
 
-      // Controller
-      let ctrlKey = data.controllerName.split(' ')[0];
-      if(data.controllerName.includes('VX600')) ctrlKey='VX600';
-      if(data.controllerName.includes('VX400')) ctrlKey='VX400';
-      if(data.controllerName.includes('VX1000')) ctrlKey='VX1000';
-      if(data.controllerName.includes('4K Prime')) ctrlKey='4K';
+  } else {
+    // Default single-line LED Cabinet (cabinet may include modules as per product definition)
+    const ledPartKey = LED_PART_KEY_BY_PRODUCT[productKey] || 'PPL-ALD-CU';
+    const ledPart = PARTS_CATALOG[ledPartKey] ? PARTS_CATALOG[ledPartKey].part : 'TBD';
+    list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
+  }
 
-      if(PARTS_CATALOG[ctrlKey]) list.push({ item:'Controller/Processor', partcode:PARTS_CATALOG[ctrlKey].part, desc:PARTS_CATALOG[ctrlKey].desc, qty:1, unit:'PCS' });
-      else list.push({ item:'Controller/Processor', partcode:'TBD', desc:data.controllerName, qty:1, unit:'PCS' });
+  // Spare Modules (unchanged logic)
+  const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
+  const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
+  list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
 
-      // If modular: output/input cards & PSU (but NO modular splicer frame row)
-      if(isModular){
-        const outModel = data.outputCardModel || 'H_20_RJ45';
-        const outPart = PARTS_CATALOG[outModel] ? PARTS_CATALOG[outModel].part : 'TBD';
-        list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
+  // Controller
+  let ctrlKey = data.controllerName.split(' ')[0];
+  if(data.controllerName.includes('VX600')) ctrlKey='VX600';
+  if(data.controllerName.includes('VX400')) ctrlKey='VX400';
+  if(data.controllerName.includes('VX1000')) ctrlKey='VX1000';
+  if(data.controllerName.includes('4K Prime') || data.controllerName.includes('4K')) ctrlKey='4K';
 
-        const inModel = data.inputCardModel || 'H_1xHDMI';
-        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
-        list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
+  if(PARTS_CATALOG[ctrlKey]) list.push({ item:'Controller/Processor', partcode:PARTS_CATALOG[ctrlKey].part, desc:PARTS_CATALOG[ctrlKey].desc, qty:1, unit:'PCS' });
+  else list.push({ item:'Controller/Processor', partcode:'TBD', desc:data.controllerName, qty:1, unit:'PCS' });
 
-        list.push({ item:'Power Supply (H Series)', partcode: PARTS_CATALOG['H_800W_PSU'] ? PARTS_CATALOG['H_800W_PSU'].part : 'TBD', desc: 'H Series PSU (800W)', qty: Math.max(1, Math.ceil((data.designPowerW/800))), unit:'PCS' });
-      }
+  // Modular-specific items (output/input cards & PSU) - keep but no splicer frame
+  if(isModular){
+    const outModel = data.outputCardModel || 'H_20_RJ45';
+    const outPart = PARTS_CATALOG[outModel] ? PARTS_CATALOG[outModel].part : 'TBD';
+    list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
 
-      // Ethernet Ports (Controller→Wall)
-      list.push({ item:'Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required (Long-distance cable Partner Scope)`, qty:data.requiredPortsBuffered, unit:'Ports' });
+    const inModel = data.inputCardModel || 'H_1xHDMI';
+    const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
+    list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
 
-      // Short Ethernet (Between Cabinets)
-      list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs (Included with Cabinet)', qty:data.requiredShortEthernet, unit:'PCS' });
+    list.push({ item:'Power Supply (H Series)', partcode: PARTS_CATALOG['H_800W_PSU'] ? PARTS_CATALOG['H_800W_PSU'].part : 'TBD', desc: 'H Series PSU (800W)', qty: Math.max(1, Math.ceil((data.designPowerW/800))), unit:'PCS' });
+  }
 
-      // Installation / Configuration (qty = number of cabinets as requested)
-      list.push({ item:'Installation / Configuration', partcode:'ALED-INST-IN', desc:'Installation & configuration (indoor)', qty:data.totalCabinets, unit:'Per Cabinet' });
+  // Ethernet Ports & Short Ethernet
+  list.push({ item:'Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required (Long-distance cable Partner Scope)`, qty:data.requiredPortsBuffered, unit:'Ports' });
+  list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs (Included with Cabinet)', qty:data.requiredShortEthernet, unit:'PCS' });
 
-      // Transportation (Indoor)
-      list.push({ item:'Transportation (Indoor)', partcode:'ALED-TRS-IN-REG', desc:'Transport (indoor) per cabinet', qty:data.totalCabinets, unit:'Per Cabinet' });
+  // Installation / Configuration (qty = number of cabinets)
+  list.push({ item:'Installation / Configuration', partcode:'ALED-INST-IN', desc:'Installation & configuration (indoor)', qty:data.totalCabinets, unit:'Per Cabinet' });
 
-      // Total Power Cables (Input Runs)
-      list.push({
-        item:'Total Power Cables (Input Runs)',
-        partcode:'TBD',
-        desc:`Power cables @ 1000W/run. Required runs based on ${fmt(data.designPowerW,0)} W Design Power. (Long-distance cable Partner Scope)`,
-        qty: data.requiredPowerRuns,
-        unit:'Runs'
-      });
+  // Transportation (Indoor)
+  list.push({ item:'Transportation (Indoor)', partcode:'ALED-TRS-IN-REG', desc:'Transport (indoor) per cabinet', qty:data.totalCabinets, unit:'Per Cabinet' });
 
-      return list;
-    }
+  // Total Power Cables
+  list.push({
+    item:'Total Power Cables (Input Runs)',
+    partcode:'TBD',
+    desc:`Power cables @ 1000W/run. Required runs based on ${fmt(data.designPowerW,0)} W Design Power. (Long-distance cable Partner Scope)`,
+    qty: data.requiredPowerRuns,
+    unit:'Runs'
+  });
+
+  return list;
+}
 
     function renderBOQPreview(data){
       const list = generateBOQList(data);
@@ -1075,3 +1115,4 @@
   </script>
 </body>
 </html>
+
