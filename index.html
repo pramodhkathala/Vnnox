@@ -593,7 +593,8 @@
 
       // control panel
       document.getElementById('ctrl_name').textContent = d.controllerName + (d.controllerType ? ` (${d.controllerType})` : '');
-      document.getElementById('ctrl_longeth_combined').textContent = `${d.requiredLongEthRuns} Runs (${d.requiredPortsBuffered} Ports)`; // Combined line
+      // MODIFIED: Show only Ports for 'Long Ethernet Cables'
+      document.getElementById('ctrl_longeth_combined').textContent = `${d.requiredPortsBuffered} Ports`; // Combined line <-- CHANGE APPLIED
       document.getElementById('ctrl_shorteth').textContent = `${d.requiredShortEthernet} (Between Cabinets)`;
       document.getElementById('spec_power').textContent = `${fmt(d.designPowerW,0)} W`;
       document.getElementById('spec_weight').textContent = `${fmt(d.designWeight,1)} kg`;
@@ -667,16 +668,7 @@
     function generateBOQList(data){
       const list = [];
       const isModular = data.controllerType && data.controllerType.includes('Modular');
-      // LED Cabinets
-      const ledKey = data.pixelPitch_mm <= 1.0 ? 'PPL-COB-09' : data.pixelPitch_mm <= 1.3 ? 'PPL-COB-125' : data.cabinetW_mm===640 ? 'PPL-SMD-18' : 'PPL-ALD-CU';
-      const ledPart = PARTS_CATALOG[ledKey] ? PARTS_CATALOG[ledKey].part : 'TBD';
-      list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
 
-      // Spare modules
-      const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
-      const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
-      list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
-      
       // Controller
       let ctrlKey = data.controllerName.split(' ')[0];
       if(data.controllerName.includes('VX600')) ctrlKey='VX600';
@@ -692,15 +684,26 @@
         list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
 
         const inModel = data.inputCardModel || 'H_1xHDMI';
-        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inPart].part : 'TBD';
+        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
         list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
 
         list.push({ item:'Modular Splicer Frame', partcode: PARTS_CATALOG[data.suggestedControllerObj?.name]?.part || 'TBD', desc: data.splicerSolution, qty:1, unit:'PCS' });
       }
       
       // Network cabling
-      list.push({ item:'Long Ethernet Ports (Controller to Wall)', partcode:'TBD', desc:`Controller to wall long ethernet ports`, qty:data.requiredPortsBuffered, unit:'Ports' });
+      // MODIFIED: Simplified item name to align with display changes (ports only)
+      list.push({ item:'Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required`, qty:data.requiredPortsBuffered, unit:'Ports' });
       list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs', qty:data.requiredShortEthernet, unit:'PCS' });
+
+      // LED Cabinets
+      const ledKey = data.pixelPitch_mm <= 1.0 ? 'PPL-COB-09' : data.pixelPitch_mm <= 1.3 ? 'PPL-COB-125' : data.cabinetW_mm===640 ? 'PPL-SMD-18' : 'PPL-ALD-CU';
+      const ledPart = PARTS_CATALOG[ledKey] ? PARTS_CATALOG[ledKey].part : 'TBD';
+      list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
+
+      // Spare modules
+      const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
+      const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
+      list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
 
       // Installation and transport
       list.push({ item:'Installation / Configuration', partcode:'ALED-INST-IN', desc:'Installation & configuration (indoor)', qty:1, unit:'LS' });
@@ -710,7 +713,7 @@
       list.push({ 
         item:'Total Power Cables (Input Runs)', 
         partcode:'TBD', 
-        desc:`Power cables (3-Pin Socket Ports)based on Design Power @ 1000W/run.`, 
+        desc:`Required runs based on ${fmt(data.designPowerW,0)} W Design Power @ 1000W/run. Daisy chain not required.`, 
         qty: data.requiredPowerRuns, 
         unit:'Runs' 
       });
@@ -722,12 +725,12 @@
       const list = generateBOQList(data);
       let html = `<div class="details-panel" style="margin-top:12px"><div style="font-weight:700;color:var(--brand);margin-bottom:8px">Bill of Quantities (Compact View)</div>`;
       
-      // MODIFIED: Added Unit Price (INR) and Total Price (INR) columns (8 total)
+      // MODIFIED: Partcode moved after Description in the header
       html += `<table id="boqPreviewTable"><thead><tr>
         <th>S.No</th>
         <th>Item</th>
-        <th>Partcode</th>
         <th>Description</th>
+        <th>Partcode</th>
         <th style="text-align:right">Qty</th>
         <th>Unit</th>
         <th style="text-align:right">Unit Price (INR)</th>
@@ -735,8 +738,8 @@
       </tr></thead><tbody>`;
       
       list.forEach((row, i)=>{
-        // Added two empty <td> for Unit Price and Total Price
-        html += `<tr><td>${i+1}</td><td>${escapeHtml(row.item)}</td><td>${escapeHtml(row.partcode)}</td><td>${escapeHtml(row.desc)}</td><td class="right">${row.qty}</td><td>${row.unit}</td><td></td><td></td></tr>`;
+        // MODIFIED: Partcode (row.partcode) and Description (row.desc) swapped positions
+        html += `<tr><td>${i+1}</td><td>${escapeHtml(row.item)}</td><td>${escapeHtml(row.desc)}</td><td>${escapeHtml(row.partcode)}</td><td class="right">${row.qty}</td><td>${row.unit}</td><td></td><td></td></tr>`;
       });
       
       // NEW Summary Rows (spanning 6 columns, leaving the last 2 price columns empty/for totals)
@@ -939,7 +942,8 @@
       const ctrlRows = [
         ['Controller/Processor:', `${data.controllerName} (${data.controllerType})`],
         ['Total Receiving Cards:', `${data.totalCabinets}`],
-        ['Long Ethernet Cables (Input) / Ports:', `${data.requiredPortsBuffered} Ports`], 
+        // MODIFIED: Changed label to 'Ethernet Ports' and value to only show ports
+        ['Ethernet Ports:', `${data.requiredPortsBuffered} Ports`], // <-- CHANGE APPLIED
         ['Short Ethernet Cables:', `${data.requiredShortEthernet} (Between Cabinets)`],
         ['Power Input Runs (1000W/run):', `${data.requiredPowerRuns} Runs`] 
       ];
@@ -960,11 +964,11 @@
       // Build BOQ table rows
       const boqList = generateBOQList(data);
       
-      // MODIFIED HEAD for 8 columns
-      const head = [['S.No','Item','Partcode','Description','Qty','Unit','Unit Price (INR)','Total Price (INR)']];
+      // MODIFIED HEAD for 8 columns - Partcode after Description
+      const head = [['S.No','Item','Description','Partcode','Qty','Unit','Unit Price (INR)','Total Price (INR)']]; // <-- CHANGE APPLIED
       
-      // MODIFIED BODY mapping for 8 columns (last two empty)
-      const body = boqList.map((r,i)=>[String(i+1), r.item, r.partcode, r.desc, String(r.qty), r.unit, '', '']);
+      // MODIFIED BODY mapping for 8 columns - Partcode after Description
+      const body = boqList.map((r,i)=>[String(i+1), r.item, r.desc, r.partcode, String(r.qty), r.unit, '', '']); // <-- CHANGE APPLIED
       
       // NEW Summary Rows with colSpan
       body.push([
@@ -1030,12 +1034,12 @@
       if(!d || !d.totalPixels){ alert('Please calculate configuration first.'); return; }
       const list = generateBOQList(d);
       
-      // MODIFIED CSV header for 8 columns
-      let csv = 'S.No,Item,Partcode,Description,Qty,Unit,"Unit Price (INR)","Total Price (INR)"\n';
+      // MODIFIED CSV header for 8 columns - Partcode after Description
+      let csv = 'S.No,Item,Description,Partcode,Qty,Unit,"Unit Price (INR)","Total Price (INR)"\n';
       
       list.forEach((r,i)=>{
-        // Added two empty fields for Unit Price and Total Price
-        csv += `${i+1},"${r.item}","${r.partcode}","${r.desc}",${r.qty},${r.unit},,\n`;
+        // MODIFIED: Partcode (r.partcode) and Description (r.desc) swapped positions
+        csv += `${i+1},"${r.item}","${r.desc}","${r.partcode}",${r.qty},${r.unit},,\n`;
       });
       
       // NEW Summary Rows (using commas for placeholder columns)
@@ -1090,7 +1094,8 @@
         if(e.target === document.getElementById('contactModal')) closeContactModal();
       });
     });
-
+    
   </script>
 </body>
 </html>
+
