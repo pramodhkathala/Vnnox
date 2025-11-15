@@ -865,15 +865,6 @@
         const yy = y + j*cellH;
         doc.line(x, yy, x+w, yy);
       }
-      // label top-left with resolution and content source
-      doc.setFontSize(8);
-      doc.text(`Resolution: ${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`, x+3, y+8);
-      // Added conceptual content text
-      doc.text(`(Video/Image playback from ${data.controllerName})`, x+3, y+16);
-      
-      // Added conceptual LAN connections text at the bottom
-      doc.text('LAN Connections: Optimized Daisy Chain for up to 7 Cabinets/Run (COB), or Direct per Port.', x+3, y+h-4);
-    }
 
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
@@ -1131,4 +1122,5 @@
   </script>
 </body>
 </html>
+
 
