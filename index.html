@@ -31,7 +31,7 @@
     .btn-secondary:hover { background: #d1d5db; }
 
     /* RESULTS */
-    .specs-grid, .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; margin-top: 10px; }
+    .specs-grid, .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
     /* SPEC FONT INCREASE: 7pt to 8pt */
     .spec-item, .ctrl-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e5e7eb; font-size: 8pt; }
     .spec-item span:first-child, .ctrl-item span:first-child { font-weight: 600; color: #1f2937; }
@@ -278,7 +278,7 @@
   </div>
   <script>
     /************************************************************************
-     * Data: LED products, controllers, parts catalog (MODIFIED)
+     * Data: LED products, controllers, parts catalog
      ************************************************************************/
     const MM_PER_METER = 1000;
     const MM_PER_FOOT = 304.8;
@@ -319,7 +319,7 @@
     let contactInfo = { email:'', phone:'' };
 
     const PARTS_CATALOG = {
-      // LED Cabinet Parts (MODIFIED to include 1.56mm corrected part)
+      // LED Cabinet Parts
       'PPL-COB-09': { part:'PPL-COB-MDL-CU-09', desc:'PeopleLink COB 0.9375mm Cabinet' },
       'PPL-COB-125': { part:'PPL-COB-MDL-CU-12', desc:'PeopleLink COB 1.25mm Cabinet' },
       'PPL-COB-15': { part:'PPL-COB-MDL-CU-15', desc:'PeopleLink COB 1.5625mm Cabinet' }, // CORRECTED PARTCODE
@@ -335,7 +335,6 @@
       'SPARE-REC-CARD': { part:'PPL-ACC-SPARE-REC-CARD', desc:'Spare Receiving Card (1 per 10 cabinets est.)' },
 
       // Controller Parts
-      'TB60': { part:'TP-VWC-NS-TB60', desc:'LED Video Wall Controller: TB60' },
       'VX400': { part:'TP-VWC-NS-VX400', desc:'LED Video Wall Controller: VX400 Pro' },
       'VX600': { part:'TP-VWC-NS-VX600', desc:'LED Video Wall Controller: VX600 Pro' },
       'VX1000': { part:'TP-VWC-NS-VX1000', desc:'LED Video Wall Controller: VX1000 Pro' },
@@ -347,7 +346,6 @@
       'H9': { part:'TP-XMF-H9', desc:'LED Video Wall Controller (H9)' },
       'H15': { part:'TP-XMF-H15', desc:'LED Video Wall Controller (H15)' },
       'H15E': { part:'TP-XMF-H15E', desc:'LED Video Wall Controller (H15 Enhanced)' },
-      'H20': { part:'TBD', desc:'LED Video Wall Controller (H20)' },
       'H_20_RJ45': { part:'TP-XOC-RJ45-20', desc:'H_20 x RJ45 Sending Card' },
       'H_16_RJ45': { part:'TP-XOC-RJ45-16-OF2', desc:'H_16 x RJ45 + 2x Fiber Sending Card' },
       'H_4_HDMI_Out': { part:'TP-XOC-HDMI4', desc:'H_4 x HDMI Output Card' },
@@ -358,7 +356,7 @@
     };
 
     /************************************************************************
-     * Utility functions (UNCHANGED)
+     * Utility functions
      ************************************************************************/
     function gcd(a, b) { return b == 0 ? a : gcd(b, a % b); }
     function formatLarge(n) { if (n < 10000) return n.toString(); return (n / 1000).toFixed(n % 1000 === 0 ? 0 : 1) + 'K'; }
@@ -367,7 +365,7 @@
     function escapeHtml(text) { return text.replace(/[&<>"'`=\/]/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;","/":"&#x2F;","`":"&#x60;","=":"&#x3D;"}[c]; }); }
 
     /************************************************************************
-     * Populate modal selects + initialization (UNCHANGED)
+     * Populate modal selects + initialization
      ************************************************************************/
     function populateModalControllers(){
       const sel = document.getElementById('modalControllerModel');
@@ -378,6 +376,9 @@
         opt.textContent = `${c.name} (${c.type})`;
         sel.appendChild(opt);
       });
+      // Set default value for the modal controller selection after population
+      const defaultCtrl = CONTROLLER_MODELS.find(c => c.is_default);
+      if(defaultCtrl) sel.value = defaultCtrl.name;
     }
     function populateModalOutputCards(){
       const sel = document.getElementById('modalOutputCardModel');
@@ -393,6 +394,9 @@
         o.textContent = `${c.model} (${c.ports} ports)`;
         sel.appendChild(o);
       });
+      // Default to the highest port count
+      sel.value = cards[0] ? `${cards[0].model}|${cards[0].ports}` : '';
+      updatePortsFromOutputCard();
     }
     function populateModalInputCards(){
       const sel = document.getElementById('modalInputCardModel');
@@ -413,7 +417,7 @@
     }
 
     /************************************************************************
-     * Calculation (MODIFIED - Aspect Ratio Logic Simplified)
+     * Calculation (REFINED Aspect Ratio Logic)
      ************************************************************************/
     function toggleMeasurementFields(){
       const unit = document.getElementById('unit').value;
@@ -451,60 +455,68 @@
       let desiredW_mm = 0;
       let desiredH_mm = 0;
 
+      // 1. Convert Diagonal to Target W/H
       if (unit === 'inches' && diagonalInput) {
-        const d_mm = diagonalInput * MM_PER_INCH;
-        let rW = details.cabW_mm;
-        let rH = details.cabH_mm;
-        if(aspectRatio && aspectRatio !== 'auto_major'){
-          const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
-          rW = ratioW; rH = ratioH;
-        }
-        const factor = d_mm / Math.sqrt(rW * rW + rH * rH);
-        desiredW_mm = factor * rW;
-        desiredH_mm = factor * rH;
-
-      } else if (aspectRatio && aspectRatio !== 'auto_major') { // Fixed ratio constraint (16:9, 4:3, etc.)
-        const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
-        const ratio = ratioW / ratioH;
-
-        if(widthInput && heightInput){ // Both inputs - prioritize closest fit by area
-          const inputW_mm = widthInput * unitFactor;
-          const inputH_mm = heightInput * unitFactor;
-          const inputRatio = inputW_mm / inputH_mm;
-
-          if(Math.abs(inputRatio - ratio) < 0.1){ // If inputs are close to desired ratio, use the smallest dimension as base
-              desiredW_mm = inputW_mm;
-              desiredH_mm = inputH_mm;
-          } else { // Inputs conflict with ratio - prioritize smallest input and apply ratio
-              if (inputW_mm < inputH_mm * ratio) {
-                  desiredW_mm = inputW_mm;
-                  desiredH_mm = desiredW_mm / ratio;
-              } else {
-                  desiredH_mm = inputH_mm;
-                  desiredW_mm = desiredH_mm * ratio;
-              }
-          }
-        } else if(widthInput){ // Only width
-          desiredW_mm = widthInput * unitFactor;
-          desiredH_mm = desiredW_mm / ratio;
-        } else if(heightInput){ // Only height
-          desiredH_mm = heightInput * unitFactor;
-          desiredW_mm = desiredH_mm * ratio;
-        } else {
-           document.getElementById('errorMessage').textContent='Please enter a width, height, or diagonal value.';
+        if (!diagonalInput > 0) {
+           document.getElementById('errorMessage').textContent='Please enter a valid diagonal value.';
            document.getElementById('errorMessage').style.display='block';
            return null;
         }
 
-      } else { // No aspect ratio constraint OR 'auto_major' (fit to cabinet ratio)
+        const d_mm = diagonalInput * MM_PER_INCH;
+        let rW, rH;
+        
+        // Use Cabinet ratio for "Auto with Major" or if no ratio selected
+        if(aspectRatio === 'auto_major' || aspectRatio === '') {
+            rW = details.cabW_mm; 
+            rH = details.cabH_mm;
+        } else { // Use fixed ratio (16:9, 4:3, etc.)
+            const [ratioW, ratioH] = aspectRatio.split(':').map(Number);
+            rW = ratioW; rH = ratioH;
+        }
+        
+        // Calculate W and H based on diagonal and target ratio
+        const factor = d_mm / Math.sqrt(rW * rW + rH * rH);
+        desiredW_mm = factor * rW;
+        desiredH_mm = factor * rH;
+      
+      } else { // Calculations based on Width/Height input
+
         if (!widthInput && !heightInput) {
-          document.getElementById('errorMessage').textContent='Please enter a width, height, or diagonal value.';
+          document.getElementById('errorMessage').textContent='Please enter a width, height, or switch to diagonal input.';
           document.getElementById('errorMessage').style.display='block';
           return null;
         }
-        // If one is missing, infer using the cabinet aspect ratio
-        desiredW_mm = widthInput * unitFactor || (heightInput * (details.cabW_mm/details.cabH_mm) * unitFactor);
-        desiredH_mm = heightInput * unitFactor || (widthInput * (details.cabH_mm/details.cabW_mm) * unitFactor);
+
+        // Determine target aspect ratio (rW:rH)
+        let rW, rH;
+        if(aspectRatio === 'auto_major' || aspectRatio === '') {
+            rW = details.cabW_mm; 
+            rH = details.cabH_mm;
+        } else {
+            [rW, rH] = aspectRatio.split(':').map(Number);
+        }
+        const ratio = rW / rH;
+
+        if (widthInput && heightInput) { 
+          // Both inputs provided: prioritize the closest fit by rounding cab numbers
+          desiredW_mm = widthInput * unitFactor;
+          desiredH_mm = heightInput * unitFactor;
+          
+          if(aspectRatio !== '' && aspectRatio !== 'auto_major'){
+            // If a fixed ratio is selected, we must modify one dimension to meet it based on the other's cabinet count.
+            // However, the simplest method is to let cabinet rounding handle the dimensions and let the resolution determine the final ratio.
+            // We just ensure the inputs are respected as the *target* size.
+          }
+        
+        } else if (widthInput) { // Only width provided
+          desiredW_mm = widthInput * unitFactor;
+          desiredH_mm = desiredW_mm / ratio;
+          
+        } else if (heightInput) { // Only height provided
+          desiredH_mm = heightInput * unitFactor;
+          desiredW_mm = desiredH_mm * ratio;
+        }
       }
 
       const numCabW = Math.max(1, Math.round(desiredW_mm / details.cabW_mm));
@@ -625,7 +637,7 @@
     }
 
     /************************************************************************
-     * Visualization & UI update (MODIFIED - BOQ Generation Logic)
+     * Visualization & UI update
      ************************************************************************/
     function showVisualization(){
       const d = calculateLEDWall();
@@ -681,13 +693,13 @@
 
 
     /************************************************************************
-     * BOQ generation & preview (MODIFIED - Ordering/Parts/Table Styling/Logic)
+     * BOQ generation & preview
      ************************************************************************/
     function generateBOQList(data){
       const list = [];
       const isModular = data.controllerType && data.controllerType.includes('Modular');
 
-      // --- 1. LED Cabinets/Modules (MODIFIED LOGIC) ---
+      // --- 1. LED Cabinets/Modules ---
       let ledKey;
       if (data.productKey === 'cob_09') ledKey = 'PPL-COB-09';
       else if (data.productKey === 'cob_125') ledKey = 'PPL-COB-125';
@@ -722,9 +734,6 @@
       }
 
       // --- 4. Short Cables (Cabinet to Cabinet) ---
-      const shortLanQty = data.totalCabinets; // N/A, data.requiredShortEthernet is total links
-      const shortPwrQty = data.totalCabinets; // N/A
-
       list.push({ item:'Cabinet to Cabinet Data Cable', partcode:PARTS_CATALOG['CAB-LAN-CBL'].part, desc:PARTS_CATALOG['CAB-LAN-CBL'].desc, qty:data.requiredShortEthernet, unit:'PCS' });
       list.push({ item:'Cabinet to Cabinet Power Cable', partcode:PARTS_CATALOG['CAB-PWR-CBL'].part, desc:PARTS_CATALOG['CAB-PWR-CBL'].desc, qty:data.requiredShortEthernet, unit:'PCS' });
 
@@ -745,12 +754,12 @@
       const spareRecCardQty = Math.max(1, Math.ceil(data.totalCabinets / 10));
       list.push({ item:`Spare Receiving Card`, partcode:PARTS_CATALOG['SPARE-REC-CARD'].part, desc:PARTS_CATALOG['SPARE-REC-CARD'].desc, qty:spareRecCardQty, unit:'PCS' });
 
-      // --- 7. Installation/Commissioning (MODIFIED QTY) ---
+      // --- 7. Installation/Commissioning (QTY AS PER CABINET COUNT) ---
       list.push({
         item:'Installation / Configuration',
         partcode:'TBD',
         desc:'Wall Installation, Configuration, & Commissioning',
-        qty: data.totalCabinets, // QTY AS PER CABINET COUNT
+        qty: data.totalCabinets,
         unit:'PCS'
       });
 
@@ -774,7 +783,7 @@
     }
 
     /************************************************************************
-     * Modal handlers (controller edit) (UNCHANGED)
+     * Modal handlers (controller edit)
      ************************************************************************/
     function openControllerModal(){
       if(!finalCalculationData || !finalCalculationData.totalPixels){
@@ -787,6 +796,7 @@
       document.getElementById('modalControllerModel').value = finalCalculationData.controllerName;
       if(ctrl.type === 'Modular'){
         document.querySelectorAll('.hseries-fields').forEach(el=>el.style.display='block');
+        // Ensure the correct output card is selected
         document.getElementById('modalOutputCardModel').value = `${finalCalculationData.outputCardModel}|${finalCalculationData.outputCardPorts}`;
         document.getElementById('modalInputCardModel').value = finalCalculationData.inputCardModel;
         document.getElementById('modalInputCardQty').value = finalCalculationData.inputCardQty;
@@ -803,7 +813,7 @@
     function onModalControllerChange(){
       const val = document.getElementById('modalControllerModel').value;
       const ctrl = CONTROLLER_MODELS.find(c => c.name === val);
-      if(ctrl.type === 'Modular'){
+      if(ctrl && ctrl.type === 'Modular'){
         document.querySelectorAll('.hseries-fields').forEach(el=>el.style.display='block');
       } else {
         document.querySelectorAll('.hseries-fields').forEach(el=>el.style.display='none');
@@ -811,6 +821,7 @@
     }
     function applyModalChanges(){
       // Re-run calculation to validate new controller config
+      // The calculateLEDWall function pulls values from the modal elements if available
       const d = calculateLEDWall();
       if(d){
         closeControllerModal();
@@ -819,9 +830,14 @@
     }
 
     /************************************************************************
-     * Download & PDF generation (MODIFIED - AutoTable, Footer, Disclaimer)
+     * Download & PDF generation
      ************************************************************************/
     function openContactModal(){
+      if(!finalCalculationData || !finalCalculationData.totalPixels){
+        document.getElementById('errorMessage').textContent='Please calculate first.';
+        document.getElementById('errorMessage').style.display='block';
+        return;
+      }
       document.getElementById('downloadEmail').value = contactInfo.email || '';
       document.getElementById('downloadPhone').value = contactInfo.phone || '';
       document.getElementById('contactError').style.display='none';
@@ -847,7 +863,7 @@
       proceedToDownloadPdf();
     }
 
-    // Helper function to add footer to all pages (NEW)
+    // Helper function to add footer to all pages
     function addFooter(doc) {
         const pageCount = doc.internal.getNumberOfPages();
         const pageW = doc.internal.pageSize.getWidth();
@@ -865,7 +881,6 @@
         }
     }
 
-    // REWRITTEN: PDF generation with new structure, ordering, T&C, and formatting.
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
       const list = generateBOQList(data);
@@ -1009,7 +1024,7 @@
         ''
       ]);
 
-      // BOQ table generation (MODIFIED FOR AUTO-FIT)
+      // BOQ table generation
       doc.autoTable(boqHeaders, boqData, {
         startY: y,
         theme: 'striped',
@@ -1042,7 +1057,7 @@
       });
       y = doc.lastAutoTable.finalY + 6;
 
-      // Section 4: Disclaimer (NEW)
+      // Section 4: Disclaimer
       if(y > doc.internal.pageSize.getHeight() - 40){ doc.addPage(); y = margin; }
       doc.setTextColor(...primary);
       doc.setFontSize(10);
@@ -1083,7 +1098,7 @@
         y += splitText.length * lineHeight;
       });
 
-      // Add the footer to all pages (NEW)
+      // Add the footer to all pages
       addFooter(doc);
 
       const fileName = `PeopleLink_LED_Proposal_${data.numCabW}x${data.numCabH}_${data.pixelPitch_mm}mm.pdf`;
@@ -1127,7 +1142,7 @@
     }
 
     /************************************************************************
-     * Reset (UNCHANGED)
+     * Reset
      ************************************************************************/
     function resetForm(){
       // clear relevant inputs
@@ -1135,7 +1150,6 @@
       document.getElementById('height').value='';
       document.getElementById('diagonal').value='';
       // Keep selected aspect ratio, only clear if needed
-      // document.getElementById('aspectRatio').value='';
       document.getElementById('errorMessage').style.display='none';
       document.getElementById('cabinetOverlay').innerHTML='';
       document.getElementById('boqPreviewContainer').innerHTML='';
@@ -1157,7 +1171,7 @@
       document.getElementById('width').value='';
       document.getElementById('height').value='';
       document.getElementById('diagonal').value='';
-      document.getElementById('aspectRatio').value='16:9'; // Reset to default
+      document.getElementById('aspectRatio').value='16:9'; // Reset to default 16:9
       document.getElementById('errorMessage').style.display='none';
       document.getElementById('cabinetOverlay').innerHTML='';
       document.getElementById('boqPreviewContainer').innerHTML='';
@@ -1172,13 +1186,14 @@
     }
 
     /************************************************************************
-     * Init (UNCHANGED)
+     * Init
      ************************************************************************/
     document.addEventListener('DOMContentLoaded', ()=>{\n
-      toggleMeasurementFields();
       populateModalControllers();
       populateModalOutputCards();
       populateModalInputCards();
+      toggleMeasurementFields(); // Call last to ensure correct fields are hidden on load
+
       // close modals on background click
       window.addEventListener('click', (e)=>{
         if(e.target === document.getElementById('controllerModal')) closeControllerModal();
