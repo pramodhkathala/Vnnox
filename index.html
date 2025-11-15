@@ -58,7 +58,7 @@
     #boqPreviewTable td.right { text-align: right; }
 
     /* ERROR & UTILS */
-    .hidden { display: none !important; }
+    .hidden { display: none !important; } /* ADDED !important for robustness */
     #errorMessage { color: var(--accent); font-weight: 600; margin-top: 10px; display: none; }
 
     /* MODAL */
@@ -114,12 +114,12 @@
             <option value="inches">Diagonal Inches (in)</option>
           </select>
         </div>
-        <div id="widthGroup" class="input-group">
+        <div id="widthGroup" class="input-group hidden">
           <label id="widthLabel" for="width">Desired Width (m)</label>
           <input type="number" id="width" min="0" step="0.01">
         </div>
 
-        <div id="heightGroup" class="input-group">
+        <div id="heightGroup" class="input-group hidden">
           <label id="heightLabel" for="height">Desired Height (m)</label>
           <input type="number" id="height" min="0" step="0.01">
         </div>
@@ -131,10 +131,14 @@
         <div class="input-group">
           <label for="aspectRatio">Aspect Ratio (Optional)</label>
           <select id="aspectRatio">
-            <option value="">-- No Ratio Constraint --</option>
-            <option value="auto_major">Auto with Major (Fit Cabinet)</option> <option value="16:9" selected>16:9 (Default)</option>
-            <option value="16:10">16:10</option> <option value="4:3">4:3</option>
-            <option value="2:1">2:1</option> <option value="3:2">3:2</option> <option value="21:9">21:9</option>
+            <option value="" selected>-- No Ratio Constraint --</option>
+            <option value="auto_major">Auto with Major (Fit Cabinet)</option>
+            <option value="16:9">16:9 (Default)</option>
+            <option value="16:10">16:10</option>
+            <option value="4:3">4:3</option>
+            <option value="2:1">2:1</option>
+            <option value="3:2">3:2</option>
+            <option value="21:9">21:9</option>
           </select>
         </div>
 
@@ -421,9 +425,13 @@
      ************************************************************************/
     function toggleMeasurementFields(){
       const unit = document.getElementById('unit').value;
+      
+      // Hide all input groups first
       document.getElementById('widthGroup').classList.add('hidden');
       document.getElementById('heightGroup').classList.add('hidden');
       document.getElementById('diagonalGroup').classList.add('hidden');
+      
+      // Show only the relevant group(s)
       if (unit === 'meters' || unit === 'feet') {
         document.getElementById('widthGroup').classList.remove('hidden');
         document.getElementById('heightGroup').classList.remove('hidden');
@@ -794,7 +802,7 @@
       // Populate modal inputs based on finalCalculationData
       const ctrl = CONTROLLER_MODELS.find(c => c.name === finalCalculationData.controllerName);
       document.getElementById('modalControllerModel').value = finalCalculationData.controllerName;
-      if(ctrl.type === 'Modular'){
+      if(ctrl && ctrl.type === 'Modular'){
         document.querySelectorAll('.hseries-fields').forEach(el=>el.style.display='block');
         // Ensure the correct output card is selected
         document.getElementById('modalOutputCardModel').value = `${finalCalculationData.outputCardModel}|${finalCalculationData.outputCardPorts}`;
@@ -972,6 +980,7 @@
       y = Math.max(colY, col2Y) + 4;
 
       // Section 2: Controller & Connectivity
+      if(y > doc.internal.pageSize.getHeight() - 40){ doc.addPage(); y = margin; }
       doc.setTextColor(...primary);
       doc.setFontSize(10);
       doc.setFont('Helvetica','bold');
@@ -1151,7 +1160,7 @@
       document.getElementById('diagonal').value='';
       // Keep selected aspect ratio, only clear if needed
       document.getElementById('errorMessage').style.display='none';
-      document.getElementById('cabinetOverlay').innerHTML='';
+      document.getElementById('cabinetOverlay').innerHTML='<div style="grid-column: 1 / -1; grid-row: 1 / -1; background: #f0f0f0; color: #333; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600;">Calculate to see visualization</div>';
       document.getElementById('boqPreviewContainer').innerHTML='';
       document.getElementById('visDimensions').textContent = '-- m × -- m';
 
@@ -1162,7 +1171,9 @@
       // Ensure H-series fields are hidden/reset visually if not calculating
       document.querySelectorAll('.hseries-only').forEach(el=>el.style.display='none');
       finalCalculationData = {};
-      toggleMeasurementFields(); // Re-toggle to ensure correct input fields are visible
+      // IMPORTANT: If product model is changed, it might influence calculation, 
+      // but unit selection controls fields, so we leave it to the unit change event.
+      // toggleMeasurementFields(); 
     }
 
     function fullReset(){
@@ -1171,9 +1182,10 @@
       document.getElementById('width').value='';
       document.getElementById('height').value='';
       document.getElementById('diagonal').value='';
-      document.getElementById('aspectRatio').value='16:9'; // Reset to default 16:9
+      // REVISED: Reset Aspect Ratio to the initial default '-- No Ratio Constraint --' (empty value)
+      document.getElementById('aspectRatio').value=''; 
       document.getElementById('errorMessage').style.display='none';
-      document.getElementById('cabinetOverlay').innerHTML='';
+      document.getElementById('cabinetOverlay').innerHTML='<div style="grid-column: 1 / -1; grid-row: 1 / -1; background: #f0f0f0; color: #333; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 600;">Calculate to see visualization</div>';
       document.getElementById('boqPreviewContainer').innerHTML='';
       document.getElementById('visDimensions').textContent = '-- m × -- m';
       // clear specs
@@ -1182,6 +1194,7 @@
       });
       document.querySelectorAll('.hseries-only').forEach(el=>el.style.display='none');
       finalCalculationData = {};
+      // Call after setting unit back to '' to ensure everything is hidden.
       toggleMeasurementFields();
     }
 
@@ -1192,7 +1205,8 @@
       populateModalControllers();
       populateModalOutputCards();
       populateModalInputCards();
-      toggleMeasurementFields(); // Call last to ensure correct fields are hidden on load
+      // Ensure the initial state is correct (all input fields are hidden as unit is not selected)
+      toggleMeasurementFields(); 
 
       // close modals on background click
       window.addEventListener('click', (e)=>{
