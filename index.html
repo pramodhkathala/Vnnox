@@ -684,7 +684,7 @@
         list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
 
         const inModel = data.inputCardModel || 'H_1xHDMI';
-        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
+        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inPart].part : 'TBD';
         list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
 
         list.push({ item:'Modular Splicer Frame', partcode: PARTS_CATALOG[data.suggestedControllerObj?.name]?.part || 'TBD', desc: data.splicerSolution, qty:1, unit:'PCS' });
@@ -847,10 +847,10 @@
       }
       contactInfo.email = e; contactInfo.phone = p;
       closeContactModal();
-      proceedToDownloadPdf(); // Call existing PDF logic
+      proceedToDownloadPdf(); 
     }
     
-    // REWRITTEN: PDF generation with a completely new structure, using Helvetica font and size 10 where possible.
+    // REWRITTEN: PDF generation with new structure, removing Control & Connectivity, and applying requested formatting.
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
       const { jsPDF } = window.jspdf;
@@ -876,99 +876,64 @@
       doc.setFontSize(10);
       doc.setFont('Helvetica','normal');
       doc.setTextColor(grey[0], grey[1], grey[2]);
-      doc.text(`Model: ${data.productName} (${data.pixelPitch_mm}mm)`, margin, 18);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, pageW - margin, 18, { align: 'right' });
+      doc.text(`Contact: ${contactInfo.email || 'N/A'} | ${contactInfo.phone || 'N/A'}`, pageW - margin, 18, { align: 'right' });
+      doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, 18);
       y = 24; 
       doc.line(margin, y, pageW - margin, y); // Separator line
       y += 6;
 
-      // Section 1: Technical Summary (Specs)
+      // Section 1: Detailed Wall Specification
       doc.setTextColor(...primary);
       doc.setFontSize(14);
       doc.setFont('Helvetica','bold');
-      doc.text('1. Wall Technical Specification Summary', margin, y);
+      doc.text('1. Detailed Wall Specification', margin, y);
       y += 8;
 
-      const specTableHead = [['Attribute', 'Details', 'Value']];
-      const specTableBody = [
-        ['Display Model', data.productName, `${data.pixelPitch_mm} mm`],
-        ['Physical Dimensions (WxH)', `Cabinets: ${data.numCabW} x ${data.numCabH}`, `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m x ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m`],
-        ['Resolution (WxH)', `${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`, `Aspect Ratio: ${data.aspectRatioText}`],
-        ['Diagonal Size', 'Approximate', `${data.finalDiagonal_in.toFixed(1)} inches`],
-        ['Pixel Density', 'Total Pixels', `${formatLarge(data.pixelDensity)} px/m² / ${formatLarge(data.totalPixels)}`],
-        ['Area', 'Total Cabinet Area', `${data.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`],
-        ['Power (Design)', 'With 15% Buffer', `${fmt(data.designPowerW,0)} W`],
-        ['Weight (Design)', 'With 15% Buffer', `${fmt(data.designWeight,1)} kg`]
+      // Use a fixed key-value pair structure for clear presentation
+      const specs = [
+        ['Model:', `PeopleLink ${data.productName.replace(/PeopleLink\s*/, '').replace(/\s*\([\d.]+mm\)/g, '')}`], // Remove repetitive pitch
+        ['Pixel Pitch:', `${data.pixelPitch_mm} mm`],
+        ['Actual Final Dimensions (WxH):', `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft x ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`],
+        ['Actual Final Resolution (WxH):', `${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`],
+        ['Final Diagonal:', `${data.finalDiagonal_in.toFixed(0)} in`], // Rounded diagonal
+        ['Pixel Density:', `${formatLarge(data.pixelDensity)} px/m²`],
+        ['Final Area:', `${data.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`],
+        ['Total Pixels:', `${formatLarge(data.totalPixels)}`],
+        ['Total Cabinets:', `${data.numCabW} x ${data.numCabH} (${data.totalCabinets})`],
+        ['Total Modules Required:', `${data.totalModules} (${data.modulesPerCab} per cabinet)`],
+        ['Cabinet Size (WxH):', `${data.cabinetW_mm} mm x ${data.cabinetH_mm} mm`],
+        ['Cabinet Pixels (WxH):', `${formatLarge(data.cabPixW)} x ${formatLarge(data.cabPixH)}`],
+        ['Design Power (Est.):', `${fmt(data.designPowerW,0)} W (15% buffer)`],
+        ['Design Weight (Est.):', `${fmt(data.designWeight,1)} kg (15% buffer)`]
       ];
 
-      doc.autoTable({
-        startY: y,
-        head: specTableHead,
-        body: specTableBody,
-        margin: { left: margin, right: margin },
-        theme: 'striped',
-        styles: { fontSize: 9, font: 'Helvetica', cellPadding: 2, lineWidth: 0.1 },
-        headStyles: { fillColor: primary, textColor: 255, fontStyle: 'bold' },
-        columnStyles: {
-          0: { cellWidth: 40, fontStyle: 'bold', textColor: [40, 40, 40] },
-          2: { fontStyle: 'bold', textColor: accent[0], halign: 'right' }
-        }
-      });
-      y = doc.lastAutoTable.finalY + 8;
-      
-      // Section 2: Control System & Connectivity
-      doc.setTextColor(...primary);
-      doc.setFontSize(14);
-      doc.setFont('Helvetica','bold');
-      doc.text('2. Control & Connectivity', margin, y);
-      y += 8;
-      
-      const ctrlTableHead = [['Component', 'Quantity', 'Details']];
-      const ctrlTableBody = [
-        ['Controller/Processor', 1, `${data.controllerName} (${data.controllerType})`],
-        ['Total Receiving Cards', data.totalCabinets, '1 per cabinet'],
-        ['Ethernet Ports (Controller→Wall)', data.requiredPortsBuffered, 'Buffered ports required from sender to wall'], // MODIFIED LABEL/DETAIL
-        ['Short Ethernet Cables', data.requiredShortEthernet, 'Inter-cabinet CAT6 runs'],
-        ['Power Input Runs', data.requiredPowerRuns, 'Required runs @ 1000W/run'] 
-      ];
+      const keyX = margin;
+      const valueX = keyX + 60;
+      doc.setFontSize(10);
+      doc.setTextColor(40,40,40);
 
-      if(data.controllerType && data.controllerType.includes('Modular')){
-          ctrlTableBody.splice(1, 0, ['Sending Cards', data.requiredSendCards, data.outputCardModel]);
-          ctrlTableBody.splice(2, 0, ['Input Card(s)', data.inputCardQty, data.inputCardModel]);
-      }
-      
-      doc.autoTable({
-        startY: y,
-        head: ctrlTableHead,
-        body: ctrlTableBody,
-        margin: { left: margin, right: margin },
-        theme: 'striped',
-        styles: { fontSize: 9, font: 'Helvetica', cellPadding: 2, lineWidth: 0.1 },
-        headStyles: { fillColor: primary, textColor: 255, fontStyle: 'bold' },
-        columnStyles: {
-          0: { cellWidth: 45, fontStyle: 'bold', textColor: [40, 40, 40] },
-          1: { halign: 'right' },
-          2: { halign: 'left' }
-        }
+      specs.forEach(s => {
+        doc.setFont('Helvetica', 'bold');
+        doc.text(s[0], keyX, y);
+        doc.setFont('Helvetica', 'normal');
+        doc.text(s[1], valueX, y);
+        y += 5.5;
       });
-      y = doc.lastAutoTable.finalY + 8;
 
-      // Section 3: Bill of Quantities (BOQ)
-      doc.setTextColor(...primary);
-      doc.setFontSize(14);
-      doc.setFont('Helvetica','bold');
-      doc.text('3. Bill of Quantities (BOQ)', margin, y);
-      y += 8;
+      y += 6;
+      
+      // Section 2: Bill of Quantities (BOQ)
+      doc.setTextColor(...primary); doc.setFontSize(14); doc.setFont('Helvetica','bold'); doc.text('2. Bill of Quantities (BOQ)', margin, y); y += 8; // BOQ is now Section 2
 
       // Check if need to add a page
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
 
       const boqList = generateBOQList(data);
       
-      // MODIFIED HEAD for 8 columns - Partcode after Description
+      // BOQ Head (Partcode after Description)
       const boqHead = [['S.No','Item','Description','Partcode','Qty','Unit','Unit Price (INR)','Total Price (INR)']];
       
-      // MODIFIED BODY mapping for 8 columns - Partcode after Description
+      // BOQ Body (Partcode after Description)
       const boqBody = boqList.map((r,i)=>[String(i+1), r.item, r.desc, r.partcode, String(r.qty), r.unit, '', '']);
       
       // Summary Rows
@@ -1002,10 +967,10 @@
       });
       y = doc.lastAutoTable.finalY + 8;
       
-      // Section 4: Terms & Conditions
+      // Section 3: Terms & Conditions
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
       
-      doc.setTextColor(...primary); doc.setFontSize(14); doc.setFont('Helvetica','bold'); doc.text('4. Standard Terms & Conditions', margin, y); y += 8;
+      doc.setTextColor(...primary); doc.setFontSize(14); doc.setFont('Helvetica','bold'); doc.text('3. Standard Terms & Conditions', margin, y); y += 8; // T&C is now Section 3
       doc.setFontSize(10); doc.setTextColor(50,50,50); doc.setFont('Helvetica','normal');
       const terms = [
         "1) Price Validity: This quotation is valid for 30 days from the date of issue.",
@@ -1018,7 +983,7 @@
       terms.forEach(t=>{
         const split = doc.splitTextToSize(t, pageW - margin*2);
         doc.text(split, margin, y);
-        y += (split.length * 5); // Increased line spacing slightly
+        y += (split.length * 5); 
         if(y > doc.internal.pageSize.getHeight() - 30){ doc.addPage(); y = margin; }
       });
 
@@ -1041,7 +1006,8 @@
       // --- Technical Summary Section ---
       let csv = 'LED Video Wall Technical & BOQ Summary\n';
       csv += 'Key: Actual Size (m), Diagonal (in), Resolution (WxH)\n';
-      csv += `Summary Data,${(d.finalW_mm/MM_PER_METER).toFixed(2)}x${(d.finalH_mm/MM_PER_METER).toFixed(2)},${d.finalDiagonal_in.toFixed(1)},${formatLarge(d.finalResW)}x${formatLarge(d.finalResH)}\n\n`;
+      // Included required data for Excel formatting
+      csv += `Summary Data,${(d.finalW_mm/MM_PER_METER).toFixed(2)}x${(d.finalH_mm/MM_PER_METER).toFixed(2)},${d.finalDiagonal_in.toFixed(0)},${formatLarge(d.finalResW)}x${formatLarge(d.finalResH)}\n\n`;
       
       // --- BOQ Section ---
       csv += 'Bill of Quantities\n';
@@ -1049,7 +1015,7 @@
       csv += 'S.No,Item,Description,Partcode,Qty,Unit,"Unit Price (INR)","Total Price (INR)"\n';
       
       list.forEach((r,i)=>{
-        // MODIFIED: Partcode (r.partcode) and Description (r.desc) swapped positions
+        // Partcode after Description
         csv += `${i+1},"${r.item}","${r.desc}","${r.partcode}",${r.qty},${r.unit},,\n`;
       });
       
@@ -1109,6 +1075,7 @@
   </script>
 </body>
 </html>
+
 
 
 
