@@ -9,45 +9,53 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
   <style>
-    /* PAGE */
-    :root{--brand:#1F2937;--accent:#B71C1C;--muted:#6b7280} /* brand set to Dark Grey (#1F2937) */
+    /* BRAND + ACCENTS */
+    :root{
+      --brand:#1F2937;   /* primary UI (kept dark grey) */
+      --accent:#B71C1C;
+      --muted:#6b7280;
+      --wood:#A67C52;    /* wood color for BOQ headers */
+      --viz:#00C2A8;     /* bright visualization accent color */
+    }
+
     body { font-family: 'Inter', sans-serif; margin: 0; padding: 28px; background: #eef6fb; color: #1c2738; font-size: 14px; -webkit-font-smoothing:antialiased; }
     .main-wrapper { max-width: 1200px; margin: auto; }
 
-    /* HEADER */
     h2 { text-align: center; color: var(--brand); margin-top: 0; margin-bottom: 18px; font-weight:700; font-size:1.7rem; }
 
-    /* LAYOUT */
     .grid-3 { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
     .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(6,25,57,0.08); }
     .input-group { margin-bottom: 15px; }
     label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 0.78rem; }
-    input[type="number"], select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; font-size: 0.78rem; }
+    input[type="number"], select, input[type="text"] { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; font-size: 0.78rem; }
     button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background-color 0.2s; }
     .btn-primary { background: var(--brand); color: #fff; }
     .btn-primary:hover { filter: brightness(0.95); }
     .btn-secondary { background: #e5e7eb; color: #374151; margin-left: 10px; }
     .btn-secondary:hover { background: #d1d5db; }
 
-    /* RESULTS */
     .specs-grid, .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.95rem; margin-top: 10px; }
     .spec-item, .ctrl-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e5e7eb; font-size: 9pt; }
     .spec-item span:first-child, .ctrl-item span:first-child { font-weight: 600; color: #1f2937; }
     .spec-item span:last-child, .ctrl-item span:last-child { color: var(--brand); font-weight: 600; }
     .details-panel { padding: 15px; border: 1px solid #d1d5db; border-radius: 4px; margin-top: 15px; background: #f9fafb; font-size: 9pt;}
 
-    /* VISUALIZATION: up to 90% width, but constrained height so it's not too tall */
+    /* VISUALIZATION */
     .vis-container { margin-top: 15px; text-align: center; }
     .led-wall { border: 2px solid #ccc; display: inline-grid; width: 90%; max-width: 90%; aspect-ratio: 16/9; max-height: 360px; overflow: hidden; position: relative; margin: 0 auto; }
     #cabinetOverlay { width: 100%; height: 100%; display: grid; }
-    #cabinetOverlay > div { border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(31,41,55,0.55); display: flex; align-items: center; justify-content: center; position: relative; }
-    .cab-label { background: rgba(0, 0, 0, 0.7); color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 8px; pointer-events: none; }
+    /* use the bright viz color for tiles fill (distinct/bright) */
+    #cabinetOverlay > div { border: 1px solid rgba(255,255,255,0.45); background: linear-gradient(135deg, rgba(0,0,0,0.06), rgba(0,0,0,0.02)); display: flex; align-items: center; justify-content: center; position: relative; }
+    /* cabinet inner fill - small accent bar */
+    #cabinetOverlay > div::after { content:''; position:absolute; bottom:4px; left:6px; right:6px; height:6px; background: var(--viz); border-radius:3px; opacity:0.95; }
+    .cab-label { background: rgba(0,0,0,0.7); color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 8px; pointer-events: none; }
     #visDimensions { font-size: 0.95rem; font-weight: 600; margin-top: 8px; }
 
-    /* BOQ TABLE STYLES */
+    /* BOQ TABLE STYLES - wood header */
     #boqPreviewTable { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9pt; }
     #boqPreviewTable th, #boqPreviewTable td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; font-size: 9pt; }
-    #boqPreviewTable th { background-color: var(--brand); color: #fff; font-weight: 700; }
+    /* wood color header */
+    #boqPreviewTable th { background-color: var(--wood); color: #fff; font-weight: 700; }
     #boqPreviewTable td.right { text-align: right; }
 
     .hidden { display: none !important; }
@@ -62,9 +70,7 @@
 
     .download-buttons { margin-top: 20px; border-top: 1px solid #d1d5db; padding-top: 15px; text-align: right; }
 
-    /* compact tooltip style */
     #cabTooltip { font-family: Inter, sans-serif; font-size: 12px; }
-
   </style>
 </head>
 <body>
@@ -153,7 +159,7 @@
             <div class="spec-item"><span>Pixel Pitch:</span><span id="spec_pitch">--</span></div>
             <div class="spec-item"><span>Actual Dimensions (WxH):</span><span id="spec_dims">--</span></div>
             <div class="spec-item"><span>Actual Resolution (WxH):</span><span id="spec_res">--</span></div>
-            <div class="spec-item"><span>Final Diagonal:</span><span id="spec_diag">--</span></div>
+            <div class="spec-item"><span>Diagonal:</span><span id="spec_diag">--</span></div>
             <div class="spec-item"><span>Aspect Ratio:</span><span id="aspectRatioText">--</span></div>
             <div class="spec-item"><span>Pixel Density:</span><span id="spec_density">--</span></div>
             <div class="spec-item"><span>Min Viewing Distance:</span><span id="spec_viewing">--</span></div>
@@ -207,6 +213,7 @@
 
   </div>
 
+  <!-- Controller Modal -->
   <div id="controllerModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -217,15 +224,13 @@
 
       <div class="input-group">
         <label for="modalControllerModel">Controller Model (Override)</label>
-        <select id="modalControllerModel" onchange="onModalControllerChange()">
-        </select>
+        <select id="modalControllerModel" onchange="onModalControllerChange()"></select>
       </div>
 
       <div class="hseries-fields">
         <div class="input-group">
           <label for="modalOutputCardModel">Output/Sending Card Type</label>
-          <select id="modalOutputCardModel" onchange="updatePortsFromOutputCard()">
-          </select>
+          <select id="modalOutputCardModel" onchange="updatePortsFromOutputCard()"></select>
           <input type="hidden" id="modalMaxPortsPerCard">
         </div>
 
@@ -253,6 +258,7 @@
     </div>
   </div>
 
+  <!-- Contact Modal -->
   <div id="contactModal" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -280,10 +286,9 @@
     </div>
   </div>
 
-
   <script>
     /************************************************************************
-     * Data: LED products, controllers, parts catalog (UPDATED)
+     * Data & constants
      ************************************************************************/
     const MM_PER_METER = 1000;
     const MM_PER_FOOT = 304.8;
@@ -346,13 +351,27 @@
 
       'PPL-COB-09': { part:'PPL-COB-MDL-CU-09', desc:'PeopleLink Active LED | 0.9PP COB (Including Modules)' },
       'PPL-COB-125': { part:'PPL-COB-MDL-CU-12', desc:'PeopleLink Active LED | 1.25PP COB (Including Modules)' },
-      'PPL-COB-156': { part:'PPL-COB-MDL-CU-15', desc:'PeopleLink Active LED | 1.56PP COB (Including Modules)' }, /* CORRECTED partcode for 1.56 */
+      'PPL-COB-156': { part:'PPL-COB-MDL-CU-15', desc:'PeopleLink Active LED | 1.56PP COB (Including Modules)' },
 
-      'PPL-SMD-18': { part:'PPL-SMD-MDL-CU-18', desc:'PeopleLink ActiveLED | 1.8PP Video LED Cabinets (Including Modules)' },
-      'PPL-ALD-CU': { part:'PPL-ALD-CU', desc:'PeopleLink ActiveLED | Video Wall Cabinet Unit (640x480mm)' },
+      'PPL-SMD-18': { part:'PPL-SMD-MDL-CU-18', desc:'PeopleLink ActiveLED | 1.8/2.0/1.86PP Video LED Cabinets (Including Modules)' },
+      'PPL-ALD-CU': { part:'PPL-ALD-CU', desc:'PeopleLink ActiveLED | Video Wall Cabinet Unit (960x960mm or 640x480mm)' },
 
       'ALED-INST-IN': { part:'ALED-INST-IN', desc:'Installation & Configuration - Indoor' },
       'ALED-TRS-IN-REG': { part:'ALED-TRS-IN-REG', desc:'Transportation (No. of Cabinets) - Indoor' }
+    };
+
+    // direct mapping productKey -> parts key (fixes previous mismatches)
+    const LED_PART_KEY_BY_PRODUCT = {
+      'cob_09': 'PPL-COB-09',
+      'cob_125': 'PPL-COB-125',
+      'cob_15': 'PPL-COB-156',
+      'indoor_186': 'PPL-SMD-18',
+      'indoor_20': 'PPL-SMD-18',
+      'indoor_25': 'PPL-SMD-18',
+      'outdoor_40': 'PPL-ALD-CU',
+      'outdoor_667': 'PPL-ALD-CU',
+      'outdoor_80': 'PPL-ALD-CU',
+      'outdoor_100': 'PPL-ALD-CU'
     };
 
     const CABINETS_PER_LONG_LAN = {
@@ -450,6 +469,8 @@
       }
 
       const details = LED_PRODUCTS[productKey];
+      if(!details){ err.textContent='ERROR: selected product unknown.'; err.style.display='block'; return null; }
+
       let desiredW_mm=0, desiredH_mm=0;
       const ratioIsAuto = (aspectRatioKey === 'auto' || !aspectRatioKey);
 
@@ -488,7 +509,7 @@
       const finalDiagonal_in = Math.round(Math.sqrt(finalW_mm*finalW_mm + finalH_mm*finalH_mm) / MM_PER_INCH);
       const pixelDensity = Math.round((totalPixels) / (finalArea_m2 || 1));
 
-      // MIN VIEWING DISTANCE rule: use pitch_mm (in mm) as meters (rounded to 2 decimals).
+      // Min viewing distance: use pitch_mm as meters (rounded to 2 decimals)
       const minViewing_m = Number(details.pitch_mm.toFixed(2));
       const minViewing_ft = Number((minViewing_m * 3.28084).toFixed(2));
 
@@ -515,7 +536,7 @@
       const requiredPortsBuffered = Math.max(1, Math.ceil(requiredPorts * (1 + GLOBAL_PORT_BUFFER_PCT)));
       const requiredShortEthernet = Math.max(0, totalCabinets - requiredPortsBuffered);
 
-      // pick suggested controller
+      // pick suggested controller: smallest that satisfies pixels & ports
       let suggested = CONTROLLER_MODELS.find(c => {
         if(c.type === 'Modular') {
           return c.maxPixels >= totalPixels;
@@ -575,7 +596,8 @@
       document.getElementById('spec_pitch').textContent = d.pixelPitch_mm + ' mm';
       document.getElementById('spec_dims').textContent = dimsText;
       document.getElementById('spec_res').textContent = `${formatLarge(d.finalResW)} × ${formatLarge(d.finalResH)}`;
-      document.getElementById('spec_diag').textContent = `${d.finalDiagonal_in} in`;
+      // Diagonal label changed to "Diagonal:" and uses inch symbol as requested
+      document.getElementById('spec_diag').textContent = `${d.finalDiagonal_in}″`;
       document.getElementById('aspectRatioText').textContent = d.aspectRatioText;
       document.getElementById('spec_density').textContent = `${formatLarge(d.pixelDensity)} px/m²`;
       document.getElementById('spec_viewing').textContent = `${d.minViewing_m} m / ${d.minViewing_ft} ft`;
@@ -656,23 +678,23 @@
     }
 
     /************************************************************************
-     * BOQ generation & preview (UPDATED)
+     * BOQ generation & preview (FIXED part codes, removed splicer)
      ************************************************************************/
     function generateBOQList(data){
       const list = [];
       const isModular = data.controllerType && data.controllerType.includes('Modular');
 
-      // --- LED Cabinets/Modules ---
-      const ledKey = data.pixelPitch_mm <= 1.0 ? 'PPL-COB-09' : data.pixelPitch_mm <= 1.3 ? 'PPL-COB-125' : data.cabinetW_mm===640 ? 'PPL-SMD-18' : 'PPL-COB-156';
-      const ledPart = PARTS_CATALOG[ledKey] ? PARTS_CATALOG[ledKey].part : 'TBD';
+      // Use mapping by selected productKey to pick correct partcode
+      const ledPartKey = LED_PART_KEY_BY_PRODUCT[data.productKey] || 'PPL-ALD-CU';
+      const ledPart = PARTS_CATALOG[ledPartKey] ? PARTS_CATALOG[ledPartKey].part : 'TBD';
       list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
 
-      // --- Spare Modules ---
+      // Spare Modules
       const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
       const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
       list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
 
-      // --- Controller/Processor ---
+      // Controller
       let ctrlKey = data.controllerName.split(' ')[0];
       if(data.controllerName.includes('VX600')) ctrlKey='VX600';
       if(data.controllerName.includes('VX400')) ctrlKey='VX400';
@@ -682,7 +704,7 @@
       if(PARTS_CATALOG[ctrlKey]) list.push({ item:'Controller/Processor', partcode:PARTS_CATALOG[ctrlKey].part, desc:PARTS_CATALOG[ctrlKey].desc, qty:1, unit:'PCS' });
       else list.push({ item:'Controller/Processor', partcode:'TBD', desc:data.controllerName, qty:1, unit:'PCS' });
 
-      // If modular, include sending cards, input cards, power supply
+      // If modular: output/input cards & PSU (but NO modular splicer frame row)
       if(isModular){
         const outModel = data.outputCardModel || 'H_20_RJ45';
         const outPart = PARTS_CATALOG[outModel] ? PARTS_CATALOG[outModel].part : 'TBD';
@@ -692,22 +714,22 @@
         const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
         list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
 
-        list.push({ item:'Modular Splicer Frame', partcode: PARTS_CATALOG[data.suggestedControllerObj?.name]?.part || 'TBD', desc: data.splicerSolution, qty:1, unit:'PCS' });
+        list.push({ item:'Power Supply (H Series)', partcode: PARTS_CATALOG['H_800W_PSU'] ? PARTS_CATALOG['H_800W_PSU'].part : 'TBD', desc: 'H Series PSU (800W)', qty: Math.max(1, Math.ceil((data.designPowerW/800))), unit:'PCS' });
       }
 
-      // --- Ethernet Ports (Controller→Wall) ---
+      // Ethernet Ports (Controller→Wall)
       list.push({ item:'Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required (Long-distance cable Partner Scope)`, qty:data.requiredPortsBuffered, unit:'Ports' });
 
-      // --- Short Ethernet (Between Cabinets) ---
+      // Short Ethernet (Between Cabinets)
       list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs (Included with Cabinet)', qty:data.requiredShortEthernet, unit:'PCS' });
 
-      // --- Installation / Configuration --- qty should be number of cabinets
+      // Installation / Configuration (qty = number of cabinets as requested)
       list.push({ item:'Installation / Configuration', partcode:'ALED-INST-IN', desc:'Installation & configuration (indoor)', qty:data.totalCabinets, unit:'Per Cabinet' });
 
-      // --- Transportation (Indoor) ---
+      // Transportation (Indoor)
       list.push({ item:'Transportation (Indoor)', partcode:'ALED-TRS-IN-REG', desc:'Transport (indoor) per cabinet', qty:data.totalCabinets, unit:'Per Cabinet' });
 
-      // --- Total Power Cables (Input Runs) ---
+      // Total Power Cables (Input Runs)
       list.push({
         item:'Total Power Cables (Input Runs)',
         partcode:'TBD',
@@ -806,7 +828,7 @@
     }
 
     /************************************************************************
-     * Contact modal & PDF / CSV export (UPDATED PDF text)
+     * Contact modal & PDF / CSV export (PDF uses wood color for table head)
      ************************************************************************/
     function openContactModal(){
       if(!finalCalculationData || !finalCalculationData.totalPixels){ document.getElementById('errorMessage').textContent='Please calculate configuration first.'; document.getElementById('errorMessage').style.display='block'; return; }
@@ -829,7 +851,6 @@
       proceedToDownloadPdf();
     }
 
-    // PDF: Helvetica font, adjusted spacing & dark-grey headings (#1F2937)
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
       const { jsPDF } = window.jspdf;
@@ -837,7 +858,9 @@
       const pageW = doc.internal.pageSize.getWidth();
       let y = 18;
       const margin = 14;
-      const primary = [31,41,55]; // dark grey RGB for #1F2937
+      // wood color rgb (#A67C52)
+      const woodRGB = [166,124,82];
+      const primaryRGB = [31,41,55];
       const finalAreaSqFt = m2ToSqFt(data.finalArea_m2);
 
       const bodyFontSize = 8;
@@ -845,7 +868,7 @@
       doc.setFontSize(bodyFontSize);
 
       // Header / Title
-      doc.setTextColor(...primary);
+      doc.setTextColor(...primaryRGB);
       doc.setFontSize(13);
       doc.setFont('Helvetica','bold');
       doc.text('PeopleLink LED Video Wall - Project Proposal', pageW/2, 12, { align:'center' });
@@ -859,7 +882,7 @@
       y = 24;
 
       // Section 1
-      doc.setTextColor(...primary);
+      doc.setTextColor(...primaryRGB);
       doc.setFontSize(10);
       doc.setFont('Helvetica','bold');
       doc.text('1. Detailed Wall Specification', margin, y);
@@ -875,7 +898,7 @@
       doc.text(formattedModelName, margin + 45, y);
       y += 4;
 
-      // Dimensions and Resolution (two columns) - removed the "Final" word
+      // Dimensions and Resolution (two columns) - removed "Final" word
       const w_m = (data.finalW_mm/MM_PER_METER).toFixed(2);
       const h_m = (data.finalH_mm/MM_PER_METER).toFixed(2);
       const w_ft = (data.finalW_mm/MM_PER_FOOT).toFixed(2);
@@ -892,7 +915,7 @@
       const specs = [
         ['Pixel Pitch:', `${data.pixelPitch_mm} mm`],
         ['Aspect Ratio:', `${data.aspectRatioText}`],
-        ['Final Diagonal:', `${data.finalDiagonal_in} in`],
+        ['Diagonal:', `${data.finalDiagonal_in} in`],
         ['Pixel Density:', `${formatLarge(data.pixelDensity)} px/m²`],
         ['Min Viewing Distance:', `${data.minViewing_m} m / ${data.minViewing_ft} ft`],
         ['Final Area:', `${data.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`],
@@ -911,7 +934,6 @@
       const col2KeyX = pageW / 2 + 5; const col2ValueX = col2KeyX + 45;
       const lineHeight = 3.6;
       let colY = y;
-
       col1Items.forEach(s => {
         doc.setFont('Helvetica','bold'); doc.text(s[0], col1KeyX, colY);
         doc.setFont('Helvetica','normal'); doc.text(s[1], col1ValueX, colY);
@@ -928,9 +950,11 @@
       y = Math.max(colY, col2Y) + 4;
 
       // Section 2: BOQ
-      doc.setTextColor(...primary); doc.setFontSize(10); doc.setFont('Helvetica','bold'); doc.text('2. Bill of Quantities (BOQ)', margin, y); y += 6;
+      doc.setTextColor(...primaryRGB); doc.setFontSize(10); doc.setFont('Helvetica','bold'); doc.text('2. Bill of Quantities (BOQ)', margin, y); y += 6;
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
       const boqList = generateBOQList(data);
+
+      // Build autoTable body
       const boqHead = [['S.No','Item','Description','Partcode','Qty','Unit','Unit Price (INR)','Total Price (INR)']];
       const boqBody = boqList.map((r,i)=>[String(i+1), r.item, r.desc, r.partcode, String(r.qty), r.unit, '', '']);
       boqBody.push([{ content: 'Sub Total Amount (INR)', colSpan: 6, styles: { halign: 'right', fontStyle: 'bold', fillColor: [240,240,240] } }, { content:'', colSpan:2, styles:{halign:'right'}}]);
@@ -944,14 +968,15 @@
         margin: { left: margin, right: margin },
         theme: 'grid',
         styles: { fontSize: bodyFontSize, cellPadding:1.5, font: 'Helvetica' },
-        headStyles: { fillColor: primary, textColor: 255, fontStyle: 'bold' },
+        headStyles: { fillColor: woodRGB, textColor: 255, fontStyle: 'bold' },
         columnStyles: { 4: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' } }
       });
+
       y = doc.lastAutoTable.finalY + 6;
 
       // Section 3: Terms & Conditions
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
-      doc.setTextColor(...primary); doc.setFontSize(10); doc.setFont('Helvetica','bold'); doc.text('3. Standard Terms & Conditions', margin, y); y += 6;
+      doc.setTextColor(...primaryRGB); doc.setFontSize(10); doc.setFont('Helvetica','bold'); doc.text('3. Standard Terms & Conditions', margin, y); y += 6;
       doc.setFontSize(bodyFontSize); doc.setFont('Helvetica','normal'); doc.setTextColor(50,50,50);
       const terms = [
         "1) Price Validity: This quotation is valid for 30 days from the date of issue.",
