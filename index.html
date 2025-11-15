@@ -37,82 +37,96 @@
 
     .specs-grid, .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.95rem; margin-top: 10px; line-height:1; }
     .spec-item, .ctrl-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #e9eef6; font-size: 9pt; align-items:center; }
-    .spec-item span:first-child, .ctrl-item span:first-child { font-weight: 600; color: var(--brand); }
-    .spec-item span:last-child, .ctrl-item span:last-child { color: var(--brand); font-weight: 600; }
+
+    /* LABEL / VALUE color rules — labels dark, values get utility classes */
+    .spec-item span:first-child,
+    .ctrl-item span:first-child {
+      font-weight: 600;
+      color: #1F2937; /* label color requested */
+    }
+
+    .spec-item span:last-child,
+    .ctrl-item span:last-child {
+      color: #0D47A1; /* default value color (fallback) */
+      font-weight: 700;
+    }
+
+    /* utility value classes (apply from JS) */
+    .value-default   { color: #1F2937; }   /* neutral/dark */
+    .value-viz       { color: var(--viz); }/* bright accent for numeric/resolution */
+    .value-wood      { color: var(--wood); }/* wood color for BOQ/parts & counts */
+    .value-alert     { color: #EF4444; }   /* red alert for warnings */
+    .value-muted     { color: #6b7280; }   /* muted for less-important values */
+
     .details-panel { padding: 14px; border: 1px solid #e6eef8; border-radius: 6px; margin-top: 12px; background: #fbfcfd; font-size: 9pt; }
 
-/* Visualization — full-color cabinet tiles (replace your existing visualization block) */
-.vis-container { margin-top: 12px; text-align: center; }
-.led-wall-wrapper { display:flex; justify-content:center; gap:20px; align-items:flex-start; flex-wrap:wrap; }
-.led-wall {
-  border: 2px solid rgba(31,41,55,0.08);
-  display: inline-grid;
-  width: 70%;
-  min-width: 320px;
-  aspect-ratio: 16/9;
-  max-height: 420px;
-  overflow: hidden;
-  position: relative;
-  background: linear-gradient(180deg,#f7fbff 0,#f3f8ff 100%);
-  border-radius:6px;
-}
+    /* Visualization — full-color cabinet tiles */
+    .vis-container { margin-top: 12px; text-align: center; }
+    .led-wall-wrapper { display:flex; justify-content:center; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+    .led-wall {
+      border: 2px solid rgba(31,41,55,0.08);
+      display: inline-grid;
+      width: 70%;
+      min-width: 320px;
+      aspect-ratio: 16/9;
+      max-height: 420px;
+      overflow: hidden;
+      position: relative;
+      background: linear-gradient(180deg,#f7fbff 0,#f3f8ff 100%);
+      border-radius:6px;
+    }
 
-/* cabinet grid */
-#cabinetOverlay {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  padding:6px;
-  gap:6px;
-  box-sizing:border-box;
-}
+    /* cabinet grid */
+    #cabinetOverlay {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      padding:6px;
+      gap:6px;
+      box-sizing:border-box;
+    }
 
-/* Each cabinet cell */
-.cab-cell {
-  border-radius:6px;
-  position:relative;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  color:#ffffff;
-  font-weight:700;
-  font-size:12px;
-  overflow:hidden;
-  /* soft outer glow using viz with low alpha for emphasis */
-  box-shadow: 0 6px 20px rgba(0,123,255,0.08), inset 0 -6px 16px rgba(0,0,0,0.06);
-  border: 1px solid rgba(255,255,255,0.06);
-}
+    /* Each cabinet cell */
+    .cab-cell {
+      border-radius:6px;
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#ffffff;
+      font-weight:700;
+      font-size:12px;
+      overflow:hidden;
+      box-shadow: 0 6px 20px rgba(0,123,255,0.08), inset 0 -6px 16px rgba(0,0,0,0.06);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
 
-/* small top-left label for cabinet index */
-.cab-cell .label {
-  position:absolute;
-  top:6px;
-  left:6px;
-  background: rgba(0,0,0,0.65);
-  padding:4px 6px;
-  border-radius:3px;
-  font-size:10px;
-  color:#fff;
-  font-weight:600;
-}
+    /* small top-left label for cabinet index */
+    .cab-cell .label {
+      position:absolute;
+      top:6px;
+      left:6px;
+      background: rgba(0,0,0,0.65);
+      padding:4px 6px;
+      border-radius:3px;
+      font-size:10px;
+      color:#fff;
+      font-weight:600;
+    }
 
-/* Full tile fill — uses var(--viz) and a subtle gradient for depth */
-.cab-fill {
-  position:absolute;
-  inset:0;                /* fill entire cell */
-  border-radius:6px;
-  display:block;
-  background: linear-gradient(180deg, var(--viz), rgba(0,123,255,0.85));
-  opacity:1;
-  pointer-events:none;
-  mix-blend-mode: normal;
-}
-
-/* remove the small bottom bar approach (if present) */
-.cab-fill::after { display:none !important; }
-
-/* optional: slightly dim the label when hovered to improve contrast */
-.cab-cell:hover .label { background: rgba(0,0,0,0.78); transform: translateY(-1px); transition: all 120ms ease; }
+    /* Full tile fill — uses var(--viz) and a subtle gradient for depth */
+    .cab-fill {
+      position:absolute;
+      inset:0;                /* fill entire cell */
+      border-radius:6px;
+      display:block;
+      background: linear-gradient(180deg, var(--viz), rgba(0,123,255,0.85));
+      opacity:1;
+      pointer-events:none;
+      mix-blend-mode: normal;
+    }
+    .cab-fill::after { display:none !important; }
+    .cab-cell:hover .label { background: rgba(0,0,0,0.78); transform: translateY(-1px); transition: all 120ms ease; }
 
     /* Controller box & connections */
     .controller-area { width: 24%; min-width:180px; text-align:center; }
@@ -279,9 +293,7 @@
           <div class="controller-area">
             <div class="controller-box" id="controllerBox">Suggested Controller<br><span id="controllerBoxName" style="font-weight:600;font-size:12px;color:#0b3b84">--</span></div>
             <!-- connections svg -->
-            <svg class="connections-svg" id="connectionsSvg" viewBox="0 0 300 140" preserveAspectRatio="none" aria-hidden="true">
-              <!-- lines will be drawn dynamically -->
-            </svg>
+            <svg class="connections-svg" id="connectionsSvg" viewBox="0 0 300 140" preserveAspectRatio="none" aria-hidden="true"></svg>
             <div style="font-size:12px; margin-top:6px; color:var(--muted)">Controller → Wall representation (visual only)</div>
           </div>
         </div>
@@ -717,6 +729,9 @@
 
       // render BOQ
       renderBOQPreview(d);
+
+      // apply colours to spec values
+      applySpecColors();
     }
 
     function renderCabinetOverlay(data){
@@ -748,11 +763,10 @@
           cell.className = 'cab-cell';
           cell.style.position = 'relative';
           cell.style.overflow = 'hidden';
-          // blue fill block
+
+          // use the CSS .cab-fill for full bright tile
           const fill = document.createElement('div');
           fill.className = 'cab-fill';
-          fill.style.background = `linear-gradient(180deg, rgba(0,123,255,0.12), rgba(0,123,255,0.06))`;
-          fill.style.position='absolute'; fill.style.left='0'; fill.style.top='0'; fill.style.right='0'; fill.style.bottom='0';
           cell.appendChild(fill);
 
           const label = document.createElement('div');
@@ -783,21 +797,14 @@
       // clear
       while(svg.firstChild) svg.removeChild(svg.firstChild);
 
-      // draw a controller box position and lines to represent runs
       const rectW = 40;
       const rectH = 18;
       const svgW = svg.viewBox.baseVal.width || 300;
       const svgH = svg.viewBox.baseVal.height || 140;
 
-      // simple visual: vertical line from controller to approx mid of wall,
-      // then fan-out lines to sample cabinet columns representing long ethernet runs.
-      // We'll compute points relative to svg.
-
-      // controller center
       const cx = svgW / 2;
       const cy = 18;
 
-      // draw controller circle
       const ctrlGrp = document.createElementNS('http://www.w3.org/2000/svg','g');
       const circle = document.createElementNS('http://www.w3.org/2000/svg','rect');
       circle.setAttribute('x', cx - rectW/2);
@@ -821,7 +828,6 @@
       ctrlGrp.appendChild(txt);
       svg.appendChild(ctrlGrp);
 
-      // fan lines — number of long runs = requiredPortsBuffered (clamped visually)
       const runs = Math.min(6, data.requiredPortsBuffered || 1);
       const startY = cy + rectH/2;
       const wallY = svgH - 12;
@@ -838,12 +844,11 @@
         svg.appendChild(line);
       }
 
-      // update controller box name on UI
       document.getElementById('controllerBoxName').textContent = (data.controllerName || '--');
     }
 
     /************************************************************************
-     * BOQ generation & preview (fixed as requested)
+     * BOQ generation & preview (spare modules removed from BOQ display)
      ************************************************************************/
     function generateBOQList(data){
       const list = [];
@@ -866,10 +871,8 @@
         list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
       }
 
-      // Spare Modules
-      const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
-      const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
-      list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
+      // --- Spare modules removed from BOQ display (calculations remain unchanged) ---
+      // (previously we pushed a spare modules line here — removed per request)
 
       // Controller
       let ctrlKey = data.controllerName.split(' ')[0];
@@ -1212,6 +1215,51 @@
     }
 
     /************************************************************************
+     * Spec color application helper (label vs value colours)
+     ************************************************************************/
+    function applySpecColors(){
+      const mapping = {
+        'Actual Resolution (WxH)': 'value-viz',
+        'Total Pixels': 'value-viz',
+        'Pixel Density': 'value-viz',
+        'Cabinet Pixels (WxH)': 'value-viz',
+
+        'Cabinets (WxH)': 'value-wood',
+        'Total Modules': 'value-wood',
+        'Cabinet Size (mm)': 'value-wood',
+        'Installation / Configuration': 'value-wood',
+
+        'Final Area (m²/sq.ft)': 'value-wood',
+        'Design Power (Est.)': 'value-wood',
+        'Design Weight (Est.)': 'value-wood',
+
+        'Aspect Ratio': 'value-muted',
+        'Model': 'value-default',
+        'Pixel Pitch': 'value-default',
+        'Min Viewing Distance': 'value-default',
+        'Actual Dimensions (WxH)': 'value-default',
+        'Diagonal': 'value-default'
+      };
+
+      document.querySelectorAll('.spec-item').forEach(item=>{
+        const keyEl = item.querySelector('span:first-child');
+        const valEl = item.querySelector('span:last-child');
+        if(!keyEl || !valEl) return;
+        const key = keyEl.textContent.trim();
+        let cls = mapping[key] || 'value-default';
+
+        if(key === 'Design Power (Est.)'){
+          const txt = (valEl.textContent || '').replace(/[, ]/g,'');
+          const m = txt.match(/(\d{2,})W/);
+          if(m && parseInt(m[1],10) > 50000){ cls = 'value-alert'; }
+        }
+
+        valEl.classList.remove('value-default','value-viz','value-wood','value-alert','value-muted');
+        valEl.classList.add(cls);
+      });
+    }
+
+    /************************************************************************
      * UI helpers & init
      ************************************************************************/
     function fullReset(){
@@ -1254,6 +1302,3 @@
   </script>
 </body>
 </html>
-
-
-
