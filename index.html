@@ -684,7 +684,7 @@
         list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
 
         const inModel = data.inputCardModel || 'H_1xHDMI';
-        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inPart].part : 'TBD';
+        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
         list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
 
         list.push({ item:'Modular Splicer Frame', partcode: PARTS_CATALOG[data.suggestedControllerObj?.name]?.part || 'TBD', desc: data.splicerSolution, qty:1, unit:'PCS' });
@@ -863,17 +863,18 @@
       const grey = [60, 60, 60];
       const finalAreaSqFt = m2ToSqFt(data.finalArea_m2);
       
-      // Set default font to Helvetica (closest standard to Calibri)
+      // --- Font Settings ---
       doc.setFont('Helvetica'); 
-      doc.setFontSize(10); 
+      const bodyFontSize = 9; // Reduced Font Size
+      doc.setFontSize(bodyFontSize); 
       
       // PDF Title & Header
       doc.setTextColor(...primary);
-      doc.setFontSize(18);
+      doc.setFontSize(16); // Reduced Title Size
       doc.setFont('Helvetica','bold');
       doc.text('PeopleLink LED Video Wall - Project Proposal', pageW/2, 12, { align:'center' });
       
-      doc.setFontSize(10);
+      doc.setFontSize(bodyFontSize);
       doc.setFont('Helvetica','normal');
       doc.setTextColor(grey[0], grey[1], grey[2]);
       doc.text(`Contact: ${contactInfo.email || 'N/A'} | ${contactInfo.phone || 'N/A'}`, pageW - margin, 18, { align: 'right' });
@@ -884,20 +885,22 @@
 
       // Section 1: Detailed Wall Specification
       doc.setTextColor(...primary);
-      doc.setFontSize(14);
+      doc.setFontSize(12); // Reduced Section Heading Size
       doc.setFont('Helvetica','bold');
       doc.text('1. Detailed Wall Specification', margin, y);
       y += 8;
 
-      // Use a fixed key-value pair structure for clear presentation
+      // Two-column setup
       const specs = [
-        ['Model:', `PeopleLink ${data.productName.replace(/PeopleLink\s*/, '').replace(/\s*\([\d.]+mm\)/g, '')}`], // Remove repetitive pitch
+        ['Model:', `PeopleLink ${data.productName.replace(/PeopleLink\s*/, '').replace(/\s*\([\d.]+mm\)/g, '')}`],
         ['Pixel Pitch:', `${data.pixelPitch_mm} mm`],
-        ['Actual Final Dimensions (WxH):', `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft x ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`],
+        ['Actual Final Dimensions (WxH):', `${(data.finalW_mm/MM_PER_METER).toFixed(2)} m * ${(data.finalH_mm/MM_PER_METER).toFixed(2)} m / ${(data.finalW_mm/MM_PER_FOOT).toFixed(2)} ft * ${(data.finalH_mm/MM_PER_FOOT).toFixed(2)} ft`], // Corrected format
         ['Actual Final Resolution (WxH):', `${formatLarge(data.finalResW)} x ${formatLarge(data.finalResH)}`],
-        ['Final Diagonal:', `${data.finalDiagonal_in.toFixed(0)} in`], // Rounded diagonal
+        ['Aspect Ratio:', `${data.aspectRatioText}`], // Added Aspect Ratio
+        ['Final Diagonal:', `${data.finalDiagonal_in.toFixed(0)} in`], // Rounded
         ['Pixel Density:', `${formatLarge(data.pixelDensity)} px/m²`],
         ['Final Area:', `${data.finalArea_m2.toFixed(2)} m² / ${finalAreaSqFt.toFixed(2)} sq.ft`],
+        // Column 2 starts here - need to split logic
         ['Total Pixels:', `${formatLarge(data.totalPixels)}`],
         ['Total Cabinets:', `${data.numCabW} x ${data.numCabH} (${data.totalCabinets})`],
         ['Total Modules Required:', `${data.totalModules} (${data.modulesPerCab} per cabinet)`],
@@ -906,24 +909,41 @@
         ['Design Power (Est.):', `${fmt(data.designPowerW,0)} W (15% buffer)`],
         ['Design Weight (Est.):', `${fmt(data.designWeight,1)} kg (15% buffer)`]
       ];
+      
+      const col1Items = specs.slice(0, 8);
+      const col2Items = specs.slice(8);
 
-      const keyX = margin;
-      const valueX = keyX + 60;
-      doc.setFontSize(10);
+      const col1KeyX = margin;
+      const col1ValueX = col1KeyX + 50; // Adjusted for 2-col space
+      const col2KeyX = pageW / 2 + 5;
+      const col2ValueX = col2KeyX + 50;
+      const lineHeight = 5;
+      let colY = y;
+
+      doc.setFontSize(bodyFontSize);
       doc.setTextColor(40,40,40);
 
-      specs.forEach(s => {
+      col1Items.forEach(s => {
         doc.setFont('Helvetica', 'bold');
-        doc.text(s[0], keyX, y);
+        doc.text(s[0], col1KeyX, colY);
         doc.setFont('Helvetica', 'normal');
-        doc.text(s[1], valueX, y);
-        y += 5.5;
+        doc.text(s[1], col1ValueX, colY);
+        colY += lineHeight;
       });
 
-      y += 6;
+      let col2Y = y;
+      col2Items.forEach(s => {
+        doc.setFont('Helvetica', 'bold');
+        doc.text(s[0], col2KeyX, col2Y);
+        doc.setFont('Helvetica', 'normal');
+        doc.text(s[1], col2ValueX, col2Y);
+        col2Y += lineHeight;
+      });
+
+      y = Math.max(colY, col2Y) + 4; // Ensure next section starts below both columns
       
       // Section 2: Bill of Quantities (BOQ)
-      doc.setTextColor(...primary); doc.setFontSize(14); doc.setFont('Helvetica','bold'); doc.text('2. Bill of Quantities (BOQ)', margin, y); y += 8; // BOQ is now Section 2
+      doc.setTextColor(...primary); doc.setFontSize(12); doc.setFont('Helvetica','bold'); doc.text('2. Bill of Quantities (BOQ)', margin, y); y += 8; 
 
       // Check if need to add a page
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
@@ -957,7 +977,7 @@
         body: boqBody,
         margin: { left: margin, right: margin },
         theme: 'grid',
-        styles: { fontSize:10, cellPadding:2, font: 'Helvetica' }, // Font size 10 applied
+        styles: { fontSize:bodyFontSize, cellPadding:2, font: 'Helvetica' }, // Font size 9 applied
         headStyles: { fillColor: primary, textColor: 255, fontStyle: 'bold' },
         columnStyles: {
             4: { halign: 'right' }, // Qty column
@@ -970,8 +990,8 @@
       // Section 3: Terms & Conditions
       if(y > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); y = margin; }
       
-      doc.setTextColor(...primary); doc.setFontSize(14); doc.setFont('Helvetica','bold'); doc.text('3. Standard Terms & Conditions', margin, y); y += 8; // T&C is now Section 3
-      doc.setFontSize(10); doc.setTextColor(50,50,50); doc.setFont('Helvetica','normal');
+      doc.setTextColor(...primary); doc.setFontSize(12); doc.setFont('Helvetica','bold'); doc.text('3. Standard Terms & Conditions', margin, y); y += 8; 
+      doc.setFontSize(bodyFontSize); doc.setTextColor(50,50,50); doc.setFont('Helvetica','normal'); // Font size 9 applied
       const terms = [
         "1) Price Validity: This quotation is valid for 30 days from the date of issue.",
         "2) Payment Terms: Standard terms are 50% advance, 40% upon delivery, and 10% upon successful commissioning.",
@@ -983,7 +1003,7 @@
       terms.forEach(t=>{
         const split = doc.splitTextToSize(t, pageW - margin*2);
         doc.text(split, margin, y);
-        y += (split.length * 5); 
+        y += (split.length * 4.5); // Adjusted line spacing for smaller font
         if(y > doc.internal.pageSize.getHeight() - 30){ doc.addPage(); y = margin; }
       });
 
@@ -1006,12 +1026,12 @@
       // --- Technical Summary Section ---
       let csv = 'LED Video Wall Technical & BOQ Summary\n';
       csv += 'Key: Actual Size (m), Diagonal (in), Resolution (WxH)\n';
-      // Included required data for Excel formatting
+      // Included required data for Excel formatting - Diagonal is rounded
       csv += `Summary Data,${(d.finalW_mm/MM_PER_METER).toFixed(2)}x${(d.finalH_mm/MM_PER_METER).toFixed(2)},${d.finalDiagonal_in.toFixed(0)},${formatLarge(d.finalResW)}x${formatLarge(d.finalResH)}\n\n`;
       
       // --- BOQ Section ---
       csv += 'Bill of Quantities\n';
-      // MODIFIED CSV header for 8 columns - Partcode after Description
+      // CSV header for 8 columns - Partcode after Description
       csv += 'S.No,Item,Description,Partcode,Qty,Unit,"Unit Price (INR)","Total Price (INR)"\n';
       
       list.forEach((r,i)=>{
@@ -1019,7 +1039,7 @@
         csv += `${i+1},"${r.item}","${r.desc}","${r.partcode}",${r.qty},${r.unit},,\n`;
       });
       
-      // Summary Rows
+      // Summary Rows (for Excel formatting)
       csv += ',,,"Sub Total Amount (INR)",,,,\n';
       csv += ',,,"GST",,,,\n';
       csv += ',,,"Grand Total (INR)",,,,\n';
@@ -1075,7 +1095,4 @@
   </script>
 </body>
 </html>
-
-
-
 
