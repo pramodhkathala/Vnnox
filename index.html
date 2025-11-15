@@ -683,7 +683,7 @@
         list.push({ item:'Output (Sending) Card', partcode:outPart, desc: outModel, qty:data.requiredSendCards, unit:'PCS' });
 
         const inModel = data.inputCardModel || 'H_1xHDMI';
-        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inModel].part : 'TBD';
+        const inPart = PARTS_CATALOG[inModel] ? PARTS_CATALOG[inPart].part : 'TBD';
         list.push({ item:'Input Card(s)', partcode:inPart, desc:inModel, qty:data.inputCardQty || 2, unit:'PCS' });
 
         list.push({ item:'Modular Splicer Frame', partcode: PARTS_CATALOG[data.suggestedControllerObj?.name]?.part || 'TBD', desc: data.splicerSolution, qty:1, unit:'PCS' });
@@ -848,24 +848,6 @@
       proceedToDownloadPdf();
     }
 
-    // Draw a simple grid visualization into the PDF using jsPDF primitives
-    function drawVisualizationInPdf(doc, data, x, y, w, h){
-      doc.setDrawColor(13,71,161);
-      doc.setLineWidth(0.8);
-      doc.rect(x,y,w,h);
-      const cols = data.numCabW, rows = data.numCabH;
-      const cellW = w / cols;
-      const cellH = h / rows;
-      doc.setLineWidth(0.3);
-      for(let i=1;i<cols;i++){
-        const xx = x + i*cellW;
-        doc.line(xx, y, xx, y+h);
-      }
-      for(let j=1;j<rows;j++){
-        const yy = y + j*cellH;
-        doc.line(x, yy, x+w, yy);
-      }
-
     function proceedToDownloadPdf(){
       const data = finalCalculationData;
       const { jsPDF } = window.jspdf;
@@ -948,19 +930,10 @@
 
       y += 4;
 
-      // Section 2 - Visualization (draw grid)
+      // Section 2 - Control & Connections (was Section 3)
       doc.setTextColor(...primary);
       doc.setFontSize(11);
-      doc.text('2. Physical Wall Visualization & Content', margin, y);
-      y += 6;
-      const vizW = pageW - margin*2, vizH = 40;
-      drawVisualizationInPdf(doc, data, margin, y, vizW, vizH);
-      y += vizH + 8;
-
-      // Section 3 - Control & Connections
-      doc.setTextColor(...primary);
-      doc.setFontSize(11);
-      doc.text('3. Control System & Connections', margin, y);
+      doc.text('2. Control System & Connections', margin, y);
       y += 6;
       doc.setFontSize(9);
       doc.setTextColor(40,40,40);
@@ -983,7 +956,7 @@
       });
 
       y += 6;
-      doc.setTextColor(...primary); doc.setFontSize(11); doc.text('4. Bill of Quantities (BOQ)', margin, y); y += 6;
+      doc.setTextColor(...primary); doc.setFontSize(11); doc.text('3. Bill of Quantities (BOQ)', margin, y); y += 6; // WAS SECTION 4
 
       // Build BOQ table rows
       const boqList = generateBOQList(data);
@@ -1020,10 +993,10 @@
         headStyles: { fillColor: primary, textColor: 255 }
       });
 
-      // Terms & Conditions (try fit into remaining page or new page)
+      // Terms & Conditions (try fit into remaining page or new page) (WAS SECTION 5)
       let after = doc.lastAutoTable.finalY + 8;
       if(after > doc.internal.pageSize.getHeight() - 70){ doc.addPage(); after = margin; }
-      doc.setFontSize(11); doc.setTextColor(...primary); doc.text('5. Standard Terms & Conditions', margin, after); after += 6;
+      doc.setFontSize(11); doc.setTextColor(...primary); doc.text('4. Standard Terms & Conditions', margin, after); after += 6;
       doc.setFontSize(9); doc.setTextColor(50,50,50);
       const terms = [
         "1) Price Validity: This quotation is valid for 30 days from the date of issue.",
@@ -1122,5 +1095,6 @@
   </script>
 </body>
 </html>
+
 
 
