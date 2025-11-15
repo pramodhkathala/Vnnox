@@ -667,7 +667,16 @@
     function generateBOQList(data){
       const list = [];
       const isModular = data.controllerType && data.controllerType.includes('Modular');
+      // LED Cabinets
+      const ledKey = data.pixelPitch_mm <= 1.0 ? 'PPL-COB-09' : data.pixelPitch_mm <= 1.3 ? 'PPL-COB-125' : data.cabinetW_mm===640 ? 'PPL-SMD-18' : 'PPL-ALD-CU';
+      const ledPart = PARTS_CATALOG[ledKey] ? PARTS_CATALOG[ledKey].part : 'TBD';
+      list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
 
+      // Spare modules
+      const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
+      const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
+      list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
+      
       // Controller
       let ctrlKey = data.controllerName.split(' ')[0];
       if(data.controllerName.includes('VX600')) ctrlKey='VX600';
@@ -693,16 +702,6 @@
       list.push({ item:'Long Ethernet Ports (Controller→Wall)', partcode:'TBD', desc:`Controller to wall long ethernet ports`, qty:data.requiredPortsBuffered, unit:'Ports' });
       list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs', qty:data.requiredShortEthernet, unit:'PCS' });
 
-      // LED Cabinets
-      const ledKey = data.pixelPitch_mm <= 1.0 ? 'PPL-COB-09' : data.pixelPitch_mm <= 1.3 ? 'PPL-COB-125' : data.cabinetW_mm===640 ? 'PPL-SMD-18' : 'PPL-ALD-CU';
-      const ledPart = PARTS_CATALOG[ledKey] ? PARTS_CATALOG[ledKey].part : 'TBD';
-      list.push({ item:'LED Cabinets (Including Modules)', partcode:ledPart, desc:data.productName, qty:data.totalCabinets, unit:'PCS' });
-
-      // Spare modules
-      const sparePct = (data.productName.toLowerCase().includes('cob')) ? 0.05 : 0.10;
-      const spareQty = Math.max(1, Math.round(data.totalModules * sparePct));
-      list.push({ item:`Spare Modules (${Math.round(sparePct*100)}%)`, partcode:'TBD', desc:'Spare modules (site spares)', qty:spareQty, unit:'PCS' });
-
       // Installation and transport
       list.push({ item:'Installation / Configuration', partcode:'ALED-INST-IN', desc:'Installation & configuration (indoor)', qty:1, unit:'LS' });
       list.push({ item:'Transportation (Indoor)', partcode:'ALED-TRS-IN-REG', desc:'Transport (indoor) per cabinet', qty:data.totalCabinets, unit:'Per Cabinet' });
@@ -711,7 +710,7 @@
       list.push({ 
         item:'Total Power Cables (Input Runs)', 
         partcode:'TBD', 
-        desc:`Required runs based on ${fmt(data.designPowerW,0)} W Design Power @ 1000W/run. Daisy chain not required.`, 
+        desc:`Required runs based on Design Power @ 1000W/run.`, 
         qty: data.requiredPowerRuns, 
         unit:'Runs' 
       });
@@ -1095,6 +1094,7 @@
   </script>
 </body>
 </html>
+
 
 
 
