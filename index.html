@@ -21,33 +21,35 @@
     .grid-3 { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; }
     .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(6,25,57,0.08); }
     .input-group { margin-bottom: 15px; }
-    label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 0.9rem; }
-    input[type="number"], select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; font-size: 0.9rem; }
+    /* INPUT FONT DECREASED: 0.9rem -> 0.85rem */
+    label { display: block; margin-bottom: 5px; font-weight: 600; color: #374151; font-size: 0.85rem; }
+    input[type="number"], select { width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; font-size: 0.85rem; }
     button { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: background-color 0.2s; }
     .btn-primary { background: var(--brand); color: #fff; }
     .btn-primary:hover { background: #0b3b84; }
     .btn-secondary { background: #e5e7eb; color: #374151; margin-left: 10px; }
     .btn-secondary:hover { background: #d1d5db; }
 
-    /* RESULTS */
-    .specs-grid, .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; margin-top: 10px; }
-    .spec-item, .ctrl-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e5e7eb; font-size: 7pt; }
+    /* RESULTS - BASE FONT INCREASED */
+    .specs-grid, .ctrl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; margin-top: 10px; }
+    /* RESULTS ITEM FONT INCREASED: 7pt -> 8pt */
+    .spec-item, .ctrl-item { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #e5e7eb; font-size: 8pt; }
     .spec-item span:first-child, .ctrl-item span:first-child { font-weight: 600; color: #1f2937; }
     .spec-item span:last-child, .ctrl-item span:last-child { color: var(--brand); font-weight: 600; }
+    /* RESULTS PANEL BASE FONT INCREASED: 7pt -> 8pt */
+    .details-panel { padding: 15px; border: 1px solid #d1d5db; border-radius: 4px; margin-top: 15px; background: #f9fafb; font-size: 8pt;}
     
-    .details-panel { padding: 15px; border: 1px solid #d1d5db; border-radius: 4px; margin-top: 15px; background: #f9fafb; font-size: 7pt;}
-    
-    /* VISUALIZATION */
+    /* VISUALIZATION - MAX WIDTH REMOVED */
     .vis-container { margin-top: 15px; text-align: center; }
-    .led-wall { border: 2px solid #ccc; display: inline-grid; width: 100%; max-width: 600px; max-height: 400px; aspect-ratio: 16/9; overflow: hidden; position: relative; }
+    .led-wall { border: 2px solid #ccc; display: inline-grid; width: 100%; aspect-ratio: 16/9; overflow: hidden; position: relative; } /* Removed max-width/height */
     #cabinetOverlay { width: 100%; height: 100%; display: grid; }
     #cabinetOverlay > div { border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(13, 71, 161, 0.5); display: flex; align-items: center; justify-content: center; position: relative; }
     .cab-label { background: rgba(0, 0, 0, 0.7); color: #fff; padding: 2px 4px; border-radius: 2px; font-size: 8px; pointer-events: none; }
     #visDimensions { font-size: 0.9rem; font-weight: 600; margin-top: 5px; }
     
-    /* BOQ TABLE STYLES */
-    #boqPreviewTable { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 7pt; }
-    #boqPreviewTable th, #boqPreviewTable td { border: 1px solid #e5e7eb; padding: 4px 6px; text-align: left; font-size: 7pt; }
+    /* BOQ TABLE STYLES - FONT INCREASED */
+    #boqPreviewTable { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 8pt; }
+    #boqPreviewTable th, #boqPreviewTable td { border: 1px solid #e5e7eb; padding: 4px 6px; text-align: left; font-size: 8pt; }
     #boqPreviewTable th { background-color: var(--brand); color: #fff; font-weight: 700; }
     #boqPreviewTable td.right { text-align: right; }
     
@@ -739,7 +741,8 @@
       let html = `<div class="details-panel" style="margin-top:12px"><div style="font-weight:700;color:var(--brand);margin-bottom:8px">Bill of Quantities (Compact View)</div>`;
       
       // Added style to table for auto-fit/compact view
-      html += `<style>#boqPreviewTable th, #boqPreviewTable td { font-size: 7pt; padding: 2px 4px; } #boqPreviewTable { width: 100%; border-collapse: collapse; }</style>`
+      // FONT SIZE INCREASED 7pt -> 8pt
+      html += `<style>#boqPreviewTable th, #boqPreviewTable td { font-size: 8pt; padding: 2px 4px; } #boqPreviewTable { width: 100%; border-collapse: collapse; }</style>`
       html += `<table id="boqPreviewTable"><thead><tr>
         <th style="width:3%">S.No</th>
         <th style="width:20%">Item</th>
@@ -877,7 +880,7 @@
       
       // --- Font Settings ---
       doc.setFont('Helvetica'); 
-      const bodyFontSize = 7; 
+      const bodyFontSize = 8; // INCREASED FONT SIZE (was 7)
       doc.setFontSize(bodyFontSize); 
       
       // PDF Title & Header
@@ -1014,10 +1017,11 @@
         theme: 'grid',
         styles: { fontSize:bodyFontSize, cellPadding:1.5, font: 'Helvetica' }, 
         headStyles: { fillColor: primary, textColor: 255, fontStyle: 'bold' },
+        // Auto-sizing columns by omitting explicit columnWidth and relying on content
         columnStyles: {
-            4: { halign: 'right' }, 
-            6: { halign: 'right' }, 
-            7: { halign: 'right' }  
+            4: { halign: 'right' }, // Qty
+            6: { halign: 'right' }, // Unit Price
+            7: { halign: 'right' }  // Total Price
         }
       });
       y = doc.lastAutoTable.finalY + 6;
@@ -1043,10 +1047,10 @@
         if(y > doc.internal.pageSize.getHeight() - 30){ doc.addPage(); y = margin; }
       });
 
-      // Footer
+      // Footer - DISCLAIMER & COPYRIGHT UPDATED
       doc.setFontSize(7); doc.setTextColor(150,170,200);
-      doc.text('Note: Design figures include a 15% safety margin for structural and electrical planning.', margin, doc.internal.pageSize.getHeight() - 15);
-      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd.', pageW/2, doc.internal.pageSize.getHeight() - 8, { align:'center' }); 
+      doc.text('Disclaimer: This document is system-generated. All specifications and calculations must be validated with the regional Pre-Sales team prior to finalization or execution.', margin, doc.internal.pageSize.getHeight() - 15);
+      doc.text('© 2025 PeopleLink Unified Communications Pvt. Ltd. | All rights revered', pageW/2, doc.internal.pageSize.getHeight() - 8, { align:'center' }); 
 
       // save pdf
       const filename = `PeopleLink_LED_Config_${data.finalResW}x${data.finalResH}_Proposal.pdf`;
