@@ -461,8 +461,9 @@
       'PPL-SMD-MDL-CU-80': { part:'NA', desc:'PeopleLink Outdoor P8 Cabinet & Module (Integrated) - TBD' },
       'PPL-SMD-MDL-CU-100':{ part:'NA', desc:'PeopleLink Outdoor P10 Cabinet & Module (Integrated) - TBD' },
 
-      'ALED-INST-IN': { part:'ALED-INST-IN', desc:'Installation & Configuration - Indoor' },
-      'ALED-TRS-IN-REG': { part:'ALED-TRS-IN-REG', desc:'Transportation (No. of Cabinets) - Indoor' }
+      'ALED-INST-IN':     { part:'ALED-INST-IN',     desc:'Installation & Configuration - Indoor' },
+      'ALED-INST-OU':     { part:'ALED-INST-OU',     desc:'Installation & Configuration - Outdoor' },
+      'ALED-TRS-IN-REG':  { part:'ALED-TRS-IN-REG',  desc:'Transportation (Indoor) - Per Cabinet' },
     };
 
     const LED_PART_KEY_BY_PRODUCT = {
@@ -901,19 +902,63 @@
       list.push({ item:'Ethernet Ports (Controller to Wall)', partcode:'TBD', desc:`Controller to wall ethernet ports required (Long-distance cable Partner Scope)`, qty:data.requiredPortsBuffered, unit:'Ports' });
       list.push({ item:'Short Ethernet (Between Cabinets)', partcode:'TBD', desc:'Inter-cabinet CAT6 runs (Included with Cabinet)', qty:data.requiredShortEthernet, unit:'PCS' });
 
-      // Installation / Configuration (qty = number of cabinets)
-      list.push({ item:'Installation / Configuration', partcode:'ALED-INST-IN', desc:'Installation & configuration (indoor)', qty:data.totalCabinets, unit:'Per Cabinet' });
+      const isOutdoor =
+        data.productKey === 'outdoor_40' ||
+        data.productKey === 'outdoor_667' ||
+        data.productKey === 'outdoor_80' ||
+        data.productKey === 'outdoor_100';
 
-      // Transportation (Indoor)
-      list.push({ item:'Transportation (Indoor)', partcode:'ALED-TRS-IN-REG', desc:'Transport (indoor) per cabinet', qty:data.totalCabinets, unit:'Per Cabinet' });
+      if (isOutdoor) {
+        // Outdoor Installation
+        list.push({
+          item: 'Installation / Configuration (Outdoor)',
+          partcode: PARTS_CATALOG['ALED-INST-OU']
+            ? PARTS_CATALOG['ALED-INST-OU'].part
+            : 'ALED-INST-OU',
+          desc: 'Installation & configuration (outdoor)',
+          qty: data.totalCabinets,
+          unit: 'Per Cabinet'
+        });
 
-      // Total Power Cables
+        // Outdoor Transportation – no part code (NA), LS
+        list.push({
+          item: 'Transportation (Outdoor)',
+          partcode: 'NA',
+          desc: 'Transportation (Outdoor) – LS / Partner Scope',
+          qty: data.totalCabinets,
+          unit: 'LS'
+        });
+      } else {
+        // Indoor Installation
+        list.push({
+          item: 'Installation / Configuration (Indoor)',
+          partcode: PARTS_CATALOG['ALED-INST-IN']
+            ? PARTS_CATALOG['ALED-INST-IN'].part
+            : 'ALED-INST-IN',
+          desc: 'Installation & configuration (indoor)',
+          qty: data.totalCabinets,
+          unit: 'Per Cabinet'
+        });
+
+        // Indoor Transportation
+        list.push({
+          item: 'Transportation (Indoor)',
+          partcode: PARTS_CATALOG['ALED-TRS-IN-REG']
+            ? PARTS_CATALOG['ALED-TRS-IN-REG'].part
+            : 'ALED-TRS-IN-REG',
+          desc: 'Transportation (Indoor) - Per Cabinet',
+          qty: data.totalCabinets,
+          unit: 'Per Cabinet'
+        });
+      }
+
+      // Total Power Cables (same for indoor & outdoor)
       list.push({
-        item:'Total Power Cables (Input Runs)',
-        partcode:'TBD',
-        desc:`Power cables @ 1000W/run. (Long-distance cable Partner Scope)`,
+        item: 'Total Power Cables (Input Runs)',
+        partcode: 'TBD',
+        desc: 'Power cables @ 1000W/run. (Long-distance cable Partner Scope)',
         qty: data.requiredPowerRuns,
-        unit:'Runs'
+        unit: 'Runs'
       });
 
       return list;
@@ -1302,3 +1347,4 @@
   </script>
 </body>
 </html>
+
